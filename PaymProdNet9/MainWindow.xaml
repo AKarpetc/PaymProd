@@ -1,0 +1,323 @@
+<Window x:Class="PaymProdNet9.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+        mc:Ignorable="d"
+        Title="Меню - Управление банкетами" 
+        Height="700" Width="1200"
+        WindowState="Maximized"
+        Loaded="Window_Loaded"
+        Closing="Window_Closing"
+        Style="{StaticResource MaterialDesignWindow}"
+        Background="{StaticResource BackgroundBrush}">
+
+    <Window.Resources>
+        <!-- Стили для кнопок удаления -->
+        <Style x:Key="DeleteButtonStyle" TargetType="Button" BasedOn="{StaticResource MaterialDesignIconButton}">
+            <Setter Property="Width" Value="30"/>
+            <Setter Property="Height" Value="30"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Foreground" Value="Red"/>
+            <Setter Property="ToolTip" Value="Удалить"/>
+        </Style>
+
+        <!-- Стили для кнопок редактирования -->
+        <Style x:Key="EditButtonStyle" TargetType="Button" BasedOn="{StaticResource MaterialDesignIconButton}">
+            <Setter Property="Width" Value="30"/>
+            <Setter Property="Height" Value="30"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Foreground" Value="Blue"/>
+            <Setter Property="ToolTip" Value="Редактировать"/>
+        </Style>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Меню -->
+        <Menu Grid.Row="0" materialDesign:ElevationAssist.Elevation="Dp2">
+            <MenuItem Header="Меню">
+                <MenuItem Header="Сохранить изменения в меню" Click="SaveMenuChanges_Click">
+                    <MenuItem.Icon>
+                        <materialDesign:PackIcon Kind="ContentSave"/>
+                    </MenuItem.Icon>
+                </MenuItem>
+                <MenuItem Header="Обновить меню" Click="RefreshMenu_Click">
+                    <MenuItem.Icon>
+                        <materialDesign:PackIcon Kind="Refresh"/>
+                    </MenuItem.Icon>
+                </MenuItem>
+                <Separator/>
+                <MenuItem Header="Выход" Click="Exit_Click">
+                    <MenuItem.Icon>
+                        <materialDesign:PackIcon Kind="ExitToApp"/>
+                    </MenuItem.Icon>
+                </MenuItem>
+            </MenuItem>
+
+            <MenuItem Header="Справочники">
+                <MenuItem Header="Правка справочников" Click="OpenDictionaries_Click">
+                    <MenuItem.Icon>
+                        <materialDesign:PackIcon Kind="BookEdit"/>
+                    </MenuItem.Icon>
+                </MenuItem>
+            </MenuItem>
+
+            <MenuItem Header="Отчет" Click="GenerateReport_Click">
+                <MenuItem.Icon>
+                    <materialDesign:PackIcon Kind="FileDocument"/>
+                </MenuItem.Icon>
+            </MenuItem>
+
+            <MenuItem Header="Распечатать все меню" Click="PrintAllMenu_Click">
+                <MenuItem.Icon>
+                    <materialDesign:PackIcon Kind="Printer"/>
+                </MenuItem.Icon>
+            </MenuItem>
+
+            <MenuItem Header="Распечатать текущее меню" Click="PrintCurrentMenu_Click">
+                <MenuItem.Icon>
+                    <materialDesign:PackIcon Kind="PrinterSettings"/>
+                </MenuItem.Icon>
+            </MenuItem>
+
+            <MenuItem Header="Справка">
+                <MenuItem Header="О программе" Click="About_Click">
+                    <MenuItem.Icon>
+                        <materialDesign:PackIcon Kind="Information"/>
+                    </MenuItem.Icon>
+                </MenuItem>
+            </MenuItem>
+        </Menu>
+
+        <!-- Основной контент -->
+        <TabControl Grid.Row="1" x:Name="MainTabControl" 
+                   Style="{StaticResource MaterialDesignTabControl}"
+                   materialDesign:ColorZoneAssist.Mode="PrimaryMid">
+            
+            <!-- Вкладка составления меню -->
+            <TabItem Header="Составление меню">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="5"/>
+                        <RowDefinition Height="250"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Верхняя панель с информацией о банкете -->
+                    <materialDesign:Card Grid.Row="0" Margin="10" Padding="15">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <TextBlock Grid.Column="0" Text="Название банкета:" 
+                                     VerticalAlignment="Center" Margin="0,0,10,0"/>
+                            <TextBox Grid.Column="1" x:Name="BanquetNameTextBox" 
+                                   materialDesign:HintAssist.Hint="Введите название"
+                                   LostFocus="BanquetInfo_LostFocus" Margin="0,0,20,0"/>
+
+                            <TextBlock Grid.Column="2" Text="Количество человек:" 
+                                     VerticalAlignment="Center" Margin="0,0,10,0"/>
+                            <TextBox Grid.Column="3" x:Name="PeopleCountTextBox" 
+                                   materialDesign:HintAssist.Hint="Кол-во"
+                                   PreviewTextInput="NumericTextBox_PreviewTextInput"
+                                   LostFocus="BanquetInfo_LostFocus" Margin="0,0,20,0"/>
+
+                            <TextBlock Grid.Column="4" Text="Дата, начало:" 
+                                     VerticalAlignment="Center" Margin="0,0,10,0"/>
+                            <DatePicker Grid.Column="5" x:Name="BanquetDatePicker" 
+                                      SelectedDateChanged="BanquetInfo_Changed" Margin="0,0,20,0"/>
+
+                            <TextBlock Grid.Column="6" Text="Описание:" 
+                                     VerticalAlignment="Center" Margin="0,0,10,0"/>
+                            <TextBox Grid.Column="7" x:Name="DescriptionTextBox" 
+                                   materialDesign:HintAssist.Hint="Краткое описание"
+                                   LostFocus="BanquetInfo_LostFocus" Margin="0,0,10,0"/>
+
+                            <StackPanel Grid.Column="8" Orientation="Horizontal">
+                                <Button Style="{StaticResource MaterialDesignFloatingActionMiniButton}" 
+                                      Click="StartMenu_Click" 
+                                      ToolTip="Перейти к заполнению"
+                                      Margin="0,0,5,0">
+                                    <materialDesign:PackIcon Kind="PlayCircle"/>
+                                </Button>
+                                <Button Style="{StaticResource MaterialDesignFloatingActionMiniButton}" 
+                                      Click="NewMenu_Click" 
+                                      ToolTip="Новое меню">
+                                    <materialDesign:PackIcon Kind="Plus"/>
+                                </Button>
+                            </StackPanel>
+                        </Grid>
+                    </materialDesign:Card>
+
+                    <!-- Список блюд в меню -->
+                    <materialDesign:Card Grid.Row="1" Margin="10" Padding="10">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+
+                            <TextBlock Grid.Row="0" x:Name="CurrentMenuInfo" 
+                                     Text="Выберите или создайте новое меню"
+                                     Style="{StaticResource MaterialDesignHeadline6TextBlock}"
+                                     Margin="0,0,0,10"/>
+
+                            <DataGrid Grid.Row="1" x:Name="MenuDelicatesDataGrid" 
+                                    AutoGenerateColumns="False"
+                                    CanUserAddRows="False"
+                                    SelectionMode="Single"
+                                    IsReadOnly="False"
+                                    materialDesign:DataGridAssist.CellPadding="10"
+                                    materialDesign:DataGridAssist.ColumnHeaderPadding="10">
+                                <DataGrid.Columns>
+                                    <DataGridTemplateColumn Width="50">
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <Button Style="{StaticResource DeleteButtonStyle}"
+                                                      Click="DeleteDelicateFromMenu_Click">
+                                                    <materialDesign:PackIcon Kind="Delete"/>
+                                                </Button>
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+
+                                    <DataGridTextColumn Header="Блюдо" Binding="{Binding Del}" 
+                                                      Width="2*" IsReadOnly="True"/>
+                                    <DataGridTextColumn Header="Состав" Binding="{Binding Sost}" 
+                                                      Width="3*" IsReadOnly="True"/>
+                                    <DataGridTextColumn Header="Количество" Binding="{Binding Countpor}" 
+                                                      Width="*"/>
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </Grid>
+                    </materialDesign:Card>
+
+                    <GridSplitter Grid.Row="2" HorizontalAlignment="Stretch" 
+                                Background="Gray" Height="5"/>
+
+                    <!-- Нижняя панель с доступными блюдами -->
+                    <materialDesign:Card Grid.Row="3" Margin="10" Padding="10">
+                        <Grid x:Name="DelicatesPanel" IsEnabled="False">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+
+                            <!-- Фильтр по типам блюд -->
+                            <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,10">
+                                <Button x:Name="AllTypesButton" Content="Все" 
+                                      Style="{StaticResource MaterialDesignRaisedButton}"
+                                      Click="FilterDelicates_Click" Tag="%" Margin="0,0,5,0"/>
+                            </StackPanel>
+
+                            <!-- Список доступных блюд -->
+                            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                                <ItemsControl x:Name="AvailableDelicatesPanel">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <WrapPanel/>
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <materialDesign:Card Margin="5" Width="300" 
+                                                               MouseDoubleClick="DelicateCard_MouseDoubleClick">
+                                                <Grid Margin="10">
+                                                    <Grid.RowDefinitions>
+                                                        <RowDefinition Height="Auto"/>
+                                                        <RowDefinition Height="Auto"/>
+                                                        <RowDefinition Height="Auto"/>
+                                                    </Grid.RowDefinitions>
+
+                                                    <TextBlock Grid.Row="0" Text="{Binding Del}" 
+                                                             FontWeight="Bold" TextWrapping="Wrap"/>
+                                                    <TextBlock Grid.Row="1" Text="{Binding Sost}" 
+                                                             TextWrapping="Wrap" Opacity="0.7" Margin="0,5,0,5"/>
+                                                    <StackPanel Grid.Row="2" Orientation="Horizontal">
+                                                        <TextBox Width="80" 
+                                                               materialDesign:HintAssist.Hint="Кол-во"
+                                                               PreviewTextInput="NumericTextBox_PreviewTextInput"
+                                                               Tag="{Binding}"/>
+                                                        <TextBlock VerticalAlignment="Center" Margin="5,0,0,0"
+                                                                 Text="{Binding WeightInfo}"/>
+                                                    </StackPanel>
+                                                </Grid>
+                                            </materialDesign:Card>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </ScrollViewer>
+                        </Grid>
+                    </materialDesign:Card>
+                </Grid>
+            </TabItem>
+
+            <!-- Вкладка сохраненных меню -->
+            <TabItem Header="Сохраненные меню">
+                <materialDesign:Card Margin="10" Padding="10">
+                    <DataGrid x:Name="SavedMenusDataGrid" 
+                            AutoGenerateColumns="False"
+                            CanUserAddRows="False"
+                            SelectionMode="Single"
+                            IsReadOnly="True"
+                            materialDesign:DataGridAssist.CellPadding="10"
+                            materialDesign:DataGridAssist.ColumnHeaderPadding="10">
+                        <DataGrid.Columns>
+                            <DataGridTemplateColumn Width="50">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Button Style="{StaticResource DeleteButtonStyle}"
+                                              Click="DeleteSavedMenu_Click">
+                                            <materialDesign:PackIcon Kind="Delete"/>
+                                        </Button>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+
+                            <DataGridTemplateColumn Width="50">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Button Style="{StaticResource EditButtonStyle}"
+                                              Click="EditSavedMenu_Click">
+                                            <materialDesign:PackIcon Kind="Pencil"/>
+                                        </Button>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+
+                            <DataGridTextColumn Header="Название" Binding="{Binding Name}" Width="2*"/>
+                            <DataGridTextColumn Header="Количество людей" Binding="{Binding CountP}" Width="*"/>
+                            <DataGridTextColumn Header="Дата, время" Binding="{Binding DateBan}" Width="*"/>
+                            <DataGridTextColumn Header="Доп. информация" Binding="{Binding Detail}" Width="2*"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </materialDesign:Card>
+            </TabItem>
+        </TabControl>
+
+        <!-- Индикатор загрузки -->
+        <Grid x:Name="LoadingOverlay" Grid.RowSpan="2" 
+              Background="#80000000" Visibility="Collapsed">
+            <ProgressBar Style="{StaticResource MaterialDesignCircularProgressBar}"
+                       Value="0" IsIndeterminate="True" 
+                       Width="100" Height="100"/>
+        </Grid>
+    </Grid>
+</Window>
+
