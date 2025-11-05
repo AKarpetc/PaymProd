@@ -65,8 +65,9 @@
 
                     <!-- Нижняя часть - редактирование блюда -->
                     <materialDesign:Card Grid.Row="2" Margin="10" Padding="15">
-                        <Grid x:Name="DelicateEditPanel" IsEnabled="False">
+                        <Grid>
                             <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="*"/>
@@ -78,42 +79,83 @@
                                      Style="{StaticResource MaterialDesignBody2TextBlock}"
                                      Margin="0,0,0,15"/>
 
+                            <!-- Кнопка создания нового блюда - ВСЕГДА АКТИВНА -->
+                            <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,10">
+                                <Button Content="➕ Создать новое блюдо" 
+                                      Style="{StaticResource MaterialDesignRaisedButton}"
+                                      materialDesign:ButtonAssist.CornerRadius="10"
+                                      Background="#4CAF50"
+                                      BorderBrush="#4CAF50"
+                                      Foreground="White"
+                                      Click="NewDelicate_Click"
+                                      Padding="20,10"
+                                      FontWeight="SemiBold"
+                                      ToolTip="Создать новое блюдо"/>
+                            </StackPanel>
+
+                            <!-- Панель редактирования блюда - отключена по умолчанию -->
+                            <Grid Grid.Row="2" x:Name="DelicateEditPanel" IsEnabled="False">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+
                             <!-- Форма редактирования блюда -->
-                            <Grid Grid.Row="1">
+                            <Grid Grid.Row="0">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
                                 <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="Auto"/>
                                     <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="Auto"/>
                                     <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="150"/>
                                 </Grid.ColumnDefinitions>
 
-                                <TextBlock Grid.Column="0" Text="Название:" 
-                                         VerticalAlignment="Center" Margin="0,0,10,0"/>
-                                <TextBox Grid.Column="1" x:Name="DelicateNameTextBox" 
-                                       materialDesign:HintAssist.Hint="Введите название" Margin="0,0,20,0"/>
+                                <!-- Первая строка: Название и Тип -->
+                                <StackPanel Grid.Row="0" Grid.Column="0" Margin="0,0,10,10">
+                                    <TextBlock Text="Название блюда:" 
+                                             Style="{StaticResource MaterialDesignBody2TextBlock}"
+                                             Margin="0,0,0,5"/>
+                                    <TextBox x:Name="DelicateNameTextBox" 
+                                           materialDesign:HintAssist.Hint="Введите название блюда"
+                                           Style="{StaticResource MaterialDesignOutlinedTextBox}"/>
+                                </StackPanel>
 
-                                <TextBlock Grid.Column="2" Text="Тип:" 
-                                         VerticalAlignment="Center" Margin="0,0,10,0"/>
-                                <ComboBox Grid.Column="3" x:Name="DelicateTypeComboBox" 
-                                        DisplayMemberPath="Name" Margin="0,0,20,0"/>
+                                <StackPanel Grid.Row="0" Grid.Column="1" Margin="10,0,0,10">
+                                    <TextBlock Text="Тип блюда:" 
+                                             Style="{StaticResource MaterialDesignBody2TextBlock}"
+                                             Margin="0,0,0,5"/>
+                                    <ComboBox x:Name="DelicateTypeComboBox" 
+                                            DisplayMemberPath="Name"
+                                            Style="{StaticResource MaterialDesignOutlinedComboBox}"
+                                            materialDesign:HintAssist.Hint="Выберите тип"/>
+                                </StackPanel>
 
-                                <TextBlock Grid.Column="4" Text="Вес порции:" 
-                                         VerticalAlignment="Center" Margin="0,0,10,0"/>
-                                <TextBox Grid.Column="5" x:Name="DelicateWeightTextBox" 
-                                       materialDesign:HintAssist.Hint="г" Margin="0,0,20,0"/>
+                                <!-- Вторая строка: Вес и Количество -->
+                                <StackPanel Grid.Row="1" Grid.Column="0" Margin="0,0,10,0">
+                                    <TextBlock Text="Вес порции (грамм):" 
+                                             Style="{StaticResource MaterialDesignBody2TextBlock}"
+                                             Margin="0,0,0,5"/>
+                                    <TextBox x:Name="DelicateWeightTextBox" 
+                                           materialDesign:HintAssist.Hint="Например: 250"
+                                           Style="{StaticResource MaterialDesignOutlinedTextBox}"
+                                           PreviewTextInput="NumericOnly_PreviewTextInput"/>
+                                </StackPanel>
 
-                                <TextBlock Grid.Column="6" Text="Количество:" 
-                                         VerticalAlignment="Center" Margin="0,0,10,0"/>
-                                <TextBox Grid.Column="7" x:Name="DelicateCountTextBox" 
-                                       materialDesign:HintAssist.Hint="порций"/>
+                                <StackPanel Grid.Row="1" Grid.Column="1" Margin="10,0,0,0">
+                                    <TextBlock Text="Количество порций:" 
+                                             Style="{StaticResource MaterialDesignBody2TextBlock}"
+                                             Margin="0,0,0,5"/>
+                                    <TextBox x:Name="DelicateCountTextBox" 
+                                           materialDesign:HintAssist.Hint="По умолчанию: 1"
+                                           Style="{StaticResource MaterialDesignOutlinedTextBox}"
+                                           PreviewTextInput="NumericOnly_PreviewTextInput"/>
+                                </StackPanel>
                             </Grid>
 
                             <!-- Состав блюда -->
-                            <Grid Grid.Row="2" Margin="0,15,0,15">
+                            <Grid Grid.Row="1" Margin="0,15,0,15">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="80"/>
@@ -172,17 +214,17 @@
                             </Grid>
 
                             <!-- Кнопки действий -->
-                            <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right">
+                            <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right">
                                 <Button Content="Перейти к составу" 
                                       Style="{StaticResource MaterialDesignRaisedButton}"
-                                      Click="GoToComposition_Click" Margin="0,0,10,0"/>
-                                <Button Content="Новое блюдо" 
+                                      Click="GoToComposition_Click" Margin="0,0,10,0"
+                                      ToolTip="Перейти к редактированию состава блюда"/>
+                                <Button Content="💾 Сохранить блюдо" 
                                       Style="{StaticResource MaterialDesignRaisedButton}"
-                                      Click="NewDelicate_Click" Margin="0,0,10,0"/>
-                                <Button Content="Сохранить блюдо" 
-                                      Style="{StaticResource MaterialDesignRaisedButton}"
-                                      Click="UpdateDelicate_Click"/>
+                                      Click="UpdateDelicate_Click"
+                                      ToolTip="Сохранить изменения блюда"/>
                             </StackPanel>
+                            </Grid>
                         </Grid>
                     </materialDesign:Card>
                 </Grid>

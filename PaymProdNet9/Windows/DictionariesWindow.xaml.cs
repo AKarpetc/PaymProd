@@ -508,6 +508,24 @@ public partial class DictionariesWindow : Window
             AvailableProductsList.ItemsSource = filtered;
         }
     }
+
+    /// <summary>
+    /// Валидация ввода только чисел (для веса и количества)
+    /// </summary>
+    private void NumericOnly_PreviewTextInput(object sender, System.Windows.Input.TextCompositionEventArgs e)
+    {
+        // Разрешаем только цифры и десятичную точку/запятую
+        var textBox = sender as TextBox;
+        if (textBox == null) return;
+
+        var text = textBox.Text.Insert(textBox.SelectionStart, e.Text);
+        
+        // Проверяем, что можно распарсить как число
+        e.Handled = !decimal.TryParse(text.Replace(',', '.'), 
+            System.Globalization.NumberStyles.AllowDecimalPoint, 
+            System.Globalization.CultureInfo.InvariantCulture, 
+            out _);
+    }
 }
 
 /// <summary>
@@ -521,17 +539,51 @@ public class WeightInputDialog : Window
     public WeightInputDialog()
     {
         Title = "Введите вес";
-        Width = 300;
-        Height = 150;
+        Width = 400;
+        Height = 200;
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
+        ResizeMode = ResizeMode.NoResize;
 
         var grid = new Grid();
         grid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
         grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        grid.Background = System.Windows.Media.Brushes.White;
 
         var stackPanel = new StackPanel { Margin = new Thickness(20) };
-        var label = new TextBlock { Text = "Введите вес (в граммах):", Margin = new Thickness(0, 0, 0, 10) };
-        _weightTextBox = new TextBox { Margin = new Thickness(0, 0, 0, 10) };
+        
+        var label = new TextBlock 
+        { 
+            Text = "Введите вес (в граммах):", 
+            Margin = new Thickness(0, 0, 0, 10),
+            FontSize = 14,
+            FontWeight = FontWeights.SemiBold
+        };
+        
+        _weightTextBox = new TextBox 
+        { 
+            Margin = new Thickness(0, 0, 0, 10),
+            Height = 35,
+            FontSize = 14,
+            Padding = new Thickness(8),
+            VerticalContentAlignment = VerticalAlignment.Center,
+            BorderThickness = new Thickness(2),
+            BorderBrush = System.Windows.Media.Brushes.LightGray
+        };
+        
+        // Устанавливаем фокус на TextBox при загрузке
+        _weightTextBox.Loaded += (s, e) => _weightTextBox.Focus();
+        
+        // Разрешаем только цифры
+        _weightTextBox.PreviewTextInput += (s, e) =>
+        {
+            var textBox = s as TextBox;
+            if (textBox == null) return;
+            var text = textBox.Text.Insert(textBox.SelectionStart, e.Text);
+            e.Handled = !decimal.TryParse(text.Replace(',', '.'), 
+                System.Globalization.NumberStyles.AllowDecimalPoint, 
+                System.Globalization.CultureInfo.InvariantCulture, 
+                out _);
+        };
         
         stackPanel.Children.Add(label);
         stackPanel.Children.Add(_weightTextBox);
@@ -546,21 +598,46 @@ public class WeightInputDialog : Window
             Margin = new Thickness(20, 0, 20, 20)
         };
         
-        var okButton = new Button { Content = "OK", Width = 80, Margin = new Thickness(0, 0, 10, 0) };
+        var okButton = new Button 
+        { 
+            Content = "OK", 
+            Width = 100, 
+            Height = 35,
+            Margin = new Thickness(0, 0, 10, 0),
+            FontSize = 14,
+            Background = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(33, 150, 243)),
+            Foreground = System.Windows.Media.Brushes.White,
+            BorderThickness = new Thickness(0)
+        };
         okButton.Click += (s, e) =>
         {
-            if (decimal.TryParse(_weightTextBox.Text, out var weight))
+            if (string.IsNullOrWhiteSpace(_weightTextBox.Text))
+            {
+                MessageBox.Show("Введите вес!", "Внимание", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+            
+            if (decimal.TryParse(_weightTextBox.Text.Replace(',', '.'), 
+                System.Globalization.NumberStyles.AllowDecimalPoint,
+                System.Globalization.CultureInfo.InvariantCulture,
+                out var weight) && weight > 0)
             {
                 Weight = weight;
                 DialogResult = true;
             }
             else
             {
-                MessageBox.Show("Введите корректное число!", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show("Введите корректное положительное число!", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         };
         
-        var cancelButton = new Button { Content = "Отмена", Width = 80 };
+        var cancelButton = new Button 
+        { 
+            Content = "Отмена", 
+            Width = 100,
+            Height = 35,
+            FontSize = 14
+        };
         cancelButton.Click += (s, e) => DialogResult = false;
         
         buttonPanel.Children.Add(okButton);
@@ -570,6 +647,15 @@ public class WeightInputDialog : Window
         grid.Children.Add(buttonPanel);
 
         Content = grid;
+        
+        // Обработка Enter для подтверждения
+        _weightTextBox.KeyDown += (s, e) =>
+        {
+            if (e.Key == System.Windows.Input.Key.Enter)
+            {
+                okButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            }
+        };
     }
 }
 
