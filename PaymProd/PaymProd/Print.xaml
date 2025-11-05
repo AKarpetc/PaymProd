@@ -1,0 +1,105 @@
+﻿<Window x:Class="PaymProd.Print"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+          
+        xmlns:telerik="http://schemas.telerik.com/2008/xaml/presentation"
+        Title="Отчет" Height="650" Width="800" Loaded="Window_Loaded" WindowStartupLocation="CenterScreen" Icon="Restaurant Blue 2.ico">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition></ColumnDefinition>
+
+
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="7*"></RowDefinition>
+            <RowDefinition Height="184*"></RowDefinition>
+        </Grid.RowDefinitions>
+        <Menu>
+            <MenuItem Header="Документ">
+                <MenuItem Click="MenuItem_Click_1" Header="Печать"></MenuItem>
+                <MenuItem Click="MenuItem_Click" Header="Сохранить в Word"></MenuItem>
+            </MenuItem>
+        </Menu>
+        <telerik:RadTabControl Grid.Row="1" >
+            <telerik:RadTabItem Header="Отчет">
+            <FlowDocumentScrollViewer  Name="rtb"     >
+          
+            <FlowDocument ColumnWidth="10 cm" >
+                <Paragraph Name="ras"  TextAlignment="Center"></Paragraph>
+                <Table BorderBrush="Black" CellSpacing="0.1"  Name="table1"  OverridesDefaultStyle="True"  >
+                    <Table.Columns >
+                        <TableColumn  Width="*" />
+                        <TableColumn Width="0.1*" />
+                        <TableColumn Width="*" />
+                    </Table.Columns>
+
+                    <TableRowGroup>
+                        <TableRow>
+
+                            <TableCell>
+                                <Table BorderBrush="Black" CellSpacing="0.1" Name="table"  OverridesDefaultStyle="True"  >
+                                    <Table.Columns >
+                                        <TableColumn  Width="3*" />
+                                        <TableColumn Width="*" />
+                                        <TableColumn Width="*" />
+                                    </Table.Columns>
+                                </Table>
+                            </TableCell>
+                            <TableCell>
+
+                            </TableCell>
+                            <TableCell>
+                                <Table BorderBrush="Black" CellSpacing="0.1" Name="table2"  OverridesDefaultStyle="True"  >
+                                    <Table.Columns >
+                                        <TableColumn  Width="3*" />
+                                        <TableColumn Width="*" />
+                                        <TableColumn Width="*" />
+                                    </Table.Columns>
+                                </Table>
+                            </TableCell>
+                        </TableRow>
+                    </TableRowGroup>
+                </Table>
+
+            </FlowDocument>
+        </FlowDocumentScrollViewer >
+            </telerik:RadTabItem>
+            <telerik:RadTabItem Header="Сводная таблица" >
+                <Grid>
+                    <telerik:RadGridView AutoGenerateColumns="False"  ShowGroupFooters="True"  telerik:StyleManager.Theme="Windows8" Name="rgv">
+                        <telerik:RadGridView.Columns>
+                            <telerik:GridViewDataColumn TextWrapping="Wrap" DataMemberBinding="{Binding Path=del}"  Header="Блюдо"   />
+
+                            <telerik:GridViewDataColumn TextWrapping="Wrap" DataMemberBinding="{Binding Path=countpor}" Header="Количество"  />
+                            
+                            <telerik:GridViewDataColumn TextWrapping="Wrap" DataMemberBinding="{Binding Path=name}" Header="Продукты"  />
+                            <telerik:GridViewDataColumn TextWrapping="Wrap" DataMemberBinding="{Binding Path=type}" Header="Тип"  />
+                          
+                            <telerik:GridViewDataColumn TextWrapping="Wrap" DataMemberBinding="{Binding Path=ves}" Header="Вес"  />
+                            <telerik:GridViewDataColumn TextWrapping="Wrap" DataMemberBinding="{Binding Path=mera}" Header="Мера"  >
+                              
+                            </telerik:GridViewDataColumn>
+                            
+                            <telerik:GridViewDataColumn TextWrapping="Wrap" DataMemberBinding="{Binding Path=fass}" Header="Фасовка"  />
+                            <telerik:GridViewDataColumn TextWrapping="Wrap" DataMemberBinding="{Binding Path=fassIz}" Header="Мера фасовки"  />
+                            <telerik:GridViewDataColumn  TextWrapping="Wrap" DataMemberBinding="{Binding Path=itog }" Header="Сумма продукта в нат ед" 
+                                                         >
+                                <telerik:GridViewDataColumn.AggregateFunctions>
+                                    <telerik:SumFunction Caption="Сумма не фассованно: " />
+                                </telerik:GridViewDataColumn.AggregateFunctions>
+                            </telerik:GridViewDataColumn>
+                            <telerik:GridViewDataColumn  TextWrapping="Wrap" DataMemberBinding="{Binding Path= itogfass }" Header="Сумма продукта" 
+                                                         >
+                                <telerik:GridViewDataColumn.AggregateFunctions>
+                                    <telerik:SumFunction Caption="Сумма фасованно: " />
+                                </telerik:GridViewDataColumn.AggregateFunctions>
+                            </telerik:GridViewDataColumn>
+                           
+                        </telerik:RadGridView.Columns>
+                    </telerik:RadGridView>
+                </Grid>
+            </telerik:RadTabItem>
+        </telerik:RadTabControl>
+
+    </Grid>
+</Window>

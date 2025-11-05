@@ -1,0 +1,266 @@
+﻿<Window x:Class="PaymProd.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Меню" Height="350" Width="525" Loaded="Window_Loaded"  WindowState="Maximized"
+         xmlns:telerik="http://schemas.telerik.com/2008/xaml/presentation" Icon="Restaurant Blue 2.ico">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="23"/>
+            <RowDefinition Height="295*"/>
+        </Grid.RowDefinitions>
+        <Menu >
+            <MenuItem Header="Меню">
+                <MenuItem Click="MenuItem_Click_3" Header="Выход"></MenuItem>
+
+            </MenuItem>
+
+            <MenuItem Header="Справочники">
+                <MenuItem Click="MenuItem_Click" Header="Правка справочников"></MenuItem>
+
+            </MenuItem>
+            <MenuItem Header="Отчет" Click="s_Click" x:Name="s"></MenuItem>
+            <MenuItem Header="Справка">
+                <MenuItem Click="MenuItem_Click_4" Header="Инструкция"></MenuItem>
+                <MenuItem Click="MenuItem_Click_2" Header="О программе"></MenuItem>
+            </MenuItem>
+        </Menu>
+        <telerik:RadTabControl Name="rt" Grid.Row="1">
+            <telerik:RadTabItem Header="Составление меню">
+
+                <Grid >
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="55*"/>
+                        <RowDefinition Height="auto" MinHeight="10" />
+                        <RowDefinition Height="23*"/>
+                    </Grid.RowDefinitions>
+                    <GridSplitter Grid.Row="1" Grid.Column="0" Height="6"
+					VerticalAlignment="Center" HorizontalAlignment="Stretch"/>
+                    <Grid Grid.Row="2">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="429*"></ColumnDefinition>
+                          
+
+                        </Grid.ColumnDefinitions>
+
+                        <Grid Margin="0,0,2,0">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="4*"/>
+                                <RowDefinition Height="25*"/>
+                            </Grid.RowDefinitions>
+                            <StackPanel Orientation="Horizontal" Grid.RowSpan="2">
+                                <TextBlock Margin="5" FontSize="14" Name="tbForFIO"></TextBlock>
+                            </StackPanel>
+
+                            <telerik:RadTreeListView Name="rtv" AutoGenerateColumns="False" Grid.Row="1" >
+                                <telerik:RadTreeListView.ChildTableDefinitions>
+
+                                    <!--<telerik:TreeListViewTableDefinition  ItemsSource="{Binding DelicatesColl}" />-->
+                                    <telerik:TreeListViewTableDefinition ItemsSource="{Binding lcomp}" />
+                                </telerik:RadTreeListView.ChildTableDefinitions>
+
+                                <telerik:RadTreeListView.Columns>
+                                    <telerik:GridViewColumn  Header="Удол." >
+                                        <telerik:GridViewColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <telerik:RadButton  
+											Click="RadButton_Click3" CommandParameter="{Binding}" 
+										 >
+                                                    <Viewbox xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation">
+                                                        <Grid>
+                                                            <Grid Name="backgroundGrid" Width="16" Height="16" Visibility="Collapsed" />
+                                                            <Path Data="F1M-1774.05,-6263.81L-1787.51,-6277.27 -1773.22,-6291.56C-1769.23,-6295.55 -1769.24,-6302.03 -1773.21,-6306.01 -1777.19,-6309.98 -1783.67,-6309.99 -1787.66,-6305.99L-1801.95,-6291.71 -1816.79,-6306.55C-1820.79,-6310.55 -1827.26,-6310.54 -1831.24,-6306.55 -1835.22,-6302.58 -1835.23,-6296.11 -1831.24,-6292.12L-1816.39,-6277.27 -1830.4,-6263.25C-1834.4,-6259.26 -1834.38,-6252.8 -1830.4,-6248.82 -1826.42,-6244.84 -1819.96,-6244.82 -1815.96,-6248.82L-1801.95,-6262.83 -1788.49,-6249.37C-1784.5,-6245.38 -1778.03,-6245.39 -1774.06,-6249.37 -1770.07,-6253.35 -1770.06,-6259.82 -1774.05,-6263.81" Stretch="Uniform" Fill="#FF4993CD" Width="16" Height="16" Margin="0,0,0,0" RenderTransformOrigin="0.5,0.5">
+                                                                <Path.RenderTransform>
+                                                                    <TransformGroup>
+                                                                        <TransformGroup.Children>
+                                                                            <RotateTransform Angle="0" />
+                                                                            <ScaleTransform ScaleX="1" ScaleY="1" />
+                                                                        </TransformGroup.Children>
+                                                                    </TransformGroup>
+                                                                </Path.RenderTransform>
+                                                            </Path>
+                                                        </Grid>
+                                                    </Viewbox>
+                                                </telerik:RadButton>
+                                            </DataTemplate>
+                                        </telerik:GridViewColumn.CellTemplate>
+                                    </telerik:GridViewColumn>
+
+                                    <telerik:GridViewDataColumn TextWrapping="Wrap" DataMemberBinding="{Binding Path=del}"  Header="Блюдо"   />
+                                    <telerik:GridViewDataColumn TextWrapping="Wrap" DataMemberBinding="{Binding Path=sost}" Header="Состав"  />
+                                    <telerik:GridViewDataColumn TextWrapping="Wrap" DataMemberBinding="{Binding Path=countpor}" Header="Количество"  />
+                                    <telerik:GridViewDataColumn TextWrapping="Wrap" DataMemberBinding="{Binding Path=nameT}" Header="Продукты"  />
+                                    <telerik:GridViewDataColumn TextWrapping="Wrap" DataMemberBinding="{Binding Path=ves}" Header="Вес"  />
+                                    <telerik:GridViewDataColumn TextWrapping="Wrap" DataMemberBinding="{Binding Path=mera}" Header="Мера"  />
+                                </telerik:RadTreeListView.Columns>
+                            </telerik:RadTreeListView>
+
+
+                        </Grid>
+                        <Grid Grid.Column="1">
+                            <Grid.RowDefinitions>
+                                <RowDefinition></RowDefinition>
+                                <RowDefinition></RowDefinition>
+                            </Grid.RowDefinitions>
+                            <telerik:RadButton Visibility="Collapsed" Grid.Column="0" Click="RadButton_Click_2"  Width="150" Margin="5" VerticalAlignment="Bottom" HorizontalAlignment="Left" Height="30">Сформировать отчет</telerik:RadButton>
+                        </Grid>
+
+                    </Grid>
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="30*"></RowDefinition>
+                            <RowDefinition Height="57*"></RowDefinition>
+                            <RowDefinition Height="41*"></RowDefinition>
+                            <RowDefinition Height="41*"></RowDefinition>
+                            <RowDefinition Height="41*"></RowDefinition>
+                        </Grid.RowDefinitions>
+
+                        <Grid  Grid.Row="1" Grid.RowSpan="4" Name="men" IsEnabled="False" >
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="10*"/>
+                                <RowDefinition Height="53*"/>
+                            </Grid.RowDefinitions>
+                            <WrapPanel Name="wp1">
+
+                            </WrapPanel>
+                            <Border Grid.Row="1" BorderBrush="Black" BorderThickness="2">
+                            <ScrollViewer Grid.Row="1"  >
+                                <StackPanel Name="lb" Grid.Row="1" ></StackPanel>
+
+                            </ScrollViewer>
+                            </Border>
+                        </Grid>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition></ColumnDefinition>
+                                <ColumnDefinition></ColumnDefinition>
+                                <ColumnDefinition></ColumnDefinition>
+                                <ColumnDefinition></ColumnDefinition>
+                                <ColumnDefinition></ColumnDefinition>
+                                <ColumnDefinition></ColumnDefinition>
+                                <ColumnDefinition></ColumnDefinition>
+                                <ColumnDefinition></ColumnDefinition>
+                                <ColumnDefinition></ColumnDefinition>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock HorizontalAlignment="Right" VerticalAlignment="Center">Название банкета</TextBlock>
+                            <TextBox   Margin="3" Grid.Column="1" Name="FIOM" Height="25" LostFocus="FIOM_LostFocus"></TextBox>
+                            <TextBlock  Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Right">Количество человек</TextBlock>
+                            <TextBox LostFocus="FIOM_LostFocus" PreviewTextInput="detM_PreviewTextInput" Grid.Column="3" Margin="3" Name="CountM" Height="25"></TextBox>
+                            <TextBlock Grid.Column="4" Margin="5" VerticalAlignment="Center" HorizontalAlignment="Right">Дата,начало</TextBlock>
+
+                            <telerik:RadDateTimePicker SelectionChanged="d" StartTime="12:00" EndTime="22:00" Name="dtb" TimeInterval="0:30" Height="25" Grid.Column="5"></telerik:RadDateTimePicker>
+                            <TextBlock  Grid.Column="6" HorizontalAlignment="Right" VerticalAlignment="Center">Краткое описание</TextBlock>
+                            <TextBox LostFocus="FIOM_LostFocus"  Grid.Column="7" Name="detM"   Margin="3" ScrollViewer.VerticalScrollBarVisibility="Auto" Height="45" TextWrapping="Wrap"></TextBox>
+                            <StackPanel Grid.Column="8" Orientation="Horizontal">
+                                <telerik:RadButton ToolTip="Перейти к заполнению" Click="RadButton_Click" telerik:StyleManager.Theme="Windows8" HorizontalAlignment="Left" Width="35" Height="45" >
+
+                                    <Viewbox xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation">
+                                        <Grid>
+                                            <Grid Name="backgroundGrid" Width="256" Height="256" Visibility="Collapsed" />
+                                            <Path Data="M2.9505676,36.439814L21.343939,36.439814C20.303749,39.110218 19.703638,42.000652 19.703638,45.041111 19.703638,47.101423 19.993691,49.091722 20.493784,50.992008L2.9505676,50.992008C1.3202689,50.992008,2.6905189E-05,49.67181,2.6147463E-05,48.041565L2.6147463E-05,39.400261C2.6905189E-05,37.760014,1.3202689,36.439814,2.9505676,36.439814z M43.691771,27.403506C43.883024,27.398506,44.075529,27.398506,44.270537,27.403506L44.280539,27.403506 44.300539,27.403506C46.750612,27.423509,49.070685,27.943573,51.18075,28.873688L51.25075,28.913692C57.48094,31.684034 61.801073,37.954807 61.73107,45.205702 61.631067,54.946903 53.660826,62.767868 43.920527,62.667858 36.320295,62.587849 29.900101,57.707245 27.500027,50.946411L33.810221,49.846275C35.580275,53.706753 39.450392,56.407085 43.980528,56.457092 50.230719,56.517097 55.340876,51.496479 55.400877,45.245708 55.470881,39.004938 50.450728,33.884306 44.200537,33.824298 43.670519,33.824298 43.150503,33.864304 42.64049,33.924311L42.630488,33.884306C40.950438,34.104332,39.390391,34.694407,38.030348,35.584515L40.200415,37.634769C40.33042,37.754784 40.380419,37.944807 40.310415,38.104826 40.250414,38.274847 40.100412,38.384861 39.920405,38.394863L34.650244,38.674896 29.970102,38.924927 29.940102,38.924927C29.810097,38.924927 29.700094,38.86492 29.61009,38.77491 29.520088,38.674896 29.480087,38.54488 29.510088,38.404863L30.260111,34.234348 31.340143,28.333621C31.370144,28.153599 31.500149,28.013581 31.670155,27.983578 31.850159,27.943573 32.030165,28.013581 32.130167,28.1636L33.86022,30.703914C36.260294,28.9737 39.11038,27.853561 42.200476,27.513519 42.240477,27.503518 42.280478,27.503518 42.320479,27.503518 42.590487,27.473515 42.850496,27.453512 43.120504,27.43351 43.310507,27.418509 43.500513,27.408506 43.691771,27.403506z M2.9499468,18.059961L44.308165,18.059961C45.938101,18.059961,47.268,19.380206,47.268,21.020318L47.268,21.830486C45.968126,21.610486 44.638106,21.470574 43.278181,21.470575 34.818579,21.470574 27.428881,25.931133 23.269024,32.611961L2.9499468,32.611961C1.3200119,32.611961,-1.251392E-07,31.291716,0,29.661614L0,21.020318C-1.251392E-07,19.380206,1.3200119,18.059961,2.9499468,18.059961z M8.6996557,3.927825C6.8497344,3.927825 5.3397986,5.4269943 5.3397986,7.2759705 5.3397986,9.1249466 6.8497344,10.634111 8.6996557,10.634111 10.549576,10.634111 12.049512,9.1249466 12.049512,7.2759705 12.049512,5.4269943 10.549576,3.927825 8.6996557,3.927825z M2.949901,0L44.308134,0C45.938063,0,47.268007,1.3292637,47.268007,2.9583616L47.268007,11.603574C47.268007,13.232672,45.938063,14.551941,44.308134,14.551941L2.949901,14.551941C1.3199705,14.551941,2.6895254E-05,13.232672,2.6147463E-05,11.603574L2.6147463E-05,2.9583616C2.6895254E-05,1.3292637,1.3199705,0,2.949901,0z" Stretch="Uniform" Fill="#FF4993CD" Width="138" Height="138" Margin="0,0,0,0" RenderTransformOrigin="0.5,0.5">
+                                                <Path.RenderTransform>
+                                                    <TransformGroup>
+                                                        <TransformGroup.Children>
+                                                            <RotateTransform Angle="0" />
+                                                            <ScaleTransform ScaleX="1" ScaleY="1" />
+                                                        </TransformGroup.Children>
+                                                    </TransformGroup>
+                                                </Path.RenderTransform>
+                                            </Path>
+                                        </Grid>
+                                    </Viewbox>
+                                </telerik:RadButton>
+                                <telerik:RadButton ToolTip="Новое меню" Click="RadButton_Click_1" telerik:StyleManager.Theme="Windows8" HorizontalAlignment="Left" Width="35" Height="45" >
+
+                                    <Viewbox xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation">
+                                        <Grid>
+                                            <Grid Name="backgroundGrid1" Width="256" Height="256" Visibility="Collapsed" />
+                                            <Path Data="M14.644773,8.5647281C11.15818,8.5659478 8.5536957,10.07375 6.6832199,11.713152 5.3245125,12.908454 4.4208908,14.159756 4.0126915,14.784757L4.0126915,40.08939C6.3486176,38.015187,9.922472,35.921486,14.635674,35.921486L14.644773,35.921486C19.441965,35.921486,23.095959,38.083088,25.476154,40.18319L25.476154,14.806957C25.372054,14.649456 25.235354,14.456557 25.066655,14.232656 24.586456,13.598655 23.853757,12.737853 22.899658,11.887753 20.972963,10.18065 18.239267,8.5647281 14.644773,8.5647281z M14.644773,4.5530027C19.500265,4.5517824 23.187059,6.7678455 25.565654,8.8916486 26.311453,9.5542491 26.941651,10.21435 27.456051,10.810851 27.95245,10.218251 28.558549,9.5647491 29.280848,8.9072488 31.287044,7.069856 34.277238,5.1753233 38.168231,4.683133 37.415233,6.0791248 36.914634,7.5737565 36.657434,9.1037486 34.836137,9.6858495 33.34664,10.670151 32.159143,11.713152 30.799045,12.909754 29.894146,14.162356 29.487247,14.786157L29.487247,40.092091C31.824743,38.01669 35.399936,35.918984 40.121327,35.921486 44.916919,35.921486 48.572513,38.080387 50.952408,40.181992L50.952408,25.831572C52.307506,25.815972,53.658403,25.612871,54.965001,25.21587L54.965001,45.589398 51.222608,46.584301 51.219908,46.585499 51.217708,46.584301C51.170408,46.507401 51.129808,46.442501 51.073108,46.355099 50.958508,46.182 50.782708,45.921498 50.541909,45.6026 50.06011,44.967099 49.330311,44.105095 48.375913,43.256195 46.446816,41.549195 43.714421,39.934693 40.121327,39.93319 36.633334,39.935891 34.028839,41.443692 32.159143,43.081597 30.327745,44.692498 29.322847,46.4058 29.245647,46.543999L29.244047,46.546501 29.241748,46.553101C28.901948,47.174202 28.24175,47.596001 27.483651,47.596001 26.738552,47.596001 26.090754,47.188603 25.745054,46.585499L25.743753,46.585499 25.743753,46.584301C25.695554,46.507401 25.654554,46.442501 25.597954,46.355099 25.483654,46.182 25.306555,45.921498 25.066655,45.6026 24.586456,44.967099 23.853757,44.105095 22.899658,43.256195 20.972963,41.549195 18.239267,39.934693 14.644773,39.93319 11.15818,39.935891 8.5536957,41.443692 6.6832199,43.081597 4.8277512,44.713196 3.8186531,46.4515 3.7665939,46.553101L3.7578049,46.547901 0,45.589398 0,14.220956 0.24572754,13.260055C0.31799316,13.136255 1.4586182,11.050351 3.804985,8.9072488 6.1357307,6.7729758 9.7857533,4.5503228 14.644773,4.5530027z M51.018623,3.4001387C49.888289,3.4001384,48.970257,4.3154152,48.970257,5.4470013L48.970257,9.4950965 44.767723,9.4950965C43.635489,9.4950965 42.718159,10.411794 42.71816,11.54069 42.718159,12.668386 43.635489,13.584882 44.767723,13.584882L48.970257,13.584882 48.970257,17.555069C48.970257,18.686465 49.888289,19.600561 51.018623,19.600561 52.145159,19.600561 53.060287,18.686465 53.060287,17.555069L53.060287,13.584882 56.878109,13.584882C58.004444,13.584882 58.918575,12.668386 58.918575,11.54069 58.918575,10.411794 58.004444,9.4950965 56.878109,9.4950965L53.060287,9.4950965 53.060287,5.4470013C53.060287,4.3154152,52.145159,3.4001384,51.018623,3.4001387z M50.784604,0C53.727758,3.0999445E-07 56.670702,1.1220663 58.915873,3.3661988 63.406715,7.8598326 63.406715,15.141078 58.915873,19.631762 54.425531,24.122746 47.1441,24.122746 42.65206,19.631762 38.161317,15.141078 38.161317,7.8598326 42.65206,3.3661988 44.89808,1.1220663 47.841448,3.0999445E-07 50.784604,0z" Stretch="Uniform" Fill="#FF4993CD" Width="138" Height="138" Margin="0,0,0,0" RenderTransformOrigin="0.5,0.5">
+                                                <Path.RenderTransform>
+                                                    <TransformGroup>
+                                                        <TransformGroup.Children>
+                                                            <RotateTransform Angle="0" />
+                                                            <ScaleTransform ScaleX="1" ScaleY="1" />
+                                                        </TransformGroup.Children>
+                                                    </TransformGroup>
+                                                </Path.RenderTransform>
+                                            </Path>
+                                        </Grid>
+                                    </Viewbox>
+
+                                </telerik:RadButton>
+                            </StackPanel>
+                        </Grid>
+                    </Grid>
+                </Grid>
+
+            </telerik:RadTabItem>
+            <telerik:RadTabItem Header="Сохраненные меню">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition></ColumnDefinition>
+                        <ColumnDefinition></ColumnDefinition>
+
+                    </Grid.ColumnDefinitions>
+                    <telerik:RadGridView AutoGenerateColumns="False" Name="menu">
+                        <telerik:RadGridView.Columns>
+                        <telerik:GridViewColumn  Header="Удал." >
+                            <telerik:GridViewColumn.CellTemplate>
+                                <DataTemplate>
+                                    <telerik:RadButton  
+										Click="RadButton_Click5"
+										CommandParameter="{Binding}" Background="{x:Null}" BorderBrush="{x:Null}" Foreground="{x:Null}" IsManipulationEnabled="True" >
+                                        <Viewbox xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation">
+                                            <Grid>
+                                                <Grid Name="backgroundGrid8" Width="16" Height="16" Visibility="Collapsed" />
+                                                <Path Data="F1M-1774.05,-6263.81L-1787.51,-6277.27 -1773.22,-6291.56C-1769.23,-6295.55 -1769.24,-6302.03 -1773.21,-6306.01 -1777.19,-6309.98 -1783.67,-6309.99 -1787.66,-6305.99L-1801.95,-6291.71 -1816.79,-6306.55C-1820.79,-6310.55 -1827.26,-6310.54 -1831.24,-6306.55 -1835.22,-6302.58 -1835.23,-6296.11 -1831.24,-6292.12L-1816.39,-6277.27 -1830.4,-6263.25C-1834.4,-6259.26 -1834.38,-6252.8 -1830.4,-6248.82 -1826.42,-6244.84 -1819.96,-6244.82 -1815.96,-6248.82L-1801.95,-6262.83 -1788.49,-6249.37C-1784.5,-6245.38 -1778.03,-6245.39 -1774.06,-6249.37 -1770.07,-6253.35 -1770.06,-6259.82 -1774.05,-6263.81" Stretch="Uniform" Fill="#FF4993CD" Width="16" Height="16" Margin="0,0,0,0" RenderTransformOrigin="0.5,0.5">
+                                                    <Path.RenderTransform>
+                                                        <TransformGroup>
+                                                            <TransformGroup.Children>
+                                                                <RotateTransform Angle="0" />
+                                                                <ScaleTransform ScaleX="1" ScaleY="1" />
+                                                            </TransformGroup.Children>
+                                                        </TransformGroup>
+                                                    </Path.RenderTransform>
+                                                </Path>
+                                            </Grid>
+                                        </Viewbox>
+                                    </telerik:RadButton>
+                                </DataTemplate>
+                            </telerik:GridViewColumn.CellTemplate>
+                        </telerik:GridViewColumn>
+
+                        <telerik:GridViewColumn  Header="Редак." >
+                            <telerik:GridViewColumn.CellTemplate>
+                                <DataTemplate>
+                                    <telerik:RadButton Height="25" 
+										Click="RadButton_Click6"
+										CommandParameter="{Binding}" Background="{x:Null}" BorderBrush="{x:Null}" Foreground="{x:Null}" IsManipulationEnabled="True" >
+                                        <Viewbox xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation">
+                                            <Grid>
+                                                <Grid x:Name="backgroundGrid" Width="32" Height="32" Visibility="Collapsed" />
+                                                <Path Data="M0,44.439791L18.98951,54.569246 0.47998798,62.66881z M17.428029,12.359973L36.955557,23.568769 21.957478,49.686174 20.847757,46.346189 15.11851,45.756407 14.138656,42.166935 8.5292659,41.966761 6.9493899,38.037481 2.4399572,38.477377z M26.812517,0.0009765625C27.350616,-0.012230873,27.875986,0.10826397,28.348372,0.3782568L42.175028,8.3180408C43.85462,9.2780154,44.234529,11.777948,43.02482,13.89789L41.375219,16.767812 21.460039,5.3381228 23.10964,2.4582005C23.979116,0.941679,25.437378,0.034730911,26.812517,0.0009765625z" Stretch="Uniform" Fill="#FF4993CD" Width="16" Height="16" Margin="0,0,0,0" RenderTransformOrigin="0.5,0.5">
+                                                    <Path.RenderTransform>
+                                                        <TransformGroup>
+                                                            <RotateTransform Angle="0" />
+                                                            <ScaleTransform ScaleX="1" ScaleY="1" />
+                                                        </TransformGroup>
+                                                    </Path.RenderTransform>
+                                                </Path>
+                                            </Grid>
+                                        </Viewbox>
+                                    </telerik:RadButton>
+
+                                </DataTemplate>
+                            </telerik:GridViewColumn.CellTemplate>
+                        </telerik:GridViewColumn>
+                        <telerik:GridViewDataColumn DataMemberBinding="{Binding name}" Header="Название"/>
+                        <telerik:GridViewDataColumn DataMemberBinding="{Binding countP}" Header="Количество. люд."/>
+                        <telerik:GridViewDataColumn DataMemberBinding="{Binding dateban}" Header="Дата,время"/>
+                        <telerik:GridViewDataColumn DataMemberBinding="{Binding detail}"  Header="Доп.инф"/>
+                                                </telerik:RadGridView.Columns>
+                    </telerik:RadGridView>
+                </Grid>
+            </telerik:RadTabItem>
+        </telerik:RadTabControl>
+    </Grid>
+</Window>

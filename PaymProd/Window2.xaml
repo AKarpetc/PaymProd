@@ -1,0 +1,18 @@
+﻿<Window x:Class="PaymProd.Window2"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Проверка подлинности" Height="120" Width="300" Background="AliceBlue" WindowStyle="None" WindowStartupLocation="CenterScreen" ResizeMode="NoResize">
+    <Grid x:Name="LayoutRoot" Margin="2">
+        <Grid.RowDefinitions>
+            <RowDefinition />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+        <TextBox Margin="143,9,0,0" Name="TBlogin" HorizontalAlignment="Left" Width="135" Height="24" VerticalAlignment="Top"></TextBox>
+        <PasswordBox  Name="TBpass" Margin="143,38,0,0" Height="24" VerticalAlignment="Top" HorizontalAlignment="Left" Width="135" KeyDown="TBpass_KeyDown"></PasswordBox>
+        <Button x:Name="CancelButton" Content="Отмена" Click="CancelButton_Click" Width="75" Height="23" HorizontalAlignment="Right" Margin="0,12,0,0" Grid.Row="1" />
+        <Button x:Name="OKButton" Content="ОК" Click="OKButton_Click" Width="75" Height="23" HorizontalAlignment="Right" Margin="0,12,79,0" Grid.Row="1" />
+        <TextBlock Height="28" HorizontalAlignment="Left" Margin="0,10,0,0" Name="lbl11" VerticalAlignment="Top" Width="67" >Имя</TextBlock>
+        <TextBlock  Height="19" HorizontalAlignment="Left" Margin="0,43,0,0" Name="label1" VerticalAlignment="Top" Width="138" >Номер сертификата</TextBlock>
+
+    </Grid>
+</Window>
