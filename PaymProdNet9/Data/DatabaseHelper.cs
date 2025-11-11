@@ -16,7 +16,17 @@ public static class DatabaseHelper
         {
             if (string.IsNullOrEmpty(_connectionString))
             {
-                var dbPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "MenuCalc.db");
+                // First try user AppData location (where migration tool puts it)
+                var appDataPath = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                    "PaymProdNet9", "MenuCalc.db");
+                
+                // Then try application directory
+                var binPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "MenuCalc.db");
+                
+                // Use AppData if it exists, otherwise use bin directory
+                var dbPath = File.Exists(appDataPath) ? appDataPath : binPath;
+                
                 _connectionString = $"Data Source={dbPath}";
             }
             return _connectionString;

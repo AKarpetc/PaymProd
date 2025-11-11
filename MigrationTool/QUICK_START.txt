@@ -1,0 +1,152 @@
+╔════════════════════════════════════════════════════════════════════════════╗
+║                                                                            ║
+║              PAYMPROD DATABASE MIGRATION TOOL - QUICK START                ║
+║                                                                            ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+
+┌────────────────────────────────────────────────────────────────────────────┐
+│  METHOD 1: RUN DIRECTLY (Requires .NET 9 SDK)                             │
+└────────────────────────────────────────────────────────────────────────────┘
+
+  From the project root directory:
+  
+    dotnet run --project MigrationTool
+    
+  Or use the convenient batch file from MigrationTool folder:
+  
+    run-migration.bat
+
+
+┌────────────────────────────────────────────────────────────────────────────┐
+│  METHOD 2: BUILD STANDALONE EXECUTABLE (Recommended for distribution)     │
+└────────────────────────────────────────────────────────────────────────────┘
+
+  From the MigrationTool folder:
+  
+    build-standalone.bat
+    
+  This creates a single executable file at:
+  
+    bin\Release\net9.0\win-x64\publish\PaymProdMigrate.exe
+    
+  The executable:
+    • Includes everything needed (no .NET SDK required to run)
+    • Size: ~70-80 MB
+    • Can be copied anywhere
+    • Runs on Windows x64
+
+
+┌────────────────────────────────────────────────────────────────────────────┐
+│  USAGE                                                                     │
+└────────────────────────────────────────────────────────────────────────────┘
+
+  Basic (auto-detects MenuCaolc.mdf in current or parent directory):
+  
+    PaymProdMigrate.exe
+    
+  
+  With custom source file:
+  
+    PaymProdMigrate.exe "C:\Path\To\MenuCaolc.mdf"
+    
+  
+  With custom source and target:
+  
+    PaymProdMigrate.exe "C:\Source\MenuCaolc.mdf" "C:\Target\MenuCalc.db"
+
+
+┌────────────────────────────────────────────────────────────────────────────┐
+│  WHAT IT MIGRATES                                                          │
+└────────────────────────────────────────────────────────────────────────────┘
+
+  FROM:  SQL Server LocalDB (MenuCaolc.mdf)
+  TO:    SQLite (MenuCalc.db)
+  
+  ✓ Products
+  ✓ Dishes and recipes
+  ✓ Product types
+  ✓ Dish types
+  ✓ Units of measurement
+  ✓ All reference tables
+
+
+┌────────────────────────────────────────────────────────────────────────────┐
+│  OUTPUT LOCATION                                                           │
+└────────────────────────────────────────────────────────────────────────────┘
+
+  By default, the SQLite database is created at:
+  
+    C:\Users\<YourName>\AppData\Local\PaymProdNet9\MenuCalc.db
+    
+  This location is automatically used by the PaymProdNet9 application.
+
+
+┌────────────────────────────────────────────────────────────────────────────┐
+│  REQUIREMENTS                                                              │
+└────────────────────────────────────────────────────────────────────────────┘
+
+  To BUILD:
+    • .NET 9.0 SDK
+    • Windows 10/11 x64
+    
+  To RUN the executable:
+    • Windows 10/11 x64
+    • SQL Server LocalDB or Express
+    • No .NET SDK required (if using standalone exe)
+
+
+┌────────────────────────────────────────────────────────────────────────────┐
+│  FILES IN THIS DIRECTORY                                                   │
+└────────────────────────────────────────────────────────────────────────────┘
+
+  Program.cs               - Main application source code
+  MigrationTool.csproj     - Project configuration
+  README.md                - Detailed documentation
+  build-standalone.bat     - Script to build standalone executable
+  run-migration.bat        - Quick run script (requires .NET SDK)
+  QUICK_START.txt          - This file
+
+
+┌────────────────────────────────────────────────────────────────────────────┐
+│  TROUBLESHOOTING                                                           │
+└────────────────────────────────────────────────────────────────────────────┘
+
+  Problem: "Source database file not found"
+  ────────────────────────────────────────────────────────────────────────────
+    • Ensure MenuCaolc.mdf is in the same folder
+    • Or provide the full path as a command-line argument
+    • Tool also checks parent directory automatically
+  
+  
+  Problem: "Failed to connect to LocalDB"
+  ────────────────────────────────────────────────────────────────────────────
+    • Ensure SQL Server LocalDB is installed
+      (Included with Visual Studio)
+    • Or install SQL Server Express from:
+      https://www.microsoft.com/sql-server/sql-server-downloads
+    • Start LocalDB: sqllocaldb start MSSQLLocalDB
+  
+  
+  Problem: Build fails
+  ────────────────────────────────────────────────────────────────────────────
+    • Ensure .NET 9.0 SDK is installed
+    • Run: dotnet --version
+    • Install from: https://dotnet.microsoft.com/download
+
+
+┌────────────────────────────────────────────────────────────────────────────┐
+│  MORE INFORMATION                                                          │
+└────────────────────────────────────────────────────────────────────────────┘
+
+  For comprehensive documentation, see:
+  
+    README.md                           (In this directory)
+    ..\MIGRATION_TOOL_GUIDE.md          (Complete guide)
+    ..\MIGRATION_TOOL_README.txt        (Text summary)
+
+
+╔════════════════════════════════════════════════════════════════════════════╗
+║                         Version 1.0.0 • 2025                               ║
+╚════════════════════════════════════════════════════════════════════════════╝
+

@@ -1,0 +1,40 @@
+## .NET Build outputs
+bin/
+obj/
+*.dll
+*.exe
+*.pdb
+
+## User-specific files
+*.user
+*.suo
+*.userprefs
+*.sln.docstates
+
+## Build results
+[Dd]ebug/
+[Rr]elease/
+x64/
+[Bb]in/
+[Oo]bj/
+
+## Visual Studio cache/options
+.vs/
+*.cache
+*.log
+
+## NuGet
+*.nupkg
+packages/
+*.nuget.props
+*.nuget.targets
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+## Test results
+TestResults/
+
+## Publish outputs
+publish/
+
