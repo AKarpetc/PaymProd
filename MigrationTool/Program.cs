@@ -1,4 +1,5 @@
 using System;
+using System.Data;
 using Microsoft.Data.SqlClient;
 using Microsoft.Data.Sqlite;
 using System.IO;
@@ -21,7 +22,9 @@ class Program
         
         // Use defaults if not provided
         sourceFile ??= "MenuCaolc.mdf";
-        targetFile ??= "C:\\My\\menu\\PaymProd\\MenuCaolc.db";
+        targetFile ??= Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "PaymProdNet9", "MenuCalc.db");
         
         // Check source file
         if (!File.Exists(sourceFile))
@@ -53,6 +56,22 @@ class Program
         Console.WriteLine($"Source: {fullSourcePath}");
         Console.WriteLine($"Target: {targetFile}");
         Console.WriteLine();
+        
+        // Check for log file early to provide helpful warning
+        var ldfFile = Path.ChangeExtension(fullSourcePath, ".ldf");
+        var ldfFile2 = Path.Combine(Path.GetDirectoryName(fullSourcePath)!, 
+            Path.GetFileNameWithoutExtension(fullSourcePath) + "_log.ldf");
+        var hasLogFile = File.Exists(ldfFile) || File.Exists(ldfFile2);
+        
+        if (!hasLogFile)
+        {
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.WriteLine("⚠️  WARNING: Log file (.ldf) not found!");
+            Console.ResetColor();
+            Console.WriteLine($"   Expected: {ldfFile}");
+            Console.WriteLine($"   Or: {ldfFile2}");
+            Console.WriteLine($"   Migration may fail without it.\n");
+        }
         
         // Confirm before proceeding
         if (File.Exists(targetFile))
@@ -116,20 +135,75 @@ class Program
         
         // Connect to SQL Server LocalDB
         WriteInfo("Connecting to SQL Server LocalDB...");
-        var connStr = $"Data Source=(LocalDB)\\MSSQLLocalDB;AttachDbFilename={sourceFile};Integrated Security=True;Connect Timeout=30";
+        
+        // Try with User Instance first (simpler, doesn't require attaching)
+        var connStr = $"Data Source=(LocalDB)\\MSSQLLocalDB;AttachDbFilename={sourceFile};Integrated Security=True;Connect Timeout=30;User Instance=False";
+        
         using var sourceConn = new SqlConnection(connStr);
         
         try
         {
+            Console.WriteLine();
+            WriteInfo("Attempting to attach and open database...");
             sourceConn.Open();
             WriteSuccess("Connected to LocalDB");
+        }
+        catch (SqlException sqlEx) when (sqlEx.Number == 4060 || sqlEx.Number == 18456)
+        {
+            // Login failed or database not found - try alternative connection
+            Console.WriteLine();
+            WriteWarning("Standard connection failed, trying alternative method...");
+            
+            try
+            {
+                sourceConn.Close();
+                
+                // Try with CREATE DATABASE approach
+                var tempConnStr = "Data Source=(LocalDB)\\MSSQLLocalDB;Integrated Security=True;Connect Timeout=30";
+                using var tempConn = new SqlConnection(tempConnStr);
+                tempConn.Open();
+                
+                var dbName = "PaymProdMigration_" + Guid.NewGuid().ToString("N").Substring(0, 8);
+                
+                using (var cmd = tempConn.CreateCommand())
+                {
+                    cmd.CommandText = $@"
+                        CREATE DATABASE [{dbName}] ON PRIMARY 
+                        (FILENAME = '{sourceFile}')
+                        FOR ATTACH";
+                    cmd.ExecuteNonQuery();
+                }
+                
+                WriteInfo($"Database attached as: {dbName}");
+                
+                // Now connect to the attached database
+                sourceConn.ConnectionString = $"Data Source=(LocalDB)\\MSSQLLocalDB;Initial Catalog={dbName};Integrated Security=True;Connect Timeout=30";
+                sourceConn.Open();
+                WriteSuccess("Connected via alternative method");
+            }
+            catch
+            {
+                throw new Exception(
+                    $"Failed to connect to LocalDB: {sqlEx.Message}\n\n" +
+                    $"Database: {sourceFile}\n" +
+                    $"User: {Environment.UserName}\n\n" +
+                    "Possible solutions:\n" +
+                    "1. Close any programs that might be using the database (SQL Server Management Studio, old app, etc.)\n" +
+                    "2. Copy BOTH MenuCaolc.mdf AND MenuCaolc_log.ldf (or MenuCaolc.ldf) to the same folder\n" +
+                    "3. Try running this tool as Administrator\n" +
+                    "4. Restart SQL Server LocalDB: sqllocaldb stop MSSQLLocalDB && sqllocaldb start MSSQLLocalDB\n" +
+                    $"5. Check if the file is read-only or blocked\n\n" +
+                    $"Current user: {Environment.UserName}\n" +
+                    $"File location: {sourceFile}", sqlEx);
+            }
         }
         catch (Exception ex)
         {
             throw new Exception($"Failed to connect to LocalDB: {ex.Message}\n\n" +
                 "Possible solutions:\n" +
                 "1. Ensure SQL Server LocalDB is installed (comes with Visual Studio)\n" +
-                "2. Install SQL Server Express from: https://www.microsoft.com/sql-server/sql-server-downloads", ex);
+                "2. Install SQL Server Express from: https://www.microsoft.com/sql-server/sql-server-downloads\n" +
+                "3. Start LocalDB: sqllocaldb start MSSQLLocalDB", ex);
         }
         
         // Create SQLite database

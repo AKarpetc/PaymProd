@@ -66,6 +66,12 @@
                         <materialDesign:PackIcon Kind="BookEdit"/>
                     </MenuItem.Icon>
                 </MenuItem>
+                <Separator/>
+                <MenuItem Header="Управление базой данных" Click="DatabaseManager_Click">
+                    <MenuItem.Icon>
+                        <materialDesign:PackIcon Kind="Database"/>
+                    </MenuItem.Icon>
+                </MenuItem>
             </MenuItem>
 
             <MenuItem Header="Отчет" Click="GenerateReport_Click">

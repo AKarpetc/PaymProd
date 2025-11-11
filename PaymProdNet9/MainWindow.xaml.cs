@@ -523,6 +523,26 @@ public partial class MainWindow : Window
     }
 
     /// <summary>
+    /// Открыть менеджер базы данных
+    /// </summary>
+    private void DatabaseManager_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var dbManagerWindow = new DatabaseManagerWindow();
+            dbManagerWindow.ShowDialog();
+            
+            // Обновляем данные после возможного импорта
+            LoadSavedMenus();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Ошибка при открытии менеджера базы данных: {ex.Message}",
+                "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    /// <summary>
     /// Генерация отчета
     /// </summary>
     private void GenerateReport_Click(object sender, RoutedEventArgs e)
