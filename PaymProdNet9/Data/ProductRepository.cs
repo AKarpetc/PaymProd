@@ -60,7 +60,7 @@ public class ProductRepository
     /// <summary>
     /// Добавить продукт
     /// </summary>
-    public int AddProduct(string name, int vesId, int typeId, double fass, int izmerId, int prizMenu = 0)
+    public int AddProduct(string name, int? vesId, int typeId, double fass, int izmerId, int prizMenu = 0)
     {
         using var connection = DatabaseHelper.GetConnection();
         connection.Open();
@@ -73,7 +73,7 @@ public class ProductRepository
         
         command.Parameters.AddWithValue("@name", name);
         command.Parameters.AddWithValue("@type", typeId);
-        command.Parameters.AddWithValue("@ves", vesId);
+        command.Parameters.AddWithValue("@ves", vesId.HasValue && vesId.Value > 0 ? (object)vesId.Value : DBNull.Value);
         command.Parameters.AddWithValue("@fass", fass);
         command.Parameters.AddWithValue("@izmer", izmerId);
         command.Parameters.AddWithValue("@prizMenu", prizMenu);
@@ -113,7 +113,7 @@ public class ProductRepository
     /// <summary>
     /// Обновить продукт
     /// </summary>
-    public void UpdateProduct(int id, string name, int vesId, int typeId, decimal fass, int izmerId, 
+    public void UpdateProduct(int id, string name, int? vesId, int typeId, decimal fass, int izmerId, 
         int prizMenu, decimal count, bool automat, int countPeople, bool mainCount)
     {
         using var connection = DatabaseHelper.GetConnection();
@@ -129,7 +129,7 @@ public class ProductRepository
         command.Parameters.AddWithValue("@id", id);
         command.Parameters.AddWithValue("@name", name);
         command.Parameters.AddWithValue("@type", typeId);
-        command.Parameters.AddWithValue("@ves", vesId);
+        command.Parameters.AddWithValue("@ves", vesId.HasValue && vesId.Value > 0 ? (object)vesId.Value : DBNull.Value);
         command.Parameters.AddWithValue("@fass", (double)fass);
         command.Parameters.AddWithValue("@izmer", izmerId);
         command.Parameters.AddWithValue("@prizMenu", prizMenu);
@@ -190,9 +190,9 @@ public class ProductRepository
     /// <summary>
     /// Получить типы продуктов
     /// </summary>
-    public List<(int Id, string Name)> GetProductTypes()
+    public List<ProductType> GetProductTypes()
     {
-        var types = new List<(int Id, string Name)>();
+        var types = new List<ProductType>();
         
         using var connection = DatabaseHelper.GetConnection();
         connection.Open();
@@ -203,7 +203,11 @@ public class ProductRepository
         using var reader = command.ExecuteReader();
         while (reader.Read())
         {
-            types.Add((reader.GetInt32(0), reader.GetString(1)));
+            types.Add(new ProductType
+            {
+                Id = reader.GetInt32(0),
+                Name = reader.GetString(1)
+            });
         }
         
         return types;
@@ -212,9 +216,9 @@ public class ProductRepository
     /// <summary>
     /// Получить меры
     /// </summary>
-    public List<(int Id, string Name, double Fass, string FassIzmer)> GetMeasures()
+    public List<Measure> GetMeasures()
     {
-        var measures = new List<(int Id, string Name, double Fass, string FassIzmer)>();
+        var measures = new List<Measure>();
         
         using var connection = DatabaseHelper.GetConnection();
         connection.Open();
@@ -225,7 +229,13 @@ public class ProductRepository
         using var reader = command.ExecuteReader();
         while (reader.Read())
         {
-            measures.Add((reader.GetInt32(0), reader.GetString(1), reader.GetDouble(2), reader.GetString(3)));
+            measures.Add(new Measure
+            {
+                Id = reader.GetInt32(0),
+                Name = reader.GetString(1),
+                Fass = reader.GetDouble(2),
+                FassIzmer = reader.GetString(3)
+            });
         }
         
         return measures;

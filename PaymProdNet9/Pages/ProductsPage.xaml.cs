@@ -3,6 +3,7 @@ using PaymProdNet9.Models;
 using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Navigation;
 
 namespace PaymProdNet9.Pages;
 
@@ -19,6 +20,40 @@ public partial class ProductsPage : Page
         
         _productRepository = new ProductRepository();
         _allProducts = new ObservableCollection<ProductView>();
+        
+        ProductsDataGrid.ItemsSource = _allProducts;
+        
+        // Подписываемся на событие Loaded для установки обработчика навигации
+        this.Loaded += ProductsPage_LoadedInternal;
+    }
+    
+    /// <summary>
+    /// Обработчик загрузки страницы для установки навигационного обработчика
+    /// </summary>
+    private void ProductsPage_LoadedInternal(object sender, RoutedEventArgs e)
+    {
+        // Подписываемся на событие навигации Frame
+        if (NavigationService != null)
+        {
+            NavigationService.Navigating -= ProductsPage_Navigating; // Отписываемся, если уже подписаны
+            NavigationService.Navigating += ProductsPage_Navigating;
+        }
+    }
+    
+    /// <summary>
+    /// Обработка навигации назад - работает как "Отмена" в режиме редактирования
+    /// </summary>
+    private void ProductsPage_Navigating(object sender, NavigatingCancelEventArgs e)
+    {
+        // Если открыт режим редактирования и пользователь нажал "Назад"
+        if (ProductEditView.Visibility == Visibility.Visible && e.NavigationMode == NavigationMode.Back)
+        {
+            // Отменяем навигацию
+            e.Cancel = true;
+            
+            // Вызываем метод отмены (возвращаемся к списку)
+            ShowListView();
+        }
     }
 
     private void Page_Loaded(object sender, RoutedEventArgs e)
@@ -26,6 +61,21 @@ public partial class ProductsPage : Page
         LoadProducts();
         LoadProductTypes();
         LoadMeasures();
+        ShowListView(); // Start in list view
+    }
+    
+    private void ShowListView()
+    {
+        ProductsListView.Visibility = Visibility.Visible;
+        ProductEditView.Visibility = Visibility.Collapsed;
+    }
+    
+    private void ShowEditView(bool isEdit)
+    {
+        ProductsListView.Visibility = Visibility.Collapsed;
+        ProductEditView.Visibility = Visibility.Visible;
+        EditModeTitle.Text = isEdit ? "Редактирование продукта" : "Создание нового продукта";
+        SaveButton.Content = isEdit ? "💾 Сохранить изменения" : "💾 Создать продукт";
     }
 
     private void LoadProducts()
@@ -38,7 +88,6 @@ public partial class ProductsPage : Page
             {
                 _allProducts.Add(product);
             }
-            ProductsDataGrid.ItemsSource = _allProducts;
         }
         catch (Exception ex)
         {
@@ -79,41 +128,50 @@ public partial class ProductsPage : Page
         }
     }
 
-    private void ProductsDataGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    private void EditProduct_Click(object sender, RoutedEventArgs e)
     {
-        if (ProductsDataGrid.SelectedItem is ProductView selectedProduct)
+        var button = sender as Button;
+        var product = button?.DataContext as ProductView;
+        if (product == null) return;
+
+        _currentProductId = product.ID;
+        
+        ProductNameTextBox.Text = product.Name;
+        
+        // Устанавливаем тип
+        var types = _productRepository.GetProductTypes();
+        var typeToSelect = types.FirstOrDefault(t => t.Name == product.Type);
+        if (typeToSelect != null && typeToSelect.Id > 0)
         {
-            _currentProductId = selectedProduct.ID;
-            ProductEditPanel.IsEnabled = true;
-            
-            ProductNameTextBox.Text = selectedProduct.Name;
-            
-            var types = _productRepository.GetProductTypes();
-            var typeToSelect = types.FirstOrDefault(t => t.Name == selectedProduct.Type);
-            if (typeToSelect.Id > 0)
-            {
-                ProductTypeComboBox.SelectedValue = typeToSelect.Id;
-            }
-            
-            var measures = _productRepository.GetMeasures();
-            var measureToSelect = measures.FirstOrDefault(m => m.Name == selectedProduct.IzName);
-            if (measureToSelect.Id > 0)
-            {
-                ProductMeasureComboBox.SelectedValue = measureToSelect.Id;
-            }
+            ProductTypeComboBox.SelectedValue = typeToSelect.Id;
         }
+        
+        // Устанавливаем единицу измерения
+        var measures = _productRepository.GetMeasures();
+        var measureToSelect = measures.FirstOrDefault(m => m.Name == product.IzName);
+        if (measureToSelect != null && measureToSelect.Id > 0)
+        {
+            ProductMeasureComboBox.SelectedValue = measureToSelect.Id;
+        }
+        
+        ShowEditView(true);
     }
 
     private void NewProduct_Click(object sender, RoutedEventArgs e)
     {
         _currentProductId = null;
-        ProductEditPanel.IsEnabled = true;
         
         ProductNameTextBox.Clear();
         ProductTypeComboBox.SelectedIndex = -1;
         ProductMeasureComboBox.SelectedIndex = -1;
         
+        ShowEditView(false);
         ProductNameTextBox.Focus();
+    }
+    
+    private void CancelEdit_Click(object sender, RoutedEventArgs e)
+    {
+        ShowListView();
     }
 
     private void DeleteProduct_Click(object sender, RoutedEventArgs e)
@@ -131,13 +189,6 @@ public partial class ProductsPage : Page
             {
                 _productRepository.DeleteProduct(product.ID);
                 LoadProducts();
-                
-                if (_currentProductId == product.ID)
-                {
-                    _currentProductId = null;
-                    ProductEditPanel.IsEnabled = false;
-                }
-                
                 MessageBox.Show("Продукт удален", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
             }
         }
@@ -148,7 +199,7 @@ public partial class ProductsPage : Page
         }
     }
 
-    private void UpdateProduct_Click(object sender, RoutedEventArgs e)
+    private void SaveProduct_Click(object sender, RoutedEventArgs e)
     {
         try
         {
@@ -182,7 +233,7 @@ public partial class ProductsPage : Page
                 _productRepository.UpdateProduct(
                     _currentProductId.Value, 
                     ProductNameTextBox.Text, 
-                    0, // vesId
+                    null, // vesId
                     typeId, 
                     0, // fass
                     measureId, 
@@ -201,7 +252,7 @@ public partial class ProductsPage : Page
                 // Создание нового продукта
                 _productRepository.AddProduct(
                     ProductNameTextBox.Text, 
-                    0, // vesId
+                    null, // vesId
                     typeId, 
                     0, // fass
                     measureId
@@ -212,7 +263,7 @@ public partial class ProductsPage : Page
             }
 
             LoadProducts();
-            NewProduct_Click(sender, e);
+            ShowListView(); // Return to list view
         }
         catch (Exception ex)
         {
