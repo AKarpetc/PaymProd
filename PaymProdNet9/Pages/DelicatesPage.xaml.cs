@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Navigation;
 
 namespace PaymProdNet9.Pages;
 
@@ -17,6 +18,7 @@ public partial class DelicatesPage : Page
     private ObservableCollection<Components> _currentDelicateComponents;
     
     private int? _currentDelicateId;
+    private bool _isEditMode; // true = редактирование, false = создание
 
     public DelicatesPage()
     {
@@ -30,6 +32,38 @@ public partial class DelicatesPage : Page
         _currentDelicateComponents = new ObservableCollection<Components>();
         
         DelicateComponentsGrid.ItemsSource = _currentDelicateComponents;
+        
+        // Подписываемся на событие Loaded для установки обработчика навигации
+        this.Loaded += DelicatesPage_LoadedInternal;
+    }
+    
+    /// <summary>
+    /// Обработчик загрузки страницы для установки навигационного обработчика
+    /// </summary>
+    private void DelicatesPage_LoadedInternal(object sender, RoutedEventArgs e)
+    {
+        // Подписываемся на событие навигации Frame
+        if (NavigationService != null)
+        {
+            NavigationService.Navigating -= DelicatesPage_Navigating; // Отписываемся, если уже подписаны
+            NavigationService.Navigating += DelicatesPage_Navigating;
+        }
+    }
+    
+    /// <summary>
+    /// Обработка навигации назад - работает как "Отмена" в режиме редактирования
+    /// </summary>
+    private void DelicatesPage_Navigating(object sender, NavigatingCancelEventArgs e)
+    {
+        // Если открыт режим редактирования и пользователь нажал "Назад"
+        if (EditViewPanel.Visibility == Visibility.Visible && e.NavigationMode == NavigationMode.Back)
+        {
+            // Отменяем навигацию
+            e.Cancel = true;
+            
+            // Вызываем метод отмены (возвращаемся к списку)
+            ShowListView();
+        }
     }
 
     private void Page_Loaded(object sender, RoutedEventArgs e)
@@ -39,16 +73,23 @@ public partial class DelicatesPage : Page
         LoadDelicateTypes();
     }
 
+    /// <summary>
+    /// Загрузка всех блюд (новые вверху)
+    /// </summary>
     private void LoadDelicates()
     {
         try
         {
             _allDelicates.Clear();
-            var delicates = _delicateRepository.GetAllDelicates();
+            var delicates = _delicateRepository.GetAllDelicates()
+                .OrderByDescending(d => d.Id) // Новые блюда вверху
+                .ToList();
+            
             foreach (var delicate in delicates)
             {
                 _allDelicates.Add(delicate);
             }
+            
             DelicatesDataGrid.ItemsSource = _allDelicates;
         }
         catch (Exception ex)
@@ -83,8 +124,6 @@ public partial class DelicatesPage : Page
         {
             var types = _delicateRepository.GetDelicateTypes();
             DelicateTypeComboBox.ItemsSource = types;
-            DelicateTypeComboBox.DisplayMemberPath = "Name";
-            DelicateTypeComboBox.SelectedValuePath = "Id";
         }
         catch (Exception ex)
         {
@@ -93,25 +132,87 @@ public partial class DelicatesPage : Page
         }
     }
 
-    private void DelicatesDataGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    /// <summary>
+    /// Переключение в режим просмотра списка
+    /// </summary>
+    private void ShowListView()
     {
-        if (DelicatesDataGrid.SelectedItem is DelicatesColl selectedDelicate)
+        ListViewPanel.Visibility = Visibility.Visible;
+        EditViewPanel.Visibility = Visibility.Collapsed;
+    }
+
+    /// <summary>
+    /// Переключение в режим создания/редактирования
+    /// </summary>
+    private void ShowEditView(bool isEdit)
+    {
+        _isEditMode = isEdit;
+        
+        ListViewPanel.Visibility = Visibility.Collapsed;
+        EditViewPanel.Visibility = Visibility.Visible;
+        
+        if (isEdit)
         {
-            _currentDelicateId = selectedDelicate.Id;
-            DelicateEditPanel.IsEnabled = true;
+            EditPanelTitle.Text = "Редактирование блюда";
+            SaveButton.Content = "💾 Сохранить изменения";
+        }
+        else
+        {
+            EditPanelTitle.Text = "Создание нового блюда";
+            SaveButton.Content = "💾 Создать блюдо";
+        }
+    }
+
+    /// <summary>
+    /// Кнопка "Создать новое блюдо"
+    /// </summary>
+    private void NewDelicate_Click(object sender, RoutedEventArgs e)
+    {
+        _currentDelicateId = null;
+        DelicateNameTextBox.Clear();
+        DelicateWeightTextBox.Clear();
+        DelicateCountTextBox.Clear();
+        DelicateTypeComboBox.SelectedIndex = -1;
+        _currentDelicateComponents.Clear();
+        
+        ShowEditView(false);
+        DelicateNameTextBox.Focus();
+    }
+
+    /// <summary>
+    /// Кнопка "Редактировать блюдо"
+    /// </summary>
+    private void EditDelicate_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var button = sender as Button;
+            var delicate = button?.DataContext as DelicatesColl;
+            if (delicate == null) return;
+
+            _currentDelicateId = delicate.Id;
             
-            DelicateNameTextBox.Text = selectedDelicate.Name;
-            DelicateWeightTextBox.Text = selectedDelicate.Ves.ToString();
-            DelicateCountTextBox.Text = selectedDelicate.Count.ToString();
+            DelicateNameTextBox.Text = delicate.Name;
+            DelicateWeightTextBox.Text = delicate.Ves.ToString();
+            DelicateCountTextBox.Text = delicate.Count.ToString();
             
+            // Устанавливаем тип
             var types = _delicateRepository.GetDelicateTypes();
-            var typeToSelect = types.FirstOrDefault(t => t.Name == selectedDelicate.Type);
-            if (typeToSelect.Id > 0)
+            var typeToSelect = types.FirstOrDefault(t => t.Name == delicate.Type);
+            if (typeToSelect != null && typeToSelect.Id > 0)
             {
                 DelicateTypeComboBox.SelectedValue = typeToSelect.Id;
             }
             
-            LoadDelicateComponents(selectedDelicate.Id);
+            // Загружаем компоненты
+            LoadDelicateComponents(delicate.Id);
+            
+            ShowEditView(true);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Ошибка при загрузке блюда: {ex.Message}", 
+                "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
 
@@ -136,18 +237,122 @@ public partial class DelicatesPage : Page
         }
     }
 
-    private void NewDelicate_Click(object sender, RoutedEventArgs e)
+    /// <summary>
+    /// Кнопка "Сохранить" (создать или обновить)
+    /// </summary>
+    private void SaveDelicate_Click(object sender, RoutedEventArgs e)
     {
-        _currentDelicateId = null;
-        DelicateNameTextBox.Clear();
-        DelicateWeightTextBox.Clear();
-        DelicateCountTextBox.Clear();
-        DelicateTypeComboBox.SelectedIndex = -1;
-        _currentDelicateComponents.Clear();
-        DelicateEditPanel.IsEnabled = true;
-        DelicateNameTextBox.Focus();
+        try
+        {
+            // Валидация
+            if (string.IsNullOrWhiteSpace(DelicateNameTextBox.Text))
+            {
+                MessageBox.Show("Введите название блюда!", 
+                    "Внимание", MessageBoxButton.OK, MessageBoxImage.Warning);
+                DelicateNameTextBox.Focus();
+                return;
+            }
+
+            if (DelicateTypeComboBox.SelectedValue == null)
+            {
+                MessageBox.Show("Выберите тип блюда!", 
+                    "Внимание", MessageBoxButton.OK, MessageBoxImage.Warning);
+                DelicateTypeComboBox.Focus();
+                return;
+            }
+
+            var typeId = (int)DelicateTypeComboBox.SelectedValue;
+            var ves = decimal.TryParse(DelicateWeightTextBox.Text, out var w) ? w : 0;
+            var count = decimal.TryParse(DelicateCountTextBox.Text, out var c) ? c : 1;
+
+            if (_isEditMode && _currentDelicateId.HasValue)
+            {
+                // Обновление существующего блюда
+                _delicateRepository.UpdateDelicate(
+                    _currentDelicateId.Value, typeId, DelicateNameTextBox.Text, ves, count);
+                
+                // Сохранение компонентов
+                SaveDelicateComponents(_currentDelicateId.Value);
+                
+                MessageBox.Show("Блюдо успешно обновлено!", 
+                    "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            else
+            {
+                // Создание нового блюда
+                var newId = _delicateRepository.AddDelicate(typeId, DelicateNameTextBox.Text, ves, count);
+                _currentDelicateId = newId;
+                
+                // Сохранение компонентов
+                if (_currentDelicateComponents.Count > 0)
+                {
+                    SaveDelicateComponents(newId);
+                }
+                
+                MessageBox.Show("Блюдо успешно создано!", 
+                    "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+
+            LoadDelicates();
+            ShowListView();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Ошибка при сохранении блюда: {ex.Message}", 
+                "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
     }
 
+    /// <summary>
+    /// Сохранение компонентов блюда
+    /// </summary>
+    private void SaveDelicateComponents(int delicateId)
+    {
+        try
+        {
+            // Удаляем старые компоненты
+            var existing = _delicateRepository.GetDelicateById(delicateId);
+            if (existing?.Lcomp != null)
+            {
+                foreach (var component in existing.Lcomp)
+                {
+                    _delicateRepository.DeleteComponentByProductAndDelicate(component.Prodid, delicateId);
+                }
+            }
+            
+            // Добавляем новые компоненты
+            foreach (var component in _currentDelicateComponents)
+            {
+                if (component.Ves > 0) // Только если указан вес
+                {
+                    _delicateRepository.AddComponent(delicateId, component.Prodid, component.Ves);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Ошибка при сохранении состава блюда: {ex.Message}", 
+                "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    /// <summary>
+    /// Кнопка "Отмена"
+    /// </summary>
+    private void CancelEdit_Click(object sender, RoutedEventArgs e)
+    {
+        var result = MessageBox.Show("Отменить изменения и вернуться к списку?", 
+            "Подтверждение", MessageBoxButton.YesNo, MessageBoxImage.Question);
+        
+        if (result == MessageBoxResult.Yes)
+        {
+            ShowListView();
+        }
+    }
+
+    /// <summary>
+    /// Удаление блюда
+    /// </summary>
     private void DeleteDelicate_Click(object sender, RoutedEventArgs e)
     {
         try
@@ -156,14 +361,16 @@ public partial class DelicatesPage : Page
             var delicate = button?.DataContext as DelicatesColl;
             if (delicate == null) return;
 
-            var result = MessageBox.Show("Удалить блюдо?", 
+            var result = MessageBox.Show($"Удалить блюдо \"{delicate.Name}\"?", 
                 "Подтверждение", MessageBoxButton.YesNo, MessageBoxImage.Question);
             
             if (result == MessageBoxResult.Yes)
             {
                 _delicateRepository.DeleteDelicate(delicate.Id);
                 LoadDelicates();
-                NewDelicate_Click(sender, e);
+                
+                MessageBox.Show("Блюдо успешно удалено!", 
+                    "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
             }
         }
         catch (Exception ex)
@@ -173,54 +380,9 @@ public partial class DelicatesPage : Page
         }
     }
 
-    private void UpdateDelicate_Click(object sender, RoutedEventArgs e)
-    {
-        try
-        {
-            if (string.IsNullOrWhiteSpace(DelicateNameTextBox.Text))
-            {
-                MessageBox.Show("Введите название блюда!", 
-                    "Внимание", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-
-            if (DelicateTypeComboBox.SelectedValue == null)
-            {
-                MessageBox.Show("Выберите тип блюда!", 
-                    "Внимание", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-
-            var typeId = (int)DelicateTypeComboBox.SelectedValue;
-            var ves = decimal.TryParse(DelicateWeightTextBox.Text, out var w) ? w : 0;
-            var count = decimal.TryParse(DelicateCountTextBox.Text, out var c) ? c : 1;
-
-            if (_currentDelicateId.HasValue)
-            {
-                _delicateRepository.UpdateDelicate(
-                    _currentDelicateId.Value, typeId, DelicateNameTextBox.Text, ves, count);
-                
-                MessageBox.Show("Блюдо обновлено!", 
-                    "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
-            }
-            else
-            {
-                var newId = _delicateRepository.AddDelicate(typeId, DelicateNameTextBox.Text, ves, count);
-                _currentDelicateId = newId;
-                
-                MessageBox.Show("Блюдо создано! Теперь можно добавить продукты в его состав.", 
-                    "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
-            }
-
-            LoadDelicates();
-        }
-        catch (Exception ex)
-        {
-            MessageBox.Show($"Ошибка при сохранении блюда: {ex.Message}", 
-                "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
-        }
-    }
-
+    /// <summary>
+    /// Добавление продукта в состав
+    /// </summary>
     private void AddProductToDelicate_Click(object sender, RoutedEventArgs e)
     {
         if (AvailableProductsList.SelectedItem is ProductView selectedProduct)
@@ -249,6 +411,9 @@ public partial class DelicatesPage : Page
         }
     }
 
+    /// <summary>
+    /// Удаление продукта из состава
+    /// </summary>
     private void RemoveProductFromDelicate_Click(object sender, RoutedEventArgs e)
     {
         if (DelicateComponentsGrid.SelectedItem is Components selectedComponent)
@@ -257,24 +422,14 @@ public partial class DelicatesPage : Page
         }
         else
         {
-            MessageBox.Show("Выберите продукт из состава", "Внимание", 
+            MessageBox.Show("Выберите продукт из состава для удаления", "Внимание", 
                 MessageBoxButton.OK, MessageBoxImage.Warning);
         }
     }
 
-    private void GoToComposition_Click(object sender, RoutedEventArgs e)
-    {
-        if (_currentDelicateComponents.Count == 0)
-        {
-            MessageBox.Show("Сначала добавьте продукты в состав блюда", "Внимание", 
-                MessageBoxButton.OK, MessageBoxImage.Warning);
-            return;
-        }
-
-        DelicateComponentsGrid.SelectedIndex = 0;
-        DelicateComponentsGrid.Focus();
-    }
-
+    /// <summary>
+    /// Поиск продуктов
+    /// </summary>
     private void ProductSearch_TextChanged(object sender, TextChangedEventArgs e)
     {
         var searchText = ProductSearchBox.Text.ToLower();
@@ -290,6 +445,9 @@ public partial class DelicatesPage : Page
         }
     }
 
+    /// <summary>
+    /// Валидация числового ввода
+    /// </summary>
     private void NumericOnly_PreviewTextInput(object sender, TextCompositionEventArgs e)
     {
         e.Handled = !IsTextNumeric(e.Text);

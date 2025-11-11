@@ -324,9 +324,9 @@ public class DelicateRepository
     /// <summary>
     /// Получить типы блюд
     /// </summary>
-    public List<(int Id, string Name)> GetDelicateTypes()
+    public List<DelicateType> GetDelicateTypes()
     {
-        var types = new List<(int Id, string Name)>();
+        var types = new List<DelicateType>();
         
         using var connection = DatabaseHelper.GetConnection();
         connection.Open();
@@ -337,7 +337,11 @@ public class DelicateRepository
         using var reader = command.ExecuteReader();
         while (reader.Read())
         {
-            types.Add((reader.GetInt32(0), reader.GetString(1)));
+            types.Add(new DelicateType
+            {
+                Id = reader.GetInt32(0),
+                Name = reader.GetString(1)
+            });
         }
         
         return types;
