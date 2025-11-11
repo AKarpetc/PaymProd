@@ -21,9 +21,7 @@ class Program
         
         // Use defaults if not provided
         sourceFile ??= "MenuCaolc.mdf";
-        targetFile ??= Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "PaymProdNet9", "MenuCalc.db");
+        targetFile ??= "C:\\My\\menu\\PaymProd\\MenuCaolc.db";
         
         // Check source file
         if (!File.Exists(sourceFile))
