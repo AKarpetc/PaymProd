@@ -9,27 +9,34 @@ using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Media;
 
-namespace PaymProdNet9.Windows;
+namespace PaymProdNet9.Pages;
 
-public partial class ReportWindow : Window
+public partial class ReportPage : Page
 {
-    private readonly ObservableCollection<MenuDel_act> _menuDelicates;
-    private readonly List<string> _banquetInfo;
+    private ObservableCollection<MenuDel_act> _menuDelicates;
+    private List<string> _banquetInfo;
     private readonly List<DelicatesCollForSvod> _summaryData;
     private readonly MenuPrinter _menuPrinter;
 
-    public ReportWindow(ObservableCollection<MenuDel_act> menuDelicates, List<string> banquetInfo)
+    public ObservableCollection<MenuDel_act>? MenuDelicates { get; set; }
+    public List<string>? BanquetInfo { get; set; }
+
+    public ReportPage()
     {
         InitializeComponent();
         
-        _menuDelicates = menuDelicates;
-        _banquetInfo = banquetInfo;
+        _menuDelicates = new ObservableCollection<MenuDel_act>();
+        _banquetInfo = new List<string>();
         _summaryData = new List<DelicatesCollForSvod>();
         _menuPrinter = new MenuPrinter();
     }
 
-    private void Window_Loaded(object sender, RoutedEventArgs e)
+    private void Page_Loaded(object sender, RoutedEventArgs e)
     {
+        // If data was set from navigation
+        if (MenuDelicates != null) _menuDelicates = MenuDelicates;
+        if (BanquetInfo != null) _banquetInfo = BanquetInfo;
+
         GenerateReport();
         GenerateSummaryData();
     }

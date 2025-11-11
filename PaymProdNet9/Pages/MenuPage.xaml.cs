@@ -2,16 +2,15 @@ using Microsoft.Win32;
 using PaymProdNet9.Data;
 using PaymProdNet9.Models;
 using PaymProdNet9.Services;
-using PaymProdNet9.Windows;
 using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 
-namespace PaymProdNet9;
+namespace PaymProdNet9.Pages;
 
-public partial class MainWindow : Window
+public partial class MenuPage : Page
 {
     private readonly MenuRepository _menuRepository;
     private readonly DelicateRepository _delicateRepository;
@@ -21,7 +20,7 @@ public partial class MainWindow : Window
     private ObservableCollection<MenuDel_act> _currentMenuDelicates;
     private bool _isDataChanged = false;
 
-    public MainWindow()
+    public MenuPage()
     {
         InitializeComponent();
         
@@ -33,7 +32,7 @@ public partial class MainWindow : Window
         MenuDelicatesDataGrid.ItemsSource = _currentMenuDelicates;
     }
 
-    private void Window_Loaded(object sender, RoutedEventArgs e)
+    private void Page_Loaded(object sender, RoutedEventArgs e)
     {
         try
         {
@@ -57,7 +56,7 @@ public partial class MainWindow : Window
     /// <summary>
     /// Загрузка сохраненных меню
     /// </summary>
-    private void LoadSavedMenus()
+    public void LoadSavedMenus()
     {
         try
         {
@@ -508,42 +507,6 @@ public partial class MainWindow : Window
     }
 
     /// <summary>
-    /// Открыть справочники
-    /// </summary>
-    private void OpenDictionaries_Click(object sender, RoutedEventArgs e)
-    {
-        var dictionariesWindow = new DictionariesWindow();
-        dictionariesWindow.ShowDialog();
-        
-        // Обновляем данные после закрытия справочников
-        LoadDelicateTypes();
-        if (_currentMenuId.HasValue)
-        {
-            LoadAvailableDelicates("%");
-        }
-    }
-
-    /// <summary>
-    /// Открыть менеджер базы данных
-    /// </summary>
-    private void DatabaseManager_Click(object sender, RoutedEventArgs e)
-    {
-        try
-        {
-            var dbManagerWindow = new DatabaseManagerWindow();
-            dbManagerWindow.ShowDialog();
-            
-            // Обновляем данные после возможного импорта
-            LoadSavedMenus();
-        }
-        catch (Exception ex)
-        {
-            MessageBox.Show($"Ошибка при открытии менеджера базы данных: {ex.Message}",
-                "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
-        }
-    }
-
-    /// <summary>
     /// Генерация отчета
     /// </summary>
     private void GenerateReport_Click(object sender, RoutedEventArgs e)
@@ -552,7 +515,7 @@ public partial class MainWindow : Window
         {
             if (!_currentMenuId.HasValue || _currentMenuDelicates.Count == 0)
             {
-                MessageBox.Show("Нет данных для отчета!", 
+                MessageBox.Show("Нет данных для отчета!\n\nСоздайте меню и добавьте блюда.", 
                     "Внимание", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
@@ -565,8 +528,15 @@ public partial class MainWindow : Window
                 DescriptionTextBox.Text
             };
 
-            var reportWindow = new ReportWindow(_currentMenuDelicates, banquetInfo);
-            reportWindow.ShowDialog();
+            // Создаем страницу отчета с данными
+            var reportPage = new ReportPage
+            {
+                MenuDelicates = _currentMenuDelicates,
+                BanquetInfo = banquetInfo
+            };
+
+            // Навигируем к странице отчета
+            Services.NavigationService.Instance.NavigateTo(reportPage);
         }
         catch (Exception ex)
         {
@@ -631,61 +601,6 @@ public partial class MainWindow : Window
         {
             MessageBox.Show($"Ошибка при печати: {ex.Message}", 
                 "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
-        }
-    }
-
-    /// <summary>
-    /// О программе
-    /// </summary>
-    private void About_Click(object sender, RoutedEventArgs e)
-    {
-        MessageBox.Show(
-            "Система управления меню банкетов\n" +
-            "Версия 2.0 (.NET 9)\n\n" +
-            "Программа предназначена для составления и управления меню банкетов,\n" +
-            "ведения справочников блюд и продуктов, формирования отчетов.",
-            "О программе", MessageBoxButton.OK, MessageBoxImage.Information);
-    }
-
-    /// <summary>
-    /// Выход из приложения
-    /// </summary>
-    private void Exit_Click(object sender, RoutedEventArgs e)
-    {
-        Close();
-    }
-
-    /// <summary>
-    /// Закрытие окна
-    /// </summary>
-    private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
-    {
-        if (_isDataChanged && _currentMenuDelicates.Count > 0)
-        {
-            var result = MessageBox.Show(
-                "Хотите ли вы сохранить изменения внесенные в меню?", 
-                "Внимание", MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
-            
-            if (result == MessageBoxResult.Yes)
-            {
-                try
-                {
-                    if (_currentMenuId.HasValue)
-                    {
-                        _menuRepository.SaveMenuChanges(_currentMenuId.Value, _currentMenuDelicates);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"Ошибка при сохранении: {ex.Message}", 
-                        "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
-                    e.Cancel = true;
-                }
-            }
-            else if (result == MessageBoxResult.Cancel)
-            {
-                e.Cancel = true;
-            }
         }
     }
 

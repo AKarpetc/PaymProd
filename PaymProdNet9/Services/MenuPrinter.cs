@@ -5,7 +5,7 @@ using PaymProdNet9.Models;
 using System.Diagnostics;
 using System.IO;
 
-namespace PaymProdNet9.Windows;
+namespace PaymProdNet9.Services;
 
 /// <summary>
 /// Класс для печати меню в формате Word
