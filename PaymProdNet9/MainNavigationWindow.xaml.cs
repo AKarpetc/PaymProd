@@ -34,11 +34,18 @@ public partial class MainNavigationWindow : Window
         NavigationService.Instance.NavigateTo<MenuPage>();
     }
 
-    private void NavigateToDictionaries_Click(object sender, RoutedEventArgs e)
+    private void NavigateToDelicates_Click(object sender, RoutedEventArgs e)
     {
         SetActiveButton(sender as Button);
-        PageTitle.Text = "Справочники";
-        NavigationService.Instance.NavigateTo<DictionariesPage>();
+        PageTitle.Text = "Справочник блюд";
+        NavigationService.Instance.NavigateTo<DelicatesPage>();
+    }
+
+    private void NavigateToProducts_Click(object sender, RoutedEventArgs e)
+    {
+        SetActiveButton(sender as Button);
+        PageTitle.Text = "Справочник продуктов";
+        NavigationService.Instance.NavigateTo<ProductsPage>();
     }
 
 
