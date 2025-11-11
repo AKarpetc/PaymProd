@@ -73,17 +73,36 @@
                 <!-- Меню навигации -->
                 <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
                     <StackPanel>
-                        <!-- Главная -->
-                        <Button x:Name="MenuPageButton" 
+                        <!-- МЕНЮ -->
+                        <TextBlock Text="МЕНЮ" 
+                                   Foreground="#7F8C8D" 
+                                   FontSize="11"
+                                   FontWeight="Bold"
+                                   Margin="20,10,20,5"/>
+
+                        <Button x:Name="CurrentMenuButton" 
                                 Style="{StaticResource NavButtonStyle}"
-                                Click="NavigateToMenu_Click">
+                                Click="NavigateToCurrentMenu_Click">
                             <StackPanel Orientation="Horizontal">
-                                <materialDesign:PackIcon Kind="Food" 
+                                <materialDesign:PackIcon Kind="FileEdit" 
                                                         Width="24" 
                                                         Height="24" 
                                                         VerticalAlignment="Center"
                                                         Margin="0,0,15,0"/>
-                                <TextBlock Text="Главная - Меню" VerticalAlignment="Center"/>
+                                <TextBlock Text="Текущее меню" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+
+                        <Button x:Name="SavedMenusButton" 
+                                Style="{StaticResource NavButtonStyle}"
+                                Click="NavigateToSavedMenus_Click">
+                            <StackPanel Orientation="Horizontal">
+                                <materialDesign:PackIcon Kind="ContentSaveAll" 
+                                                        Width="24" 
+                                                        Height="24" 
+                                                        VerticalAlignment="Center"
+                                                        Margin="0,0,15,0"/>
+                                <TextBlock Text="Сохраненные меню" VerticalAlignment="Center"/>
                             </StackPanel>
                         </Button>
 

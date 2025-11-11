@@ -23,15 +23,22 @@ public partial class MainNavigationWindow : Window
 
     private void Window_Loaded(object sender, RoutedEventArgs e)
     {
-        // По умолчанию открываем главную страницу
-        NavigateToMenu_Click(MenuPageButton, e);
+        // По умолчанию открываем текущее меню
+        NavigateToCurrentMenu_Click(CurrentMenuButton, e);
     }
 
-    private void NavigateToMenu_Click(object sender, RoutedEventArgs e)
+    private void NavigateToCurrentMenu_Click(object sender, RoutedEventArgs e)
     {
         SetActiveButton(sender as Button);
-        PageTitle.Text = "Главная - Управление меню";
-        NavigationService.Instance.NavigateTo<MenuPage>();
+        PageTitle.Text = "Текущее меню - Составление банкета";
+        NavigationService.Instance.NavigateTo<CurrentMenuPage>();
+    }
+
+    private void NavigateToSavedMenus_Click(object sender, RoutedEventArgs e)
+    {
+        SetActiveButton(sender as Button);
+        PageTitle.Text = "Сохраненные меню - Все банкеты";
+        NavigationService.Instance.NavigateTo<SavedMenusPage>();
     }
 
     private void NavigateToDelicates_Click(object sender, RoutedEventArgs e)

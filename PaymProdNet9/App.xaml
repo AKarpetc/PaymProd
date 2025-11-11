@@ -18,6 +18,29 @@
             <!-- Converters -->
             <converters:NullToBoolConverter x:Key="NullToBoolConverter"/>
             
+            <!-- Стили для кнопок в таблицах -->
+            <Style x:Key="DeleteButtonStyle" TargetType="Button" BasedOn="{StaticResource MaterialDesignIconButton}">
+                <Setter Property="Foreground" Value="#F44336"/>
+                <Setter Property="ToolTip" Value="Удалить"/>
+                <Setter Property="Margin" Value="5,0"/>
+                <Style.Triggers>
+                    <Trigger Property="IsMouseOver" Value="True">
+                        <Setter Property="Background" Value="#FFEBEE"/>
+                    </Trigger>
+                </Style.Triggers>
+            </Style>
+            
+            <Style x:Key="EditButtonStyle" TargetType="Button" BasedOn="{StaticResource MaterialDesignIconButton}">
+                <Setter Property="Foreground" Value="#2196F3"/>
+                <Setter Property="ToolTip" Value="Редактировать"/>
+                <Setter Property="Margin" Value="5,0"/>
+                <Style.Triggers>
+                    <Trigger Property="IsMouseOver" Value="True">
+                        <Setter Property="Background" Value="#E3F2FD"/>
+                    </Trigger>
+                </Style.Triggers>
+            </Style>
+            
         </ResourceDictionary>
     </Application.Resources>
 </Application>

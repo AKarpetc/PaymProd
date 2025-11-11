@@ -1,0 +1,65 @@
+<Page x:Class="PaymProdNet9.Pages.SavedMenusPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+      xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+      mc:Ignorable="d"
+      Title="Сохраненные меню"
+      Loaded="Page_Loaded">
+    <Grid Margin="10">
+        <materialDesign:Card Padding="10">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <TextBlock Grid.Row="0" 
+                           Text="Все сохраненные меню:"
+                           Style="{StaticResource MaterialDesignHeadline6TextBlock}"
+                           Margin="0,0,0,15"/>
+
+                <DataGrid Grid.Row="1" x:Name="SavedMenusDataGrid" 
+                          AutoGenerateColumns="False"
+                          CanUserAddRows="False"
+                          SelectionMode="Single"
+                          IsReadOnly="True"
+                          materialDesign:DataGridAssist.CellPadding="10"
+                          materialDesign:DataGridAssist.ColumnHeaderPadding="10">
+                    <DataGrid.Columns>
+                        <DataGridTemplateColumn Width="50">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Button Style="{StaticResource DeleteButtonStyle}"
+                                            Click="DeleteSavedMenu_Click"
+                                            ToolTip="Удалить меню">
+                                        <materialDesign:PackIcon Kind="Delete"/>
+                                    </Button>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+
+                        <DataGridTemplateColumn Width="50">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Button Style="{StaticResource EditButtonStyle}"
+                                            Click="EditSavedMenu_Click"
+                                            ToolTip="Открыть меню для редактирования">
+                                        <materialDesign:PackIcon Kind="Pencil"/>
+                                    </Button>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+
+                        <DataGridTextColumn Header="Название" Binding="{Binding Name}" Width="2*"/>
+                        <DataGridTextColumn Header="Количество людей" Binding="{Binding CountP}" Width="*"/>
+                        <DataGridTextColumn Header="Дата, время" Binding="{Binding DateBan}" Width="*"/>
+                        <DataGridTextColumn Header="Доп. информация" Binding="{Binding Detail}" Width="2*"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </Grid>
+        </materialDesign:Card>
+    </Grid>
+</Page>
+
