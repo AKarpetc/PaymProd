@@ -198,7 +198,7 @@ public class ProductRepository
         connection.Open();
         
         var command = connection.CreateCommand();
-        command.CommandText = "SELECT TypeProdId, Type_Opis FROM Produkt_Type ORDER BY Type_Opis";
+        command.CommandText = "SELECT TypeProdId, Type_Opis, COALESCE(SortOrder, 0) FROM Produkt_Type ORDER BY COALESCE(SortOrder, 0), Type_Opis";
         
         using var reader = command.ExecuteReader();
         while (reader.Read())
@@ -206,7 +206,8 @@ public class ProductRepository
             types.Add(new ProductType
             {
                 Id = reader.GetInt32(0),
-                Name = reader.GetString(1)
+                Name = reader.GetString(1),
+                SortOrder = reader.GetInt32(2)
             });
         }
         
@@ -244,16 +245,17 @@ public class ProductRepository
     /// <summary>
     /// Добавить тип продукта
     /// </summary>
-    public int AddProductType(string name)
+    public int AddProductType(string name, int sortOrder = 0)
     {
         using var connection = DatabaseHelper.GetConnection();
         connection.Open();
         
         var command = connection.CreateCommand();
         command.CommandText = @"
-            INSERT INTO Produkt_Type (Type_Opis) VALUES (@name);
+            INSERT INTO Produkt_Type (Type_Opis, SortOrder) VALUES (@name, @sortOrder);
             SELECT last_insert_rowid();";
         command.Parameters.AddWithValue("@name", name);
+        command.Parameters.AddWithValue("@sortOrder", sortOrder);
         
         return Convert.ToInt32(command.ExecuteScalar());
     }
@@ -317,7 +319,7 @@ public class ProductRepository
     /// <summary>
     /// Обновить тип продукта
     /// </summary>
-    public void UpdateProductType(int id, string name)
+    public void UpdateProductType(int id, string name, int sortOrder = 0)
     {
         using var connection = DatabaseHelper.GetConnection();
         connection.Open();
@@ -325,10 +327,11 @@ public class ProductRepository
         var command = connection.CreateCommand();
         command.CommandText = @"
             UPDATE Produkt_Type 
-            SET Type_Opis = @name
+            SET Type_Opis = @name, SortOrder = @sortOrder
             WHERE TypeProdId = @id";
         command.Parameters.AddWithValue("@id", id);
         command.Parameters.AddWithValue("@name", name);
+        command.Parameters.AddWithValue("@sortOrder", sortOrder);
         
         command.ExecuteNonQuery();
     }

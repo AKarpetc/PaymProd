@@ -122,6 +122,7 @@ public partial class ProductTypesPage : Page
         _currentProductTypeId = productType.Id;
         
         ProductTypeNameTextBox.Text = productType.Name;
+        ProductTypeSortOrderTextBox.Text = productType.SortOrder.ToString();
         
         ShowEditView(true);
     }
@@ -131,6 +132,7 @@ public partial class ProductTypesPage : Page
         _currentProductTypeId = null;
         
         ProductTypeNameTextBox.Clear();
+        ProductTypeSortOrderTextBox.Text = "0";
         
         ShowEditView(false);
         ProductTypeNameTextBox.Focus();
@@ -177,18 +179,24 @@ public partial class ProductTypesPage : Page
                 return;
             }
 
+            if (!int.TryParse(ProductTypeSortOrderTextBox.Text, out int sortOrder))
+            {
+                sortOrder = 0;
+            }
+
             if (_currentProductTypeId.HasValue)
             {
                 _productRepository.UpdateProductType(
                     _currentProductTypeId.Value, 
-                    ProductTypeNameTextBox.Text);
+                    ProductTypeNameTextBox.Text,
+                    sortOrder);
                 
                 MessageBox.Show("Тип продукта обновлен!", 
                     "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             else
             {
-                _productRepository.AddProductType(ProductTypeNameTextBox.Text);
+                _productRepository.AddProductType(ProductTypeNameTextBox.Text, sortOrder);
                 
                 MessageBox.Show("Тип продукта создан!", 
                     "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -202,6 +210,12 @@ public partial class ProductTypesPage : Page
             MessageBox.Show($"Ошибка при сохранении типа продукта: {ex.Message}", 
                 "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
         }
+    }
+
+    private void NumericOnly_PreviewTextInput(object sender, System.Windows.Input.TextCompositionEventArgs e)
+    {
+        // Разрешаем только цифры
+        e.Handled = !e.Text.All(char.IsDigit);
     }
 }
 

@@ -59,9 +59,21 @@ public static class DatabaseHelper
         command.CommandText = @"
             CREATE TABLE IF NOT EXISTS Produkt_Type (
                 TypeProdId INTEGER PRIMARY KEY AUTOINCREMENT,
-                Type_Opis TEXT NOT NULL
+                Type_Opis TEXT NOT NULL,
+                SortOrder INTEGER DEFAULT 0
             );";
         command.ExecuteNonQuery();
+        
+        // Миграция: добавляем SortOrder, если его нет
+        try
+        {
+            command.CommandText = "ALTER TABLE Produkt_Type ADD COLUMN SortOrder INTEGER DEFAULT 0";
+            command.ExecuteNonQuery();
+        }
+        catch
+        {
+            // Колонка уже существует, игнорируем ошибку
+        }
 
         // Создание таблицы продуктов
         command.CommandText = @"
@@ -87,9 +99,21 @@ public static class DatabaseHelper
         command.CommandText = @"
             CREATE TABLE IF NOT EXISTS Type_Del (
                 Type_Del_ID INTEGER PRIMARY KEY AUTOINCREMENT,
-                Type_del_opis TEXT NOT NULL
+                Type_del_opis TEXT NOT NULL,
+                SortOrder INTEGER DEFAULT 0
             );";
         command.ExecuteNonQuery();
+        
+        // Миграция: добавляем SortOrder, если его нет
+        try
+        {
+            command.CommandText = "ALTER TABLE Type_Del ADD COLUMN SortOrder INTEGER DEFAULT 0";
+            command.ExecuteNonQuery();
+        }
+        catch
+        {
+            // Колонка уже существует, игнорируем ошибку
+        }
 
         // Создание таблицы блюд
         command.CommandText = @"

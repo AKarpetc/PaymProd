@@ -122,6 +122,7 @@ public partial class DelicateTypesPage : Page
         _currentDelicateTypeId = delicateType.Id;
         
         DelicateTypeNameTextBox.Text = delicateType.Name;
+        DelicateTypeSortOrderTextBox.Text = delicateType.SortOrder.ToString();
         
         ShowEditView(true);
     }
@@ -131,6 +132,7 @@ public partial class DelicateTypesPage : Page
         _currentDelicateTypeId = null;
         
         DelicateTypeNameTextBox.Clear();
+        DelicateTypeSortOrderTextBox.Text = "0";
         
         ShowEditView(false);
         DelicateTypeNameTextBox.Focus();
@@ -177,18 +179,24 @@ public partial class DelicateTypesPage : Page
                 return;
             }
 
+            if (!int.TryParse(DelicateTypeSortOrderTextBox.Text, out int sortOrder))
+            {
+                sortOrder = 0;
+            }
+
             if (_currentDelicateTypeId.HasValue)
             {
                 _delicateRepository.UpdateDelicateType(
                     _currentDelicateTypeId.Value, 
-                    DelicateTypeNameTextBox.Text);
+                    DelicateTypeNameTextBox.Text,
+                    sortOrder);
                 
                 MessageBox.Show("Тип блюда обновлен!", 
                     "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             else
             {
-                _delicateRepository.AddDelicateType(DelicateTypeNameTextBox.Text);
+                _delicateRepository.AddDelicateType(DelicateTypeNameTextBox.Text, sortOrder);
                 
                 MessageBox.Show("Тип блюда создан!", 
                     "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -202,6 +210,12 @@ public partial class DelicateTypesPage : Page
             MessageBox.Show($"Ошибка при сохранении типа блюда: {ex.Message}", 
                 "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
         }
+    }
+
+    private void NumericOnly_PreviewTextInput(object sender, System.Windows.Input.TextCompositionEventArgs e)
+    {
+        // Разрешаем только цифры
+        e.Handled = !e.Text.All(char.IsDigit);
     }
 }
 

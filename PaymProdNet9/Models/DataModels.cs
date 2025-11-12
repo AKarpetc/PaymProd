@@ -89,6 +89,7 @@ public class DelicatesColl
     public decimal Count { get; set; }
     public string Opis { get; set; } = string.Empty;
     public int? IDType { get; set; }
+    public int TypeSortOrder { get; set; }
     public List<Components> Lcomp { get; set; } = new List<Components>();
 }
 

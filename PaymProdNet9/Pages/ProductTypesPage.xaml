@@ -108,7 +108,8 @@
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
 
-                            <DataGridTextColumn Header="Название типа" Binding="{Binding Name}" Width="*"/>
+                            <DataGridTextColumn Header="Название типа" Binding="{Binding Name}" Width="2*"/>
+                            <DataGridTextColumn Header="Порядок сортировки" Binding="{Binding SortOrder}" Width="*"/>
                         </DataGrid.Columns>
                     </DataGrid>
                 </Grid>
@@ -142,6 +143,14 @@
                             <TextBox x:Name="ProductTypeNameTextBox" 
                                      materialDesign:HintAssist.Hint="Например: Овощи, Мясные продукты"
                                      Style="{StaticResource MaterialDesignOutlinedTextBox}"/>
+                            
+                            <TextBlock Text="Порядок сортировки:" 
+                                       Style="{StaticResource MaterialDesignBody2TextBlock}"
+                                       Margin="0,15,0,5"/>
+                            <TextBox x:Name="ProductTypeSortOrderTextBox" 
+                                     materialDesign:HintAssist.Hint="Число для сортировки (меньше = выше в списке)"
+                                     Style="{StaticResource MaterialDesignOutlinedTextBox}"
+                                     PreviewTextInput="NumericOnly_PreviewTextInput"/>
                         </StackPanel>
                     </StackPanel>
                 </materialDesign:Card>

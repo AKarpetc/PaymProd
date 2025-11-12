@@ -21,11 +21,12 @@ public class MenuPrinter
         {
             var fileName = Path.Combine(Path.GetTempPath(), $"Menu_{DateTime.Now:yyyyMMdd_HHmmss}.docx");
             
-            // Группируем блюда по типам
+            // Группируем блюда по типам и сортируем по SortOrder
             var groupedDelicates = delicates
                 .Where(d => d.Lcomp != null && d.Lcomp.Any())
-                .GroupBy(d => d.Type)
-                .OrderBy(g => g.Key);
+                .GroupBy(d => new { Type = d.Type, SortOrder = d.TypeSortOrder })
+                .OrderBy(g => g.Key.SortOrder)
+                .ThenBy(g => g.Key.Type);
 
             // Создаем документ
             using (var document = WordprocessingDocument.Create(fileName, WordprocessingDocumentType.Document))
@@ -78,7 +79,7 @@ public class MenuPrinter
                     var headerRun = new Run();
                     var headerRunProps = new RunProperties(new Bold(), new FontSize { Val = "28" });
                     headerRun.Append(headerRunProps);
-                    headerRun.Append(new Text(group.Key ?? "Без типа"));
+                    headerRun.Append(new Text(group.Key.Type ?? "Без типа"));
                     headerParagraph.Append(headerRun);
                     headerCell.Append(headerParagraph);
                     headerRow.Append(headerCell);

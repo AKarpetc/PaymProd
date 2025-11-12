@@ -27,11 +27,11 @@ public class DelicateRepository
         command.CommandText = @"
             SELECT d.Del_id, d.Del_Name, COALESCE(d.Del_opis, ''), 
                    COALESCE(d.Del_count, 0), COALESCE(d.Del_Ves, 0), 
-                   td.Type_del_opis, td.Type_Del_ID
+                   td.Type_del_opis, td.Type_Del_ID, COALESCE(td.SortOrder, 0)
             FROM Delicates d
             INNER JOIN Type_Del td ON td.Type_Del_ID = d.Del_Type
             WHERE d.Del_Type != -1
-            ORDER BY td.Type_del_opis, d.Del_Name";
+            ORDER BY COALESCE(td.SortOrder, 0), td.Type_del_opis, d.Del_Name";
         
         using var reader = command.ExecuteReader();
         while (reader.Read())
@@ -47,6 +47,7 @@ public class DelicateRepository
                 Ves = reader.GetDecimal(4),
                 Type = reader.GetString(5),
                 IDType = reader.GetInt32(6),
+                TypeSortOrder = reader.GetInt32(7),
                 Lcomp = allComponents.Where(c => c.Delid == delId).ToList()
             };
             
@@ -108,7 +109,7 @@ public class DelicateRepository
         command.CommandText = @"
             SELECT d.Del_id, d.Del_Name, COALESCE(d.Del_opis, ''), 
                    COALESCE(d.Del_count, 0), COALESCE(d.Del_Ves, 0), 
-                   td.Type_del_opis, td.Type_Del_ID
+                   td.Type_del_opis, td.Type_Del_ID, COALESCE(td.SortOrder, 0)
             FROM Delicates d
             INNER JOIN Type_Del td ON td.Type_Del_ID = d.Del_Type
             WHERE d.Del_id = @id";
@@ -126,6 +127,7 @@ public class DelicateRepository
                 Count = reader.GetDecimal(3),
                 Ves = reader.GetDecimal(4),
                 Type = reader.GetString(5),
+                TypeSortOrder = reader.GetInt32(7),
                 IDType = reader.GetInt32(6),
                 Lcomp = components
             };
@@ -332,7 +334,7 @@ public class DelicateRepository
         connection.Open();
         
         var command = connection.CreateCommand();
-        command.CommandText = "SELECT Type_Del_ID, Type_del_opis FROM Type_Del ORDER BY Type_del_opis";
+        command.CommandText = "SELECT Type_Del_ID, Type_del_opis, COALESCE(SortOrder, 0) FROM Type_Del ORDER BY COALESCE(SortOrder, 0), Type_del_opis";
         
         using var reader = command.ExecuteReader();
         while (reader.Read())
@@ -340,7 +342,8 @@ public class DelicateRepository
             types.Add(new DelicateType
             {
                 Id = reader.GetInt32(0),
-                Name = reader.GetString(1)
+                Name = reader.GetString(1),
+                SortOrder = reader.GetInt32(2)
             });
         }
         
@@ -350,16 +353,17 @@ public class DelicateRepository
     /// <summary>
     /// Добавить тип блюда
     /// </summary>
-    public int AddDelicateType(string name)
+    public int AddDelicateType(string name, int sortOrder = 0)
     {
         using var connection = DatabaseHelper.GetConnection();
         connection.Open();
         
         var command = connection.CreateCommand();
         command.CommandText = @"
-            INSERT INTO Type_Del (Type_del_opis) VALUES (@name);
+            INSERT INTO Type_Del (Type_del_opis, SortOrder) VALUES (@name, @sortOrder);
             SELECT last_insert_rowid();";
         command.Parameters.AddWithValue("@name", name);
+        command.Parameters.AddWithValue("@sortOrder", sortOrder);
         
         return Convert.ToInt32(command.ExecuteScalar());
     }
@@ -367,7 +371,7 @@ public class DelicateRepository
     /// <summary>
     /// Обновить тип блюда
     /// </summary>
-    public void UpdateDelicateType(int id, string name)
+    public void UpdateDelicateType(int id, string name, int sortOrder = 0)
     {
         using var connection = DatabaseHelper.GetConnection();
         connection.Open();
@@ -375,10 +379,11 @@ public class DelicateRepository
         var command = connection.CreateCommand();
         command.CommandText = @"
             UPDATE Type_Del 
-            SET Type_del_opis = @name
+            SET Type_del_opis = @name, SortOrder = @sortOrder
             WHERE Type_Del_ID = @id";
         command.Parameters.AddWithValue("@id", id);
         command.Parameters.AddWithValue("@name", name);
+        command.Parameters.AddWithValue("@sortOrder", sortOrder);
         
         command.ExecuteNonQuery();
     }
@@ -410,7 +415,7 @@ public class DelicateRepository
         
         var sql = @"
             SELECT d.Del_id, d.Del_Name, COALESCE(d.Del_Ves, 0), 
-                   COALESCE(d.Del_count, 0), td.Type_del_opis, td.Type_Del_ID
+                   COALESCE(d.Del_count, 0), td.Type_del_opis, td.Type_Del_ID, COALESCE(td.SortOrder, 0)
             FROM Delicates d
             INNER JOIN Type_Del td ON td.Type_Del_ID = d.Del_Type
             WHERE d.Del_Type != -1";
@@ -420,7 +425,7 @@ public class DelicateRepository
             sql += " AND td.Type_del_opis = @type";
         }
         
-        sql += " ORDER BY td.Type_del_opis, d.Del_Name";
+        sql += " ORDER BY COALESCE(td.SortOrder, 0), td.Type_del_opis, d.Del_Name";
         
         var command = connection.CreateCommand();
         command.CommandText = sql;
@@ -440,7 +445,8 @@ public class DelicateRepository
                 Ves = reader.GetDecimal(2),
                 Count = reader.GetDecimal(3),
                 Type = reader.GetString(4),
-                IDType = reader.GetInt32(5)
+                IDType = reader.GetInt32(5),
+                TypeSortOrder = reader.GetInt32(6)
             });
         }
         

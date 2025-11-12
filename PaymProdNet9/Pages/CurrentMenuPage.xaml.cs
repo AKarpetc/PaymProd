@@ -970,7 +970,8 @@ public partial class CurrentMenuPage : Page
                     Name = md.Del,
                     Count = md.Countpor,
                     Lcomp = md.Lcomp,
-                    Type = delicate?.Type ?? "Без типа"
+                    Type = delicate?.Type ?? "Без типа",
+                    TypeSortOrder = delicate?.TypeSortOrder ?? 0
                 });
             }
 
