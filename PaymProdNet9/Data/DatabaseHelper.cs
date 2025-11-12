@@ -51,9 +51,21 @@ public static class DatabaseHelper
                 Mera_ID INTEGER PRIMARY KEY AUTOINCREMENT,
                 Name_Mera TEXT NOT NULL,
                 Fass_Def REAL DEFAULT 1,
-                Fass_Izmer TEXT
+                Fass_Izmer TEXT,
+                RoundingPrecision INTEGER DEFAULT 2
             );";
         command.ExecuteNonQuery();
+        
+        // Миграция: добавляем RoundingPrecision, если его нет
+        try
+        {
+            command.CommandText = "ALTER TABLE Mera ADD COLUMN RoundingPrecision INTEGER DEFAULT 2";
+            command.ExecuteNonQuery();
+        }
+        catch
+        {
+            // Колонка уже существует, игнорируем ошибку
+        }
 
         // Создание таблицы типов продуктов
         command.CommandText = @"

@@ -1,8 +1,15 @@
+using ClosedXML.Excel;
+using Microsoft.Win32;
+using PaymProdNet9.Data;
+using PaymProdNet9.Models;
 using PaymProdNet9.Pages;
 using PaymProdNet9.Services;
 using System;
+using System.Collections.ObjectModel;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Documents;
 
 namespace PaymProdNet9;
 
@@ -124,6 +131,156 @@ public partial class MainNavigationWindow : Window
         {
             _activeButton.Background = new System.Windows.Media.SolidColorBrush(
                 (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#2C3E50")!);
+        }
+    }
+
+    /// <summary>
+    /// Получить данные текущего меню для отчетов
+    /// </summary>
+    private (ObservableCollection<MenuDel_act> menuDelicates, List<string> banquetInfo)? GetCurrentMenuData()
+    {
+        try
+        {
+            var menuRepository = new MenuRepository();
+            var openMenu = menuRepository.GetOpenMenu();
+            
+            if (openMenu == null)
+            {
+                MessageBox.Show("Нет открытого меню!\n\nСоздайте или откройте меню для генерации отчета.", 
+                    "Внимание", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return null;
+            }
+
+            var menuDelicates = menuRepository.GetMenuDelicates(openMenu.Id);
+            if (menuDelicates.Count == 0)
+            {
+                MessageBox.Show("В меню нет блюд!\n\nДобавьте блюда в меню для генерации отчета.", 
+                    "Внимание", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return null;
+            }
+
+            var banquetInfo = new List<string>
+            {
+                openMenu.Name ?? "Без названия",
+                openMenu.CountP.ToString(),
+                openMenu.DateBan ?? DateTime.Now.ToString(),
+                openMenu.Detail ?? ""
+            };
+
+            return (menuDelicates, banquetInfo);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Ошибка при получении данных меню: {ex.Message}", 
+                "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+            return null;
+        }
+    }
+
+
+    /// <summary>
+    /// Навигация к отчету по продуктам
+    /// </summary>
+    private void NavigateToProductsReport_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            SetActiveButton(sender as Button);
+            PageTitle.Text = "Отчет по продуктам";
+            
+            var menuData = GetCurrentMenuData();
+            if (menuData == null) return;
+
+            var (menuDelicates, banquetInfo) = menuData.Value;
+
+            // Создаем страницу отчета по продуктам с данными
+            var productsReportPage = new ProductsReportPage
+            {
+                MenuDelicates = menuDelicates,
+                BanquetInfo = banquetInfo
+            };
+
+            // Навигируем к странице отчета
+            NavigationService.Instance.NavigateTo(productsReportPage);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Ошибка при открытии отчета: {ex.Message}", 
+                "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    /// <summary>
+    /// Навигация к сводной таблице
+    /// </summary>
+    private void NavigateToSummaryTable_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            SetActiveButton(sender as Button);
+            PageTitle.Text = "Сводная таблица";
+            
+            var menuData = GetCurrentMenuData();
+            if (menuData == null) return;
+
+            var (menuDelicates, banquetInfo) = menuData.Value;
+
+            // Создаем страницу сводной таблицы с данными
+            var summaryTablePage = new SummaryTablePage
+            {
+                MenuDelicates = menuDelicates,
+                BanquetInfo = banquetInfo
+            };
+
+            // Навигируем к странице сводной таблицы
+            NavigationService.Instance.NavigateTo(summaryTablePage);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Ошибка при открытии сводной таблицы: {ex.Message}", 
+                "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    /// <summary>
+    /// Печать меню
+    /// </summary>
+    private void PrintMenu_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var menuData = GetCurrentMenuData();
+            if (menuData == null) return;
+
+            var (menuDelicates, banquetInfo) = menuData.Value;
+
+            var menuRepository = new MenuRepository();
+            var delicateRepository = new DelicateRepository();
+            var menuPrinter = new MenuPrinter();
+            
+            var menuName = $"{banquetInfo[0]}, {banquetInfo[1]} человек, {banquetInfo[2]}";
+            
+            var delicatesToPrint = new List<DelicatesColl>();
+            foreach (var md in menuDelicates)
+            {
+                // Получаем тип блюда из справочника
+                var delicate = delicateRepository.GetDelicateById(md.Del_id);
+                delicatesToPrint.Add(new DelicatesColl
+                {
+                    Name = md.Del,
+                    Count = md.Countpor,
+                    Lcomp = md.Lcomp,
+                    Type = delicate?.Type ?? "Без типа",
+                    TypeSortOrder = delicate?.TypeSortOrder ?? 0
+                });
+            }
+
+            menuPrinter.PrintMenu(delicatesToPrint, menuName);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Ошибка при печати меню: {ex.Message}", 
+                "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
 }

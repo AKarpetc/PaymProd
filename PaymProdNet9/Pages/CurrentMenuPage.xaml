@@ -30,28 +30,6 @@
                         <TextBlock Text="Обновить" VerticalAlignment="Center"/>
                     </StackPanel>
                 </Button>
-                <Button Style="{StaticResource MaterialDesignRaisedButton}" 
-                        Click="GenerateReport_Click" Margin="5"
-                        Background="#FF9800">
-                    <StackPanel Orientation="Horizontal">
-                        <materialDesign:PackIcon Kind="FileDocument" VerticalAlignment="Center" Margin="0,0,5,0"/>
-                        <TextBlock Text="Генерация отчета" VerticalAlignment="Center"/>
-                    </StackPanel>
-                </Button>
-                <Button Style="{StaticResource MaterialDesignRaisedButton}" 
-                        Click="PrintAllMenu_Click" Margin="5">
-                    <StackPanel Orientation="Horizontal">
-                        <materialDesign:PackIcon Kind="Printer" VerticalAlignment="Center" Margin="0,0,5,0"/>
-                        <TextBlock Text="Печать всех меню" VerticalAlignment="Center"/>
-                    </StackPanel>
-                </Button>
-                <Button Style="{StaticResource MaterialDesignRaisedButton}" 
-                        Click="PrintCurrentMenu_Click" Margin="5">
-                    <StackPanel Orientation="Horizontal">
-                        <materialDesign:PackIcon Kind="PrinterSettings" VerticalAlignment="Center" Margin="0,0,5,0"/>
-                        <TextBlock Text="Печать текущего" VerticalAlignment="Center"/>
-                    </StackPanel>
-                </Button>
             </WrapPanel>
         </materialDesign:Card>
 

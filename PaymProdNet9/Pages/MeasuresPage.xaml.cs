@@ -127,6 +127,20 @@ public partial class MeasuresPage : Page
         MeasureFassTextBox.Text = measure.Fass.ToString();
         MeasureFassIzmerTextBox.Text = measure.FassIzmer;
         
+        // Устанавливаем точность округления
+        foreach (ComboBoxItem item in MeasureRoundingComboBox.Items)
+        {
+            if (item.Tag != null && int.TryParse(item.Tag.ToString(), out int tagValue) && tagValue == measure.RoundingPrecision)
+            {
+                MeasureRoundingComboBox.SelectedItem = item;
+                break;
+            }
+        }
+        if (MeasureRoundingComboBox.SelectedItem == null && MeasureRoundingComboBox.Items.Count > 1)
+        {
+            MeasureRoundingComboBox.SelectedIndex = 1; // По умолчанию до сотых
+        }
+        
         ShowEditView(true);
     }
 
@@ -137,6 +151,7 @@ public partial class MeasuresPage : Page
         MeasureNameTextBox.Clear();
         MeasureFassTextBox.Clear();
         MeasureFassIzmerTextBox.Clear();
+        MeasureRoundingComboBox.SelectedIndex = 1; // По умолчанию до сотых
         
         ShowEditView(false);
         MeasureNameTextBox.Focus();
@@ -185,6 +200,15 @@ public partial class MeasuresPage : Page
 
             var fass = double.TryParse(MeasureFassTextBox.Text, out var f) ? f : 1.0;
             var fassIzmer = MeasureFassIzmerTextBox.Text ?? MeasureNameTextBox.Text;
+            
+            // Получаем точность округления из ComboBox
+            int roundingPrecision = 2; // По умолчанию до сотых
+            if (MeasureRoundingComboBox.SelectedItem is ComboBoxItem selectedItem && 
+                selectedItem.Tag != null && 
+                int.TryParse(selectedItem.Tag.ToString(), out int precision))
+            {
+                roundingPrecision = precision;
+            }
 
             if (_currentMeasureId.HasValue)
             {
@@ -192,7 +216,8 @@ public partial class MeasuresPage : Page
                     _currentMeasureId.Value, 
                     MeasureNameTextBox.Text, 
                     fass, 
-                    fassIzmer);
+                    fassIzmer,
+                    roundingPrecision);
                 
                 MessageBox.Show("Единица измерения обновлена!", 
                     "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -202,7 +227,8 @@ public partial class MeasuresPage : Page
                 _productRepository.AddMeasure(
                     MeasureNameTextBox.Text, 
                     fass, 
-                    fassIzmer);
+                    fassIzmer,
+                    roundingPrecision);
                 
                 MessageBox.Show("Единица измерения создана!", 
                     "Успех", MessageBoxButton.OK, MessageBoxImage.Information);

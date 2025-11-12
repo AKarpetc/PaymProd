@@ -35,8 +35,8 @@
         <TabControl Grid.Row="1" Style="{StaticResource MaterialDesignTabControl}"
                    materialDesign:ColorZoneAssist.Mode="PrimaryMid">
             
-            <!-- Вкладка отчета -->
-            <TabItem Header="Отчет">
+            <!-- Вкладка отчета по продуктам -->
+            <TabItem Header="Отчет по продуктам">
                 <materialDesign:Card Margin="10" Padding="20">
                     <FlowDocumentScrollViewer>
                         <FlowDocument x:Name="ReportDocument">
@@ -44,7 +44,6 @@
                             <Table x:Name="ReportTable" CellSpacing="1" BorderBrush="Black" BorderThickness="1">
                                 <Table.Columns>
                                     <TableColumn Width="3*"/>
-                                    <TableColumn Width="1*"/>
                                     <TableColumn Width="1*"/>
                                 </Table.Columns>
                             </Table>
