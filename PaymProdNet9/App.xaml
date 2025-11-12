@@ -17,6 +17,7 @@
             
             <!-- Converters -->
             <converters:NullToBoolConverter x:Key="NullToBoolConverter"/>
+            <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
             
             <!-- Стили для кнопок в таблицах -->
             <Style x:Key="DeleteButtonStyle" TargetType="Button" BasedOn="{StaticResource MaterialDesignIconButton}">

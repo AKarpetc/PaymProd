@@ -25,6 +25,7 @@ public class MenuDel_act : INotifyPropertyChanged
     private string _sost = string.Empty;
     private decimal _countpor;
     private List<Components> _lcomp = new List<Components>();
+    private bool _isModified;
 
     public int Idmen
     {
@@ -60,6 +61,12 @@ public class MenuDel_act : INotifyPropertyChanged
     {
         get => _lcomp;
         set { _lcomp = value; OnPropertyChanged(nameof(Lcomp)); }
+    }
+
+    public bool IsModified
+    {
+        get => _isModified;
+        set { _isModified = value; OnPropertyChanged(nameof(IsModified)); }
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;

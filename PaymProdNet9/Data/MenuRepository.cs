@@ -172,9 +172,6 @@ public class MenuRepository
         using var connection = DatabaseHelper.GetConnection();
         connection.Open();
         
-        // Получаем компоненты
-        var components = GetAllComponents(connection, menuId);
-        
         // Получаем блюда меню
         var command = connection.CreateCommand();
         command.CommandText = @"
@@ -194,13 +191,26 @@ public class MenuRepository
             var delId = reader.GetInt32(2);
             var ff = reader.GetInt32(5);
             
+            // Получаем компоненты для этого блюда в этом меню (из Components1 или Components)
+            var components = GetMenuDelicateComponents(menuId, delId);
+            
+            // Проверяем, есть ли измененные компоненты в Components1
+            var checkCommand = connection.CreateCommand();
+            checkCommand.CommandText = @"
+                SELECT COUNT(*) FROM Components1 
+                WHERE Idmen = @menuId AND Delic_id = @delicateId";
+            checkCommand.Parameters.AddWithValue("@menuId", menuId);
+            checkCommand.Parameters.AddWithValue("@delicateId", delId);
+            var hasModifiedComponents = Convert.ToInt32(checkCommand.ExecuteScalar()) > 0;
+            
             var menuDel = new MenuDel_act
             {
                 Idmen = reader.GetInt32(0),
                 Del_id = delId,
                 Countpor = reader.GetInt32(3),
                 Del = reader.GetString(4),
-                Lcomp = components.Where(c => c.Delid == delId).ToList()
+                Lcomp = components,
+                IsModified = hasModifiedComponents
             };
 
             // Формируем состав
@@ -345,6 +355,133 @@ public class MenuRepository
             command.CommandText = "UPDATE Menus SET Ifchan = 1 WHERE Id = @menuId";
             command.Parameters.AddWithValue("@menuId", menuId);
             command.ExecuteNonQuery();
+            
+            transaction.Commit();
+        }
+        catch
+        {
+            transaction.Rollback();
+            throw;
+        }
+    }
+    
+    /// <summary>
+    /// Получить компоненты блюда для конкретного меню (сначала из Components1, если нет - из Components)
+    /// </summary>
+    public List<Components> GetMenuDelicateComponents(int menuId, int delicateId)
+    {
+        var components = new List<Components>();
+        
+        using var connection = DatabaseHelper.GetConnection();
+        connection.Open();
+        
+        // Сначала проверяем, есть ли измененные компоненты в Components1
+        var command = connection.CreateCommand();
+        command.CommandText = @"
+            SELECT c1.Comp_Id, c1.Delic_id, c1.ProductID, c1.Ves, 
+                   p.Name as ProdName, 
+                   COALESCE(m.Name_Mera, '') as MeraName
+            FROM Components1 c1
+            INNER JOIN Producrs p ON p.Prod_ID = c1.ProductID
+            LEFT JOIN Mera m ON m.Mera_ID = p.Izmer
+            WHERE c1.Idmen = @menuId AND c1.Delic_id = @delicateId";
+        
+        command.Parameters.AddWithValue("@menuId", menuId);
+        command.Parameters.AddWithValue("@delicateId", delicateId);
+        
+        using var reader = command.ExecuteReader();
+        bool hasCustomComponents = reader.HasRows;
+        
+        if (hasCustomComponents)
+        {
+            // Используем измененные компоненты
+            while (reader.Read())
+            {
+                components.Add(new Components
+                {
+                    Id = reader.GetInt32(0),
+                    Delid = reader.GetInt32(1),
+                    Prodid = reader.GetInt32(2),
+                    Ves = reader.GetDecimal(3),
+                    NameT = reader.GetString(4),
+                    Mera = reader.IsDBNull(5) ? "" : reader.GetString(5)
+                });
+            }
+        }
+        else
+        {
+            // Используем стандартные компоненты из справочника
+            command = connection.CreateCommand();
+            command.CommandText = @"
+                SELECT c.Comp_Id, c.Delic_id, c.ProductID, c.Ves, 
+                       CASE WHEN COALESCE(TRIM(c.Detail), '') = '' THEN p.Name 
+                            ELSE p.Name || '(' || c.Detail || ')' END AS Name,
+                       COALESCE(m.Name_Mera, '') as MeraName
+                FROM Components c
+                INNER JOIN Producrs p ON p.Prod_ID = c.ProductID
+                LEFT JOIN Mera m ON m.Mera_ID = p.Izmer
+                WHERE c.Delic_id = @delicateId";
+            
+            command.Parameters.AddWithValue("@delicateId", delicateId);
+            
+            using var reader2 = command.ExecuteReader();
+            while (reader2.Read())
+            {
+                components.Add(new Components
+                {
+                    Id = reader2.GetInt32(0),
+                    Delid = reader2.GetInt32(1),
+                    Prodid = reader2.GetInt32(2),
+                    Ves = reader2.GetDecimal(3),
+                    NameT = reader2.GetString(4),
+                    Mera = reader2.IsDBNull(5) ? "" : reader2.GetString(5)
+                });
+            }
+        }
+        
+        return components;
+    }
+    
+    /// <summary>
+    /// Сохранить измененные компоненты блюда для конкретного меню в Components1
+    /// </summary>
+    public void SaveMenuDelicateComponents(int menuId, int delicateId, List<Components> components)
+    {
+        using var connection = DatabaseHelper.GetConnection();
+        connection.Open();
+        using var transaction = connection.BeginTransaction();
+        
+        try
+        {
+            // Удаляем старые измененные компоненты для этого блюда в этом меню
+            var deleteCommand = connection.CreateCommand();
+            deleteCommand.CommandText = "DELETE FROM Components1 WHERE Idmen = @menuId AND Delic_id = @delicateId";
+            deleteCommand.Parameters.AddWithValue("@menuId", menuId);
+            deleteCommand.Parameters.AddWithValue("@delicateId", delicateId);
+            deleteCommand.ExecuteNonQuery();
+            
+            // Добавляем новые компоненты
+            foreach (var component in components)
+            {
+                if (component.Ves > 0)
+                {
+                    var insertCommand = connection.CreateCommand();
+                    insertCommand.CommandText = @"
+                        INSERT INTO Components1 (Delic_id, ProductID, Ves, Idmen) 
+                        VALUES (@delicateId, @productId, @ves, @menuId)";
+                    insertCommand.Parameters.AddWithValue("@delicateId", delicateId);
+                    insertCommand.Parameters.AddWithValue("@productId", component.Prodid);
+                    insertCommand.Parameters.AddWithValue("@ves", component.Ves);
+                    insertCommand.Parameters.AddWithValue("@menuId", menuId);
+                    insertCommand.ExecuteNonQuery();
+                }
+            }
+            
+            // Отмечаем меню как измененное
+            var updateCommand = connection.CreateCommand();
+            updateCommand.CommandText = "UPDATE Menus SET Ifchan = 1 WHERE Id = @menuId";
+            updateCommand.Parameters.AddWithValue("@menuId", menuId);
+            updateCommand.ExecuteNonQuery();
             
             transaction.Commit();
         }

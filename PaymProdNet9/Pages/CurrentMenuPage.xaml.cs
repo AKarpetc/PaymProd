@@ -21,6 +21,11 @@ public partial class CurrentMenuPage : Page
     private ObservableCollection<dynamic> _availableDelicates;
     private string _currentTypeFilter = "%";
     private bool _isDataChanged = false;
+    
+    // Для редактирования блюда в меню
+    private int? _editingDelicateId;
+    private ObservableCollection<Components> _editingDelicateComponents;
+    private ObservableCollection<ProductView> _editingAvailableProducts;
 
     public CurrentMenuPage()
     {
@@ -32,7 +37,12 @@ public partial class CurrentMenuPage : Page
         
         _currentMenuDelicates = new ObservableCollection<MenuDel_act>();
         _availableDelicates = new ObservableCollection<dynamic>();
+        _editingDelicateComponents = new ObservableCollection<Components>();
+        _editingAvailableProducts = new ObservableCollection<ProductView>();
+        
         MenuDelicatesDataGrid.ItemsSource = _currentMenuDelicates;
+        EditDelicateComponentsGrid.ItemsSource = _editingDelicateComponents;
+        EditAvailableProductsList.ItemsSource = _editingAvailableProducts;
     }
 
     private void Page_Loaded(object sender, RoutedEventArgs e)
@@ -550,6 +560,223 @@ public partial class CurrentMenuPage : Page
     private string GetCurrentTypeFilter()
     {
         return _currentTypeFilter;
+    }
+
+    /// <summary>
+    /// Редактирование блюда в меню
+    /// </summary>
+    private void EditDelicateInMenu_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            if (!_currentMenuId.HasValue)
+            {
+                MessageBox.Show("Сначала создайте или откройте меню!", 
+                    "Внимание", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            var button = sender as Button;
+            var delicate = button?.DataContext as MenuDel_act;
+            if (delicate == null) return;
+
+            _editingDelicateId = delicate.Del_id;
+            
+            // Загружаем название блюда
+            EditDelicateNameText.Text = delicate.Del;
+            EditDelicateTitle.Text = $"Редактирование блюда: {delicate.Del}";
+            
+            // Загружаем компоненты блюда для этого меню
+            LoadEditingDelicateComponents();
+            
+            // Загружаем доступные продукты
+            LoadEditingAvailableProducts();
+            
+            // Показываем панель редактирования
+            EditDelicateInMenuPanel.Visibility = Visibility.Visible;
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Ошибка при открытии редактирования: {ex.Message}", 
+                "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+    
+    /// <summary>
+    /// Загрузка компонентов редактируемого блюда
+    /// </summary>
+    private void LoadEditingDelicateComponents()
+    {
+        try
+        {
+            _editingDelicateComponents.Clear();
+            
+            if (!_currentMenuId.HasValue || !_editingDelicateId.HasValue) return;
+            
+            // Получаем компоненты для этого меню (из Components1 или Components)
+            var components = _menuRepository.GetMenuDelicateComponents(
+                _currentMenuId.Value, 
+                _editingDelicateId.Value);
+            
+            foreach (var component in components)
+            {
+                _editingDelicateComponents.Add(component);
+            }
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Ошибка при загрузке компонентов: {ex.Message}", 
+                "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+    
+    /// <summary>
+    /// Загрузка доступных продуктов для редактирования
+    /// </summary>
+    private void LoadEditingAvailableProducts()
+    {
+        try
+        {
+            _editingAvailableProducts.Clear();
+            var products = _productRepository.GetAllProducts();
+            foreach (var product in products)
+            {
+                _editingAvailableProducts.Add(product);
+            }
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Ошибка при загрузке продуктов: {ex.Message}", 
+                "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+    
+    /// <summary>
+    /// Поиск продуктов при редактировании
+    /// </summary>
+    private void EditProductSearch_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        var searchText = EditProductSearchBox.Text.ToLower();
+        if (string.IsNullOrWhiteSpace(searchText))
+        {
+            LoadEditingAvailableProducts();
+            return;
+        }
+        
+        try
+        {
+            _editingAvailableProducts.Clear();
+            var allProducts = _productRepository.GetAllProducts();
+            var filtered = allProducts.Where(p => 
+                p.Name.ToLower().Contains(searchText) || 
+                (p.Type != null && p.Type.ToLower().Contains(searchText))
+            );
+            
+            foreach (var product in filtered)
+            {
+                _editingAvailableProducts.Add(product);
+            }
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Ошибка при поиске продуктов: {ex.Message}", 
+                "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+    
+    /// <summary>
+    /// Добавление продукта в состав редактируемого блюда
+    /// </summary>
+    private void AddProductToEditDelicate_Click(object sender, RoutedEventArgs e)
+    {
+        if (EditAvailableProductsList.SelectedItem is ProductView selectedProduct)
+        {
+            if (_editingDelicateComponents.Any(c => c.Prodid == selectedProduct.ID))
+            {
+                MessageBox.Show("Этот продукт уже добавлен в состав", "Внимание", 
+                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            var component = new Components
+            {
+                Prodid = selectedProduct.ID,
+                NameT = selectedProduct.Name,
+                Ves = 0,
+                Mera = selectedProduct.IzName
+            };
+
+            _editingDelicateComponents.Add(component);
+        }
+        else
+        {
+            MessageBox.Show("Выберите продукт из списка", "Внимание", 
+                MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+    }
+    
+    /// <summary>
+    /// Удаление продукта из состава редактируемого блюда
+    /// </summary>
+    private void RemoveProductFromEditDelicate_Click(object sender, RoutedEventArgs e)
+    {
+        if (EditDelicateComponentsGrid.SelectedItem is Components selectedComponent)
+        {
+            _editingDelicateComponents.Remove(selectedComponent);
+        }
+        else
+        {
+            MessageBox.Show("Выберите продукт из состава", "Внимание", 
+                MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+    }
+    
+    /// <summary>
+    /// Сохранение изменений блюда в меню
+    /// </summary>
+    private void SaveEditDelicateInMenu_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            if (!_currentMenuId.HasValue || !_editingDelicateId.HasValue)
+            {
+                MessageBox.Show("Ошибка: не выбрано меню или блюдо", 
+                    "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            // Сохраняем измененные компоненты в Components1
+            _menuRepository.SaveMenuDelicateComponents(
+                _currentMenuId.Value,
+                _editingDelicateId.Value,
+                _editingDelicateComponents.ToList());
+
+            // Закрываем панель редактирования
+            EditDelicateInMenuPanel.Visibility = Visibility.Collapsed;
+            
+            // Обновляем список меню
+            LoadMenu(_currentMenuId.Value);
+            _isDataChanged = true;
+            
+            MessageBox.Show("Изменения сохранены! Блюдо помечено как измененное в этом меню.", 
+                "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Ошибка при сохранении изменений: {ex.Message}", 
+                "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+    
+    /// <summary>
+    /// Отмена редактирования блюда в меню
+    /// </summary>
+    private void CancelEditDelicateInMenu_Click(object sender, RoutedEventArgs e)
+    {
+        EditDelicateInMenuPanel.Visibility = Visibility.Collapsed;
+        _editingDelicateId = null;
+        _editingDelicateComponents.Clear();
+        EditProductSearchBox.Clear();
     }
 
     /// <summary>
