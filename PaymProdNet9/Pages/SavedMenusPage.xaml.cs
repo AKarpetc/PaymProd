@@ -1,6 +1,7 @@
 using PaymProdNet9.Data;
 using PaymProdNet9.Models;
 using System;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -34,6 +35,37 @@ public partial class SavedMenusPage : Page
         catch (Exception ex)
         {
             MessageBox.Show($"Ошибка при загрузке списка меню: {ex.Message}", 
+                "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+    
+    /// <summary>
+    /// Поиск по сохраненным меню
+    /// </summary>
+    private void MenuSearch_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        var searchText = MenuSearchBox.Text.ToLower();
+        
+        if (string.IsNullOrWhiteSpace(searchText))
+        {
+            LoadSavedMenus();
+            return;
+        }
+        
+        try
+        {
+            var allMenus = _menuRepository.GetAllMenus();
+            var filtered = allMenus.Where(m => 
+                (m.Name != null && m.Name.ToLower().Contains(searchText)) || 
+                (m.Detail != null && m.Detail.ToLower().Contains(searchText)) ||
+                (m.DateBan != null && m.DateBan.ToLower().Contains(searchText))
+            );
+            
+            SavedMenusDataGrid.ItemsSource = filtered.ToList();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Ошибка при поиске меню: {ex.Message}", 
                 "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }

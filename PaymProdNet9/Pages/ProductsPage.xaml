@@ -16,25 +16,43 @@
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
 
-            <!-- Кнопка создания нового продукта -->
+            <!-- Кнопка создания нового продукта и поиск -->
             <materialDesign:Card Grid.Row="0" Margin="10,10,10,5" Padding="10">
-                <Button Content="➕ Создать новый продукт" 
-                        Style="{StaticResource MaterialDesignRaisedButton}"
-                        materialDesign:ButtonAssist.CornerRadius="8"
-                        Background="#4CAF50"
-                        BorderBrush="#4CAF50"
-                        Foreground="White"
-                        Click="NewProduct_Click"
-                        Padding="25,15"
-                        FontSize="15"
-                        FontWeight="SemiBold"
-                        HorizontalAlignment="Left"
-                        MinHeight="50"
-                        ToolTip="Создать новый продукт">
-                    <Button.Effect>
-                        <DropShadowEffect Color="#4CAF50" BlurRadius="8" ShadowDepth="2" Opacity="0.3"/>
-                    </Button.Effect>
-                </Button>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    
+                    <Button Grid.Column="0"
+                            Content="➕ Создать новый продукт" 
+                            Style="{StaticResource MaterialDesignRaisedButton}"
+                            materialDesign:ButtonAssist.CornerRadius="8"
+                            Background="#4CAF50"
+                            BorderBrush="#4CAF50"
+                            Foreground="White"
+                            Click="NewProduct_Click"
+                            Padding="25,15"
+                            FontSize="15"
+                            FontWeight="SemiBold"
+                            HorizontalAlignment="Left"
+                            MinHeight="50"
+                            ToolTip="Создать новый продукт"
+                            Margin="0,0,15,0">
+                        <Button.Effect>
+                            <DropShadowEffect Color="#4CAF50" BlurRadius="8" ShadowDepth="2" Opacity="0.3"/>
+                        </Button.Effect>
+                    </Button>
+                    
+                    <TextBox Grid.Column="1"
+                             x:Name="ProductSearchBox"
+                             materialDesign:HintAssist.Hint="Поиск..."
+                             Style="{StaticResource MaterialDesignOutlinedTextBox}"
+                             VerticalAlignment="Center"
+                             FontSize="14"
+                             TextChanged="ProductSearch_TextChanged"
+                             HorizontalAlignment="Stretch"/>
+                </Grid>
             </materialDesign:Card>
 
             <!-- Таблица всех продуктов -->
@@ -58,33 +76,33 @@
                               materialDesign:DataGridAssist.ColumnHeaderPadding="8"
                               FontSize="13">
                         <DataGrid.Columns>
-                            <DataGridTemplateColumn Width="60" Header="">
+                            <DataGridTemplateColumn Width="50" Header="">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
                                         <Button Style="{StaticResource DeleteButtonStyle}"
                                                 Click="DeleteProduct_Click"
-                                                Width="32"
-                                                Height="32"
+                                                Width="24"
+                                                Height="24"
                                                 ToolTip="Удалить продукт">
                                             <materialDesign:PackIcon Kind="Delete" 
-                                                                     Width="18" 
-                                                                     Height="18"/>
+                                                                     Width="14" 
+                                                                     Height="14"/>
                                         </Button>
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
 
-                            <DataGridTemplateColumn Width="60" Header="">
+                            <DataGridTemplateColumn Width="50" Header="">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
                                         <Button Style="{StaticResource EditButtonStyle}"
                                                 Click="EditProduct_Click"
-                                                Width="32"
-                                                Height="32"
+                                                Width="24"
+                                                Height="24"
                                                 ToolTip="Редактировать продукт">
                                             <materialDesign:PackIcon Kind="Pencil" 
-                                                                     Width="18" 
-                                                                     Height="18"/>
+                                                                     Width="14" 
+                                                                     Height="14"/>
                                         </Button>
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
@@ -92,7 +110,7 @@
 
                             <DataGridTextColumn Header="Название" Binding="{Binding Name}" Width="2*"/>
                             <DataGridTextColumn Header="Тип" Binding="{Binding Type}" Width="*"/>
-                            <DataGridTextColumn Header="Единица измерения" Binding="{Binding Measure}" Width="*"/>
+                            <DataGridTextColumn Header="Единица измерения" Binding="{Binding IzName}" Width="*"/>
                         </DataGrid.Columns>
                     </DataGrid>
                 </Grid>

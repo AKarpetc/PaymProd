@@ -206,8 +206,12 @@
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
                                         <Button Style="{StaticResource DeleteButtonStyle}"
-                                              Click="DeleteDelicateFromMenu_Click">
-                                            <materialDesign:PackIcon Kind="Delete"/>
+                                              Click="DeleteDelicateFromMenu_Click"
+                                              Width="24"
+                                              Height="24">
+                                            <materialDesign:PackIcon Kind="Delete" 
+                                                                     Width="14" 
+                                                                     Height="14"/>
                                         </Button>
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>

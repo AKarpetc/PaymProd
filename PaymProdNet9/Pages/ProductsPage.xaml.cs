@@ -95,6 +95,38 @@ public partial class ProductsPage : Page
                 "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
+    
+    private void ProductSearch_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        var searchText = ProductSearchBox.Text.ToLower();
+        
+        if (string.IsNullOrWhiteSpace(searchText))
+        {
+            LoadProducts();
+            return;
+        }
+        
+        try
+        {
+            _allProducts.Clear();
+            var allProducts = _productRepository.GetAllProducts();
+            var filtered = allProducts.Where(p => 
+                p.Name.ToLower().Contains(searchText) || 
+                (p.Type != null && p.Type.ToLower().Contains(searchText)) ||
+                (p.IzName != null && p.IzName.ToLower().Contains(searchText))
+            );
+            
+            foreach (var product in filtered)
+            {
+                _allProducts.Add(product);
+            }
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Ошибка при поиске продуктов: {ex.Message}", 
+                "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
 
     private void LoadProductTypes()
     {

@@ -98,6 +98,37 @@ public partial class DelicatesPage : Page
                 "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
+    
+    private void DelicateSearch_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        var searchText = DelicateSearchBox.Text.ToLower();
+        
+        if (string.IsNullOrWhiteSpace(searchText))
+        {
+            LoadDelicates();
+            return;
+        }
+        
+        try
+        {
+            _allDelicates.Clear();
+            var allDelicates = _delicateRepository.GetAllDelicates();
+            var filtered = allDelicates.Where(d => 
+                d.Name.ToLower().Contains(searchText) || 
+                (d.Type != null && d.Type.ToLower().Contains(searchText))
+            ).OrderByDescending(d => d.Id);
+            
+            foreach (var delicate in filtered)
+            {
+                _allDelicates.Add(delicate);
+            }
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Ошибка при поиске блюд: {ex.Message}", 
+                "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
 
     private void LoadProducts()
     {
