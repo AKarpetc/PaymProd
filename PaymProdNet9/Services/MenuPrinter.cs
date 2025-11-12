@@ -65,11 +65,11 @@ public class MenuPrinter
 
                 foreach (var group in groupedDelicates)
                 {
-                    // Заголовок группы
+                    // Заголовок группы (тип блюда)
                     var headerRow = new TableRow();
                     var headerCell = new TableCell();
                     var headerCellProperties = new TableCellProperties(
-                        new GridSpan { Val = 3 },
+                        new GridSpan { Val = 2 },
                         new Shading { Fill = "D3D3D3" }
                     );
                     headerCell.Append(headerCellProperties);
@@ -78,7 +78,7 @@ public class MenuPrinter
                     var headerRun = new Run();
                     var headerRunProps = new RunProperties(new Bold(), new FontSize { Val = "28" });
                     headerRun.Append(headerRunProps);
-                    headerRun.Append(new Text(group.Key));
+                    headerRun.Append(new Text(group.Key ?? "Без типа"));
                     headerParagraph.Append(headerRun);
                     headerCell.Append(headerParagraph);
                     headerRow.Append(headerCell);
@@ -102,6 +102,9 @@ public class MenuPrinter
                             var fassIzmer = component.FassIz;
                             var ves = component.Ves * delicate.Count;
                             
+                            // Используем NameT (название продукта) вместо Name
+                            var productName = !string.IsNullOrEmpty(component.NameT) ? component.NameT : component.Name;
+                            
                             if (fass > 0)
                             {
                                 var fassSumm = Math.Round(ves / fass, 2);
@@ -110,11 +113,11 @@ public class MenuPrinter
                                     fassSumm = ves;
                                     fassIzmer = component.Mera;
                                 }
-                                composition += $"{component.Name}({fassSumm}{fassIzmer}), ";
+                                composition += $"{productName}({fassSumm}{fassIzmer}), ";
                             }
                             else
                             {
-                                composition += $"{component.Name}({ves}{component.Mera}), ";
+                                composition += $"{productName}({ves}{component.Mera}), ";
                             }
                         }
                         
@@ -124,16 +127,6 @@ public class MenuPrinter
                         var compositionCell = new TableCell();
                         compositionCell.Append(new Paragraph(new Run(new Text(composition))));
                         row.Append(compositionCell);
-                        
-                        // Вес/количество
-                        var weightInfo = delicate.Ves > 0 
-                            ? $"{delicate.Ves}г" 
-                            : delicate.Count > 0 
-                                ? "Порция" 
-                                : "";
-                        var weightCell = new TableCell();
-                        weightCell.Append(new Paragraph(new Run(new Text(weightInfo))));
-                        row.Append(weightCell);
                         
                         table.Append(row);
                     }

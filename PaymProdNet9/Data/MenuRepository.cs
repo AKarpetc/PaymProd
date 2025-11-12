@@ -1,6 +1,7 @@
 using Microsoft.Data.Sqlite;
 using PaymProdNet9.Models;
 using System.Collections.ObjectModel;
+using System.Linq;
 
 namespace PaymProdNet9.Data;
 
@@ -191,17 +192,33 @@ public class MenuRepository
             var delId = reader.GetInt32(2);
             var ff = reader.GetInt32(5);
             
-            // Получаем компоненты для этого блюда в этом меню (из Components1 или Components)
-            var components = GetMenuDelicateComponents(menuId, delId);
+            // Получаем компоненты из Components1 (измененные) и Components (справочник)
+            var customComponents = GetCustomComponents(connection, menuId, delId);
+            var standardComponents = GetStandardComponents(connection, delId);
             
-            // Проверяем, есть ли измененные компоненты в Components1
-            var checkCommand = connection.CreateCommand();
-            checkCommand.CommandText = @"
-                SELECT COUNT(*) FROM Components1 
-                WHERE Idmen = @menuId AND Delic_id = @delicateId";
-            checkCommand.Parameters.AddWithValue("@menuId", menuId);
-            checkCommand.Parameters.AddWithValue("@delicateId", delId);
-            var hasModifiedComponents = Convert.ToInt32(checkCommand.ExecuteScalar()) > 0;
+            // Определяем, изменено ли блюдо
+            bool isModified = false;
+            if (customComponents.Count > 0)
+            {
+                // Если есть измененные компоненты, сравниваем со справочником
+                isModified = !AreComponentsEqual(customComponents, standardComponents);
+                
+                // Если компоненты совпадают со справочником, удаляем записи из Components1
+                if (!isModified)
+                {
+                    var deleteCommand = connection.CreateCommand();
+                    deleteCommand.CommandText = @"
+                        DELETE FROM Components1 
+                        WHERE Idmen = @menuId AND Delic_id = @delicateId";
+                    deleteCommand.Parameters.AddWithValue("@menuId", menuId);
+                    deleteCommand.Parameters.AddWithValue("@delicateId", delId);
+                    deleteCommand.ExecuteNonQuery();
+                }
+            }
+            // Если customComponents пустой, значит блюдо не изменено (isModified = false)
+            
+            // Используем измененные компоненты, если они есть, иначе стандартные
+            var components = customComponents.Count > 0 ? customComponents : standardComponents;
             
             var menuDel = new MenuDel_act
             {
@@ -210,7 +227,7 @@ public class MenuRepository
                 Countpor = reader.GetInt32(3),
                 Del = reader.GetString(4),
                 Lcomp = components,
-                IsModified = hasModifiedComponents
+                IsModified = isModified
             };
 
             // Формируем состав
@@ -380,7 +397,12 @@ public class MenuRepository
         command.CommandText = @"
             SELECT c1.Comp_Id, c1.Delic_id, c1.ProductID, c1.Ves, 
                    p.Name as ProdName, 
-                   COALESCE(m.Name_Mera, '') as MeraName
+                   COALESCE(m.Name_Mera, '') as MeraName,
+                   CASE WHEN p.Fass = 0 THEN COALESCE(m.Fass_Def, 1) 
+                        ELSE COALESCE(COALESCE(p.Fass, m.Fass_Def), 1) END as Fass,
+                   COALESCE(CASE WHEN p.Izmer = p.Ves THEN m.Fass_Izmer 
+                            ELSE (SELECT m2.Name_Mera FROM Mera m2 WHERE m2.Mera_ID = p.Izmer) END, 
+                           (SELECT m2.Name_Mera FROM Mera m2 WHERE m2.Mera_ID = p.Izmer)) as FassIzmer
             FROM Components1 c1
             INNER JOIN Producrs p ON p.Prod_ID = c1.ProductID
             LEFT JOIN Mera m ON m.Mera_ID = p.Izmer
@@ -404,7 +426,9 @@ public class MenuRepository
                     Prodid = reader.GetInt32(2),
                     Ves = reader.GetDecimal(3),
                     NameT = reader.GetString(4),
-                    Mera = reader.IsDBNull(5) ? "" : reader.GetString(5)
+                    Mera = reader.IsDBNull(5) ? "" : reader.GetString(5),
+                    Fass = reader.GetDecimal(6),
+                    FassIz = reader.IsDBNull(7) ? "" : reader.GetString(7)
                 });
             }
         }
@@ -416,7 +440,12 @@ public class MenuRepository
                 SELECT c.Comp_Id, c.Delic_id, c.ProductID, c.Ves, 
                        CASE WHEN COALESCE(TRIM(c.Detail), '') = '' THEN p.Name 
                             ELSE p.Name || '(' || c.Detail || ')' END AS Name,
-                       COALESCE(m.Name_Mera, '') as MeraName
+                       COALESCE(m.Name_Mera, '') as MeraName,
+                       CASE WHEN p.Fass = 0 THEN COALESCE(m.Fass_Def, 1) 
+                            ELSE COALESCE(COALESCE(p.Fass, m.Fass_Def), 1) END as Fass,
+                       COALESCE(CASE WHEN p.Izmer = p.Ves THEN m.Fass_Izmer 
+                                ELSE (SELECT m2.Name_Mera FROM Mera m2 WHERE m2.Mera_ID = p.Izmer) END, 
+                               (SELECT m2.Name_Mera FROM Mera m2 WHERE m2.Mera_ID = p.Izmer)) as FassIzmer
                 FROM Components c
                 INNER JOIN Producrs p ON p.Prod_ID = c.ProductID
                 LEFT JOIN Mera m ON m.Mera_ID = p.Izmer
@@ -434,12 +463,129 @@ public class MenuRepository
                     Prodid = reader2.GetInt32(2),
                     Ves = reader2.GetDecimal(3),
                     NameT = reader2.GetString(4),
-                    Mera = reader2.IsDBNull(5) ? "" : reader2.GetString(5)
+                    Mera = reader2.IsDBNull(5) ? "" : reader2.GetString(5),
+                    Fass = reader2.GetDecimal(6),
+                    FassIz = reader2.IsDBNull(7) ? "" : reader2.GetString(7)
                 });
             }
         }
         
         return components;
+    }
+    
+    /// <summary>
+    /// Получить измененные компоненты из Components1 для конкретного меню
+    /// </summary>
+    private List<Components> GetCustomComponents(SqliteConnection connection, int menuId, int delicateId)
+    {
+        var components = new List<Components>();
+        
+        var command = connection.CreateCommand();
+        command.CommandText = @"
+            SELECT c1.Comp_Id, c1.Delic_id, c1.ProductID, c1.Ves, 
+                   p.Name as ProdName, 
+                   COALESCE(m.Name_Mera, '') as MeraName,
+                   CASE WHEN p.Fass = 0 THEN COALESCE(m.Fass_Def, 1) 
+                        ELSE COALESCE(COALESCE(p.Fass, m.Fass_Def), 1) END as Fass,
+                   COALESCE(CASE WHEN p.Izmer = p.Ves THEN m.Fass_Izmer 
+                            ELSE (SELECT m2.Name_Mera FROM Mera m2 WHERE m2.Mera_ID = p.Izmer) END, 
+                           (SELECT m2.Name_Mera FROM Mera m2 WHERE m2.Mera_ID = p.Izmer)) as FassIzmer
+            FROM Components1 c1
+            INNER JOIN Producrs p ON p.Prod_ID = c1.ProductID
+            LEFT JOIN Mera m ON m.Mera_ID = p.Izmer
+            WHERE c1.Idmen = @menuId AND c1.Delic_id = @delicateId";
+        
+        command.Parameters.AddWithValue("@menuId", menuId);
+        command.Parameters.AddWithValue("@delicateId", delicateId);
+        
+        using var reader = command.ExecuteReader();
+        while (reader.Read())
+        {
+            components.Add(new Components
+            {
+                Id = reader.GetInt32(0),
+                Delid = reader.GetInt32(1),
+                Prodid = reader.GetInt32(2),
+                Ves = reader.GetDecimal(3),
+                NameT = reader.GetString(4),
+                Mera = reader.IsDBNull(5) ? "" : reader.GetString(5),
+                Fass = reader.GetDecimal(6),
+                FassIz = reader.IsDBNull(7) ? "" : reader.GetString(7)
+            });
+        }
+        
+        return components;
+    }
+    
+    /// <summary>
+    /// Получить стандартные компоненты из Components (справочник)
+    /// </summary>
+    private List<Components> GetStandardComponents(SqliteConnection connection, int delicateId)
+    {
+        var components = new List<Components>();
+        
+        var command = connection.CreateCommand();
+        command.CommandText = @"
+            SELECT c.Comp_Id, c.Delic_id, c.ProductID, c.Ves, 
+                   CASE WHEN COALESCE(TRIM(c.Detail), '') = '' THEN p.Name 
+                        ELSE p.Name || '(' || c.Detail || ')' END AS Name,
+                   COALESCE(m.Name_Mera, '') as MeraName,
+                   CASE WHEN p.Fass = 0 THEN COALESCE(m.Fass_Def, 1) 
+                        ELSE COALESCE(COALESCE(p.Fass, m.Fass_Def), 1) END as Fass,
+                   COALESCE(CASE WHEN p.Izmer = p.Ves THEN m.Fass_Izmer 
+                            ELSE (SELECT m2.Name_Mera FROM Mera m2 WHERE m2.Mera_ID = p.Izmer) END, 
+                           (SELECT m2.Name_Mera FROM Mera m2 WHERE m2.Mera_ID = p.Izmer)) as FassIzmer
+            FROM Components c
+            INNER JOIN Producrs p ON p.Prod_ID = c.ProductID
+            LEFT JOIN Mera m ON m.Mera_ID = p.Izmer
+            WHERE c.Delic_id = @delicateId";
+        
+        command.Parameters.AddWithValue("@delicateId", delicateId);
+        
+        using var reader = command.ExecuteReader();
+        while (reader.Read())
+        {
+            components.Add(new Components
+            {
+                Id = reader.GetInt32(0),
+                Delid = reader.GetInt32(1),
+                Prodid = reader.GetInt32(2),
+                Ves = reader.GetDecimal(3),
+                NameT = reader.GetString(4),
+                Mera = reader.IsDBNull(5) ? "" : reader.GetString(5),
+                Fass = reader.GetDecimal(6),
+                FassIz = reader.IsDBNull(7) ? "" : reader.GetString(7)
+            });
+        }
+        
+        return components;
+    }
+    
+    /// <summary>
+    /// Сравнить два списка компонентов (продукты и вес должны совпадать)
+    /// </summary>
+    private bool AreComponentsEqual(List<Components> list1, List<Components> list2)
+    {
+        if (list1.Count != list2.Count)
+            return false;
+        
+        // Сортируем по ProductID для сравнения
+        var sorted1 = list1.OrderBy(c => c.Prodid).ThenBy(c => c.Ves).ToList();
+        var sorted2 = list2.OrderBy(c => c.Prodid).ThenBy(c => c.Ves).ToList();
+        
+        for (int i = 0; i < sorted1.Count; i++)
+        {
+            if (sorted1[i].Prodid != sorted2[i].Prodid)
+                return false;
+            
+            // Сравниваем вес с точностью до 2 знаков после запятой
+            var weightDiff = sorted1[i].Ves - sorted2[i].Ves;
+            if (weightDiff < 0) weightDiff = -weightDiff;
+            if (weightDiff > 0.01m)
+                return false;
+        }
+        
+        return true;
     }
     
     /// <summary>
@@ -477,9 +623,26 @@ public class MenuRepository
                 }
             }
             
-            // Отмечаем меню как измененное
+            // Проверяем, совпадают ли сохраненные компоненты со справочником
+            var savedComponents = GetCustomComponents(connection, menuId, delicateId);
+            var standardComponents = GetStandardComponents(connection, delicateId);
+            
+            bool isModified = !AreComponentsEqual(savedComponents, standardComponents);
+            
+            // Если компоненты совпадают со справочником, удаляем их из Components1
+            if (!isModified && savedComponents.Count > 0)
+            {
+                var deleteCommand2 = connection.CreateCommand();
+                deleteCommand2.CommandText = "DELETE FROM Components1 WHERE Idmen = @menuId AND Delic_id = @delicateId";
+                deleteCommand2.Parameters.AddWithValue("@menuId", menuId);
+                deleteCommand2.Parameters.AddWithValue("@delicateId", delicateId);
+                deleteCommand2.ExecuteNonQuery();
+            }
+            
+            // Отмечаем меню как измененное только если компоненты действительно отличаются
             var updateCommand = connection.CreateCommand();
-            updateCommand.CommandText = "UPDATE Menus SET Ifchan = 1 WHERE Id = @menuId";
+            updateCommand.CommandText = "UPDATE Menus SET Ifchan = @ifchan WHERE Id = @menuId";
+            updateCommand.Parameters.AddWithValue("@ifchan", isModified ? 1 : 0);
             updateCommand.Parameters.AddWithValue("@menuId", menuId);
             updateCommand.ExecuteNonQuery();
             

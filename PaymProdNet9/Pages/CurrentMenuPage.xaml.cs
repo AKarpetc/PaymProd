@@ -960,12 +960,19 @@ public partial class CurrentMenuPage : Page
             var menuPrinter = new MenuPrinter();
             var menuName = $"{BanquetNameTextBox.Text}, {PeopleCountTextBox.Text} человек, {BanquetDatePicker.SelectedDate?.ToShortDateString()}";
             
-            var delicatesToPrint = _currentMenuDelicates.Select(md => new DelicatesColl
+            var delicatesToPrint = new List<DelicatesColl>();
+            foreach (var md in _currentMenuDelicates)
             {
-                Name = md.Del,
-                Count = md.Countpor,
-                Lcomp = md.Lcomp
-            }).ToList();
+                // Получаем тип блюда из справочника
+                var delicate = _delicateRepository.GetDelicateById(md.Del_id);
+                delicatesToPrint.Add(new DelicatesColl
+                {
+                    Name = md.Del,
+                    Count = md.Countpor,
+                    Lcomp = md.Lcomp,
+                    Type = delicate?.Type ?? "Без типа"
+                });
+            }
 
             menuPrinter.PrintMenu(delicatesToPrint, menuName);
         }
