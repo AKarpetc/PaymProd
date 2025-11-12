@@ -162,12 +162,23 @@
                                             <TextBlock Grid.Row="1" Text="{Binding Sost}" 
                                                      TextWrapping="Wrap" Opacity="0.7" Margin="0,5,0,5"/>
                                             <StackPanel Grid.Row="2" Orientation="Horizontal">
-                                                <TextBox Width="80" 
+                                                <TextBox x:Name="QuantityTextBox"
+                                                       Width="80" 
                                                        materialDesign:HintAssist.Hint="Кол-во"
                                                        PreviewTextInput="NumericTextBox_PreviewTextInput"
+                                                       TextChanged="QuantityTextBox_TextChanged"
                                                        Tag="{Binding}"/>
                                                 <TextBlock VerticalAlignment="Center" Margin="5,0,0,0"
                                                          Text="{Binding WeightInfo}"/>
+                                                <Button Style="{StaticResource MaterialDesignFloatingActionMiniButton}"
+                                                      Click="AddDelicateToMenu_Click"
+                                                      Tag="{Binding}"
+                                                      Margin="10,0,0,0"
+                                                      ToolTip="Добавить в меню"
+                                                      IsEnabled="False"
+                                                      x:Name="AddButton">
+                                                    <materialDesign:PackIcon Kind="Plus" Width="20" Height="20"/>
+                                                </Button>
                                             </StackPanel>
                                         </Grid>
                                     </materialDesign:Card>

@@ -55,6 +55,26 @@ public partial class MainNavigationWindow : Window
         NavigationService.Instance.NavigateTo<ProductsPage>();
     }
 
+    private void NavigateToMeasures_Click(object sender, RoutedEventArgs e)
+    {
+        SetActiveButton(sender as Button);
+        PageTitle.Text = "Единицы измерения";
+        NavigationService.Instance.NavigateTo<MeasuresPage>();
+    }
+
+    private void NavigateToProductTypes_Click(object sender, RoutedEventArgs e)
+    {
+        SetActiveButton(sender as Button);
+        PageTitle.Text = "Типы продуктов";
+        NavigationService.Instance.NavigateTo<ProductTypesPage>();
+    }
+
+    private void NavigateToDelicateTypes_Click(object sender, RoutedEventArgs e)
+    {
+        SetActiveButton(sender as Button);
+        PageTitle.Text = "Типы блюд";
+        NavigationService.Instance.NavigateTo<DelicateTypesPage>();
+    }
 
     private void NavigateToDatabase_Click(object sender, RoutedEventArgs e)
     {

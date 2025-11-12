@@ -141,6 +141,45 @@
                             </StackPanel>
                         </Button>
 
+                        <Button x:Name="MeasuresButton"
+                                Style="{StaticResource NavButtonStyle}"
+                                Click="NavigateToMeasures_Click">
+                            <StackPanel Orientation="Horizontal">
+                                <materialDesign:PackIcon Kind="Ruler" 
+                                                        Width="24" 
+                                                        Height="24" 
+                                                        VerticalAlignment="Center"
+                                                        Margin="0,0,15,0"/>
+                                <TextBlock Text="Единицы измерения" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+
+                        <Button x:Name="ProductTypesButton"
+                                Style="{StaticResource NavButtonStyle}"
+                                Click="NavigateToProductTypes_Click">
+                            <StackPanel Orientation="Horizontal">
+                                <materialDesign:PackIcon Kind="Tag" 
+                                                        Width="24" 
+                                                        Height="24" 
+                                                        VerticalAlignment="Center"
+                                                        Margin="0,0,15,0"/>
+                                <TextBlock Text="Типы продуктов" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+
+                        <Button x:Name="DelicateTypesButton"
+                                Style="{StaticResource NavButtonStyle}"
+                                Click="NavigateToDelicateTypes_Click">
+                            <StackPanel Orientation="Horizontal">
+                                <materialDesign:PackIcon Kind="Label" 
+                                                        Width="24" 
+                                                        Height="24" 
+                                                        VerticalAlignment="Center"
+                                                        Margin="0,0,15,0"/>
+                                <TextBlock Text="Типы блюд" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+
                         <Separator Background="#34495E" Margin="10,5"/>
 
                         <!-- База данных -->

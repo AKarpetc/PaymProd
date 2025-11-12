@@ -363,6 +363,40 @@ public class DelicateRepository
         
         return Convert.ToInt32(command.ExecuteScalar());
     }
+    
+    /// <summary>
+    /// Обновить тип блюда
+    /// </summary>
+    public void UpdateDelicateType(int id, string name)
+    {
+        using var connection = DatabaseHelper.GetConnection();
+        connection.Open();
+        
+        var command = connection.CreateCommand();
+        command.CommandText = @"
+            UPDATE Type_Del 
+            SET Type_del_opis = @name
+            WHERE Type_Del_ID = @id";
+        command.Parameters.AddWithValue("@id", id);
+        command.Parameters.AddWithValue("@name", name);
+        
+        command.ExecuteNonQuery();
+    }
+    
+    /// <summary>
+    /// Удалить тип блюда
+    /// </summary>
+    public bool DeleteDelicateType(int id)
+    {
+        using var connection = DatabaseHelper.GetConnection();
+        connection.Open();
+        
+        var command = connection.CreateCommand();
+        command.CommandText = "DELETE FROM Type_Del WHERE Type_Del_ID = @id";
+        command.Parameters.AddWithValue("@id", id);
+        
+        return command.ExecuteNonQuery() > 0;
+    }
 
     /// <summary>
     /// Получить список блюд для меню (доступные для добавления)

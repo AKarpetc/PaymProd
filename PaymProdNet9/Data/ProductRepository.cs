@@ -277,5 +277,75 @@ public class ProductRepository
         
         return Convert.ToInt32(command.ExecuteScalar());
     }
+    
+    /// <summary>
+    /// Обновить единицу измерения
+    /// </summary>
+    public void UpdateMeasure(int id, string name, double fassDef, string fassIzmer)
+    {
+        using var connection = DatabaseHelper.GetConnection();
+        connection.Open();
+        
+        var command = connection.CreateCommand();
+        command.CommandText = @"
+            UPDATE Mera 
+            SET Name_Mera = @name, Fass_Def = @fassDef, Fass_Izmer = @fassIzmer
+            WHERE Mera_ID = @id";
+        command.Parameters.AddWithValue("@id", id);
+        command.Parameters.AddWithValue("@name", name);
+        command.Parameters.AddWithValue("@fassDef", fassDef);
+        command.Parameters.AddWithValue("@fassIzmer", fassIzmer);
+        
+        command.ExecuteNonQuery();
+    }
+    
+    /// <summary>
+    /// Удалить единицу измерения
+    /// </summary>
+    public bool DeleteMeasure(int id)
+    {
+        using var connection = DatabaseHelper.GetConnection();
+        connection.Open();
+        
+        var command = connection.CreateCommand();
+        command.CommandText = "DELETE FROM Mera WHERE Mera_ID = @id";
+        command.Parameters.AddWithValue("@id", id);
+        
+        return command.ExecuteNonQuery() > 0;
+    }
+    
+    /// <summary>
+    /// Обновить тип продукта
+    /// </summary>
+    public void UpdateProductType(int id, string name)
+    {
+        using var connection = DatabaseHelper.GetConnection();
+        connection.Open();
+        
+        var command = connection.CreateCommand();
+        command.CommandText = @"
+            UPDATE Produkt_Type 
+            SET Type_Opis = @name
+            WHERE TypeProdId = @id";
+        command.Parameters.AddWithValue("@id", id);
+        command.Parameters.AddWithValue("@name", name);
+        
+        command.ExecuteNonQuery();
+    }
+    
+    /// <summary>
+    /// Удалить тип продукта
+    /// </summary>
+    public bool DeleteProductType(int id)
+    {
+        using var connection = DatabaseHelper.GetConnection();
+        connection.Open();
+        
+        var command = connection.CreateCommand();
+        command.CommandText = "DELETE FROM Produkt_Type WHERE TypeProdId = @id";
+        command.Parameters.AddWithValue("@id", id);
+        
+        return command.ExecuteNonQuery() > 0;
+    }
 }
 

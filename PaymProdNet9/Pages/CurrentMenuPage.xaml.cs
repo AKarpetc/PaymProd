@@ -18,6 +18,8 @@ public partial class CurrentMenuPage : Page
     
     private int? _currentMenuId;
     private ObservableCollection<MenuDel_act> _currentMenuDelicates;
+    private ObservableCollection<dynamic> _availableDelicates;
+    private string _currentTypeFilter = "%";
     private bool _isDataChanged = false;
 
     public CurrentMenuPage()
@@ -29,6 +31,7 @@ public partial class CurrentMenuPage : Page
         _productRepository = new ProductRepository();
         
         _currentMenuDelicates = new ObservableCollection<MenuDel_act>();
+        _availableDelicates = new ObservableCollection<dynamic>();
         MenuDelicatesDataGrid.ItemsSource = _currentMenuDelicates;
     }
 
@@ -150,8 +153,22 @@ public partial class CurrentMenuPage : Page
         {
             var delicates = _delicateRepository.GetAvailableDelicatesForMenu(typeFilter);
             
+            // Получаем список ID блюд, уже добавленных в текущее меню
+            var addedDelicateIds = new HashSet<int>();
+            if (_currentMenuId.HasValue)
+            {
+                var menuDelicates = _menuRepository.GetMenuDelicates(_currentMenuId.Value);
+                foreach (var md in menuDelicates)
+                {
+                    addedDelicateIds.Add(md.Del_id);
+                }
+            }
+            
+            // Исключаем уже добавленные блюда
+            var availableDelicates = delicates.Where(d => !addedDelicateIds.Contains(d.Id)).ToList();
+            
             // Получаем компоненты для каждого блюда
-            foreach (var delicate in delicates)
+            foreach (var delicate in availableDelicates)
             {
                 var delicateWithComponents = _delicateRepository.GetDelicateById(delicate.Id);
                 if (delicateWithComponents != null)
@@ -161,7 +178,8 @@ public partial class CurrentMenuPage : Page
             }
 
             // Конвертируем в формат для отображения
-            var displayDelicates = delicates.Select(d => new
+            _availableDelicates.Clear();
+            var displayDelicates = availableDelicates.Select(d => new
             {
                 Del = d.Name,
                 Sost = d.Lcomp.Any() 
@@ -172,7 +190,12 @@ public partial class CurrentMenuPage : Page
                 DefaultCount = PeopleCountTextBox.Text
             }).ToList();
 
-            AvailableDelicatesPanel.ItemsSource = displayDelicates;
+            foreach (var item in displayDelicates)
+            {
+                _availableDelicates.Add(item);
+            }
+
+            AvailableDelicatesPanel.ItemsSource = _availableDelicates;
         }
         catch (Exception ex)
         {
@@ -189,8 +212,8 @@ public partial class CurrentMenuPage : Page
         var button = sender as Button;
         if (button?.Tag == null) return;
 
-        var filter = button.Tag.ToString() ?? "%";
-        LoadAvailableDelicates(filter);
+        _currentTypeFilter = button.Tag.ToString() ?? "%";
+        LoadAvailableDelicates(_currentTypeFilter);
     }
 
     /// <summary>
@@ -281,7 +304,7 @@ public partial class CurrentMenuPage : Page
             var textBox = FindVisualChild<TextBox>(card);
             if (textBox == null || string.IsNullOrWhiteSpace(textBox.Text)) return;
 
-            if (!int.TryParse(textBox.Text, out int count))
+            if (!int.TryParse(textBox.Text, out int count) || count <= 0)
             {
                 MessageBox.Show("Некорректно введено количество!", 
                     "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
@@ -292,7 +315,134 @@ public partial class CurrentMenuPage : Page
             int delicateId = (int)data.DelicateId;
             _menuRepository.AddDelicateToMenu(_currentMenuId.Value, delicateId, count);
             
-            // Обновляем список
+            // Удаляем блюдо из списка доступных
+            var itemToRemove = _availableDelicates.FirstOrDefault(d => (int)d.DelicateId == delicateId);
+            if (itemToRemove != null)
+            {
+                _availableDelicates.Remove(itemToRemove);
+            }
+            
+            // Очищаем поле количества
+            textBox.Clear();
+            
+            // Обновляем список меню
+            LoadMenu(_currentMenuId.Value);
+            _isDataChanged = true;
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Ошибка при добавлении блюда: {ex.Message}", 
+                "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    /// <summary>
+    /// Обработчик изменения текста в поле количества - включает/выключает кнопку добавления
+    /// </summary>
+    private void QuantityTextBox_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        var textBox = sender as TextBox;
+        if (textBox == null) return;
+
+        // Находим родительский элемент (StackPanel)
+        var parent = textBox.Parent as FrameworkElement;
+        if (parent == null) return;
+
+        // Находим кнопку добавления (с иконкой Plus) в том же StackPanel
+        var addButton = FindAddButton(parent);
+        if (addButton != null)
+        {
+            // Включаем кнопку только если введено число больше 0
+            bool hasValidValue = !string.IsNullOrWhiteSpace(textBox.Text) &&
+                                int.TryParse(textBox.Text, out int count) && count > 0;
+            addButton.IsEnabled = hasValidValue;
+        }
+    }
+
+    /// <summary>
+    /// Поиск кнопки добавления (с иконкой Plus) в визуальном дереве
+    /// </summary>
+    private Button? FindAddButton(DependencyObject parent)
+    {
+        for (int i = 0; i < System.Windows.Media.VisualTreeHelper.GetChildrenCount(parent); i++)
+        {
+            var child = System.Windows.Media.VisualTreeHelper.GetChild(parent, i);
+            
+            if (child is Button button)
+            {
+                // Проверяем, есть ли в кнопке PackIcon с Kind="Plus"
+                var packIcon = FindVisualChild<MaterialDesignThemes.Wpf.PackIcon>(button);
+                if (packIcon != null && packIcon.Kind == MaterialDesignThemes.Wpf.PackIconKind.Plus)
+                {
+                    return button;
+                }
+            }
+            
+            var result = FindAddButton(child);
+            if (result != null)
+            {
+                return result;
+            }
+        }
+        return null;
+    }
+
+    /// <summary>
+    /// Добавление блюда в меню по кнопке плюсика
+    /// </summary>
+    private void AddDelicateToMenu_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            if (!_currentMenuId.HasValue)
+            {
+                MessageBox.Show("Сначала создайте или откройте меню!", 
+                    "Внимание", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            var button = sender as Button;
+            if (button == null) return;
+            
+            var data = button.DataContext as dynamic;
+            if (data == null) return;
+
+            // Находим родительский элемент (StackPanel)
+            var parent = button.Parent as FrameworkElement;
+            if (parent == null) return;
+
+            // Находим TextBox с количеством
+            var textBox = FindVisualChild<TextBox>(parent);
+            if (textBox == null || string.IsNullOrWhiteSpace(textBox.Text))
+            {
+                MessageBox.Show("Введите количество!", 
+                    "Внимание", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            if (!int.TryParse(textBox.Text, out int count) || count <= 0)
+            {
+                MessageBox.Show("Некорректно введено количество!", 
+                    "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            // Добавляем блюдо в меню
+            int delicateId = (int)data.DelicateId;
+            _menuRepository.AddDelicateToMenu(_currentMenuId.Value, delicateId, count);
+            
+            // Удаляем блюдо из списка доступных
+            var itemToRemove = _availableDelicates.FirstOrDefault(d => (int)d.DelicateId == delicateId);
+            if (itemToRemove != null)
+            {
+                _availableDelicates.Remove(itemToRemove);
+            }
+            
+            // Очищаем поле количества
+            textBox.Clear();
+            button.IsEnabled = false;
+            
+            // Обновляем список меню
             LoadMenu(_currentMenuId.Value);
             _isDataChanged = true;
         }
@@ -319,8 +469,14 @@ public partial class CurrentMenuPage : Page
             
             if (result == MessageBoxResult.Yes)
             {
+                var delicateId = delicate.Del_id;
+                
                 _menuRepository.RemoveDelicateFromMenu(delicate.Idmen);
                 _currentMenuDelicates.Remove(delicate);
+                
+                // Возвращаем блюдо в список доступных
+                ReturnDelicateToAvailableList(delicateId);
+                
                 _isDataChanged = true;
             }
         }
@@ -329,6 +485,71 @@ public partial class CurrentMenuPage : Page
             MessageBox.Show($"Ошибка при удалении блюда: {ex.Message}", 
                 "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
         }
+    }
+    
+    /// <summary>
+    /// Возвращает блюдо в список доступных после удаления из меню
+    /// </summary>
+    private void ReturnDelicateToAvailableList(int delicateId)
+    {
+        try
+        {
+            // Проверяем, не добавлено ли уже это блюдо
+            var exists = _availableDelicates.Any(d => (int)d.DelicateId == delicateId);
+            if (exists) return;
+            
+            // Получаем информацию о блюде
+            var delicate = _delicateRepository.GetDelicateById(delicateId);
+            if (delicate == null) return;
+            
+            // Получаем текущий фильтр типа
+            var currentFilter = GetCurrentTypeFilter();
+            
+            // Проверяем, соответствует ли блюдо текущему фильтру
+            if (!string.IsNullOrEmpty(currentFilter) && currentFilter != "%")
+            {
+                if (delicate.IDType.HasValue)
+                {
+                    var delicateType = _delicateRepository.GetDelicateTypes()
+                        .FirstOrDefault(t => t.Id == delicate.IDType.Value);
+                    if (delicateType == null || delicateType.Name != currentFilter)
+                    {
+                        return; // Блюдо не соответствует текущему фильтру
+                    }
+                }
+                else
+                {
+                    return; // У блюда нет типа
+                }
+            }
+            
+            // Создаем объект для отображения
+            var displayDelicate = new
+            {
+                Del = delicate.Name,
+                Sost = delicate.Lcomp != null && delicate.Lcomp.Any() 
+                    ? "Состав: " + string.Join(", ", delicate.Lcomp.Select(c => c.Name)) 
+                    : "Без состава",
+                WeightInfo = delicate.Ves > 0 ? $"{delicate.Ves}г" : delicate.Count > 0 ? "Порция" : "",
+                DelicateId = delicate.Id,
+                DefaultCount = PeopleCountTextBox.Text
+            };
+            
+            _availableDelicates.Add(displayDelicate);
+        }
+        catch (Exception ex)
+        {
+            // Игнорируем ошибки при возврате блюда в список
+            System.Diagnostics.Debug.WriteLine($"Ошибка при возврате блюда в список: {ex.Message}");
+        }
+    }
+    
+    /// <summary>
+    /// Получает текущий активный фильтр типа блюд
+    /// </summary>
+    private string GetCurrentTypeFilter()
+    {
+        return _currentTypeFilter;
     }
 
     /// <summary>
