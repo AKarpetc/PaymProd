@@ -46,15 +46,24 @@ public partial class ProductsReportPage : Page
         {
             ReportDocument.Blocks.Clear();
 
-            var headerParagraph = new Paragraph(new Run(
-                $"Банкет: {_banquetInfo[0]}\n" +
-                $"Начало: {_banquetInfo[2]}\n" +
-                $"Количество гостей: {_banquetInfo[1]} человек"))
+            var headerParagraph = new Paragraph();
+            headerParagraph.Inlines.Add(new Run("Отчет по продуктам")
             {
-                TextAlignment = TextAlignment.Center,
-                FontSize = 16,
+                FontSize = 18,
                 FontWeight = FontWeights.Bold
-            };
+            });
+            headerParagraph.Inlines.Add(new LineBreak());
+            headerParagraph.Inlines.Add(new Run($"Банкет: {_banquetInfo[0]}"));
+            headerParagraph.Inlines.Add(new LineBreak());
+            var dateText = DateTime.TryParse(_banquetInfo[2], out var date)
+                ? date.ToString("dd.MM.yyyy")
+                : _banquetInfo[2];
+            headerParagraph.Inlines.Add(new Run($"Дата: {dateText}"));
+            headerParagraph.Inlines.Add(new LineBreak());
+            headerParagraph.Inlines.Add(new Run($"Количество гостей: {_banquetInfo[1]} человек"));
+            headerParagraph.TextAlignment = TextAlignment.Center;
+            headerParagraph.FontSize = 16;
+            headerParagraph.FontWeight = FontWeights.Bold;
             ReportDocument.Blocks.Add(headerParagraph);
             ReportDocument.Blocks.Add(new Paragraph()); // пустая строка
 

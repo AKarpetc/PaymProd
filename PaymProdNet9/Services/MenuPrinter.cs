@@ -1,37 +1,38 @@
+using System.Diagnostics;
+using System.IO;
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
 using PaymProdNet9.Data;
 using PaymProdNet9.Models;
-using System.Diagnostics;
-using System.IO;
 
 namespace PaymProdNet9.Services;
 
 /// <summary>
-/// Класс для печати меню в формате Word
+///     Класс для печати меню в формате Word
 /// </summary>
 public class MenuPrinter
 {
     private readonly ProductRepository _productRepository;
-    
+
     public MenuPrinter()
     {
         _productRepository = new ProductRepository();
     }
+
     /// <summary>
-    /// Печать меню
+    ///     Печать меню
     /// </summary>
     public void PrintMenu(List<DelicatesColl> delicates, string menuName)
     {
         try
         {
             var fileName = Path.Combine(Path.GetTempPath(), $"Menu_{DateTime.Now:yyyyMMdd_HHmmss}.docx");
-            
+
             // Группируем блюда по типам и сортируем по SortOrder
             var groupedDelicates = delicates
                 .Where(d => d.Lcomp != null && d.Lcomp.Any())
-                .GroupBy(d => new { Type = d.Type, SortOrder = d.TypeSortOrder })
+                .GroupBy(d => new { d.Type, SortOrder = d.TypeSortOrder })
                 .OrderBy(g => g.Key.SortOrder)
                 .ThenBy(g => g.Key.Type);
 
@@ -49,7 +50,7 @@ public class MenuPrinter
                 titleRunProperties.AppendChild(new Bold());
                 titleRunProperties.AppendChild(new FontSize { Val = "32" });
                 titleRun.AppendChild(new Text($"Меню: {menuName}"));
-                
+
                 var titleProperties = titleParagraph.AppendChild(new ParagraphProperties());
                 titleProperties.AppendChild(new Justification { Val = JustificationValues.Center });
 
@@ -57,7 +58,7 @@ public class MenuPrinter
 
                 // Создаем таблицу
                 var table = new Table();
-                
+
                 // Свойства таблицы
                 var tableProperties = new TableProperties(
                     new TableBorders(
@@ -81,7 +82,7 @@ public class MenuPrinter
                         new Shading { Fill = "D3D3D3" }
                     );
                     headerCell.Append(headerCellProperties);
-                    
+
                     var headerParagraph = new Paragraph();
                     var headerRun = new Run();
                     var headerRunProps = new RunProperties(new Bold(), new FontSize { Val = "28" });
@@ -96,12 +97,12 @@ public class MenuPrinter
                     foreach (var delicate in group)
                     {
                         var row = new TableRow();
-                        
+
                         // Название блюда
                         var nameCell = new TableCell();
                         nameCell.Append(new Paragraph(new Run(new Text(delicate.Name))));
                         row.Append(nameCell);
-                        
+
                         // Состав
                         var composition = "Состав: ";
                         foreach (var component in delicate.Lcomp)
@@ -109,10 +110,10 @@ public class MenuPrinter
                             var fass = component.Fass;
                             var fassIzmer = component.FassIz;
                             var ves = component.Ves * delicate.Count;
-                            
+
                             // Используем NameT (название продукта) вместо Name
                             var productName = !string.IsNullOrEmpty(component.NameT) ? component.NameT : component.Name;
-                            
+
                             if (fass > 0)
                             {
                                 var fassSumm = Math.Round(ves / fass, 2);
@@ -121,6 +122,7 @@ public class MenuPrinter
                                     fassSumm = ves;
                                     fassIzmer = component.Mera;
                                 }
+
                                 composition += $"{productName}({fassSumm}{fassIzmer}), ";
                             }
                             else
@@ -128,14 +130,14 @@ public class MenuPrinter
                                 composition += $"{productName}({ves}{component.Mera}), ";
                             }
                         }
-                        
+
                         if (composition.EndsWith(", "))
                             composition = composition.Substring(0, composition.Length - 2);
-                        
+
                         var compositionCell = new TableCell();
                         compositionCell.Append(new Paragraph(new Run(new Text(composition))));
                         row.Append(compositionCell);
-                        
+
                         table.Append(row);
                     }
                 }
@@ -154,7 +156,7 @@ public class MenuPrinter
     }
 
     /// <summary>
-    /// Печать отчета с продуктами
+    ///     Печать отчета с продуктами
     /// </summary>
     public void PrintReport(List<DelicatesCollForSvod> reportData, string menuName)
     {
@@ -165,28 +167,26 @@ public class MenuPrinter
             // Получаем все меры для определения округления
             var measures = _productRepository.GetMeasures();
             var measuresDict = measures.ToDictionary(m => m.Name.ToLower().Trim(), m => m);
-            
+
             // Функция для поиска меры по имени (с учетом вариаций)
             Measure? FindMeasure(string? measureName)
             {
                 if (string.IsNullOrEmpty(measureName)) return null;
-                
+
                 var lowerName = measureName.ToLower().Trim();
-                
+
                 // Прямое совпадение
                 if (measuresDict.ContainsKey(lowerName))
                     return measuresDict[lowerName];
-                
+
                 // Поиск по частичному совпадению
                 foreach (var measure in measures)
-                {
                     if (lowerName.Contains(measure.Name.ToLower()) || measure.Name.ToLower().Contains(lowerName))
                         return measure;
-                }
-                
+
                 return null;
             }
-            
+
             // Получаем типы продуктов для сортировки
             var productTypes = _productRepository.GetProductTypes();
             var productTypesDict = productTypes.ToDictionary(pt => pt.Name, pt => pt.SortOrder);
@@ -197,16 +197,20 @@ public class MenuPrinter
                 mainPart.Document = new Document();
                 var body = mainPart.Document.AppendChild(new Body());
 
-                // Заголовок
-                var titleParagraph = body.AppendChild(new Paragraph());
-                var titleRun = titleParagraph.AppendChild(new Run());
-                var titleRunProperties = titleRun.AppendChild(new RunProperties());
-                titleRunProperties.AppendChild(new Bold());
-                titleRunProperties.AppendChild(new FontSize { Val = "32" });
-                titleRun.AppendChild(new Text($"Отчет по меню: {menuName}"));
-                
-                var titleProperties = titleParagraph.AppendChild(new ParagraphProperties());
-                titleProperties.AppendChild(new Justification { Val = JustificationValues.Center });
+                var titleParagraph = body.AppendChild(new Paragraph(
+                    new ParagraphProperties(new Justification { Val = JustificationValues.Center }),
+                    new Run(new RunProperties(new Bold(), new FontSize { Val = "32" }),
+                        new Text("Отчет по продуктам"))
+                ));
+
+                var infoParagraph = body.AppendChild(new Paragraph(
+                    new ParagraphProperties(new Justification { Val = JustificationValues.Center })
+                ));
+                infoParagraph.AppendChild(new Run(new Text($"Банкет: {menuName}")));
+                infoParagraph.AppendChild(new Break());
+                var dateRun = new Run();
+                dateRun.AppendChild(new Text($"Дата: {DateTime.Now:dd.MM.yyyy}"));
+                infoParagraph.AppendChild(dateRun);
 
                 body.AppendChild(new Paragraph()); // Пустая строка
 
@@ -219,15 +223,7 @@ public class MenuPrinter
                 var table = new Table(
                     new TableProperties(
                         new TableWidth { Type = TableWidthUnitValues.Dxa, Width = "9000" },
-                        new TableJustification { Val = TableRowAlignmentValues.Center },
-                        new TableBorders(
-                            new TopBorder { Val = BorderValues.None },
-                            new BottomBorder { Val = BorderValues.None },
-                            new LeftBorder { Val = BorderValues.None },
-                            new RightBorder { Val = BorderValues.None },
-                            new InsideHorizontalBorder { Val = BorderValues.None },
-                            new InsideVerticalBorder { Val = BorderValues.None }
-                        )
+                        new TableJustification { Val = TableRowAlignmentValues.Center }
                     ),
                     new TableGrid(
                         new GridColumn { Width = "2800" },
@@ -240,135 +236,108 @@ public class MenuPrinter
                     )
                 );
 
-                for (int i = 0; i < groupedList.Count; i++)
+                var rows = new List<TempRow>();
+                foreach (var t in groupedList)
                 {
-                    AppendTypeSection(table, groupedList[i], i);
-                    table.Append(CreateSpacerRow());
+                    rows.AddRange(AppendTypeSection(t));
+                    rows.AddRange(CreateSpacerRow());
                 }
+
+                var rowsMiddleNumber = rows.Count / 2;
+
+                var left = rows.GetRange(0, rowsMiddleNumber);
+                var right = rows.GetRange(rowsMiddleNumber, rows.Count - rowsMiddleNumber);
+
+                var count = left.Count > right.Count ? left.Count : right.Count;
+
+                for (var i = 0; i < count; i++)
+                {
+                    var leftRow = left.Count <= i ? null : left[i];
+                    var rightRow = right.Count <= i ? null : right[i];
+
+                    var row = new TableRow();
+
+                    if (leftRow != null) row.Append(leftRow.Cells.ToArray());
+                    
+                    row.Append(CreateCell(string.Empty, false,null,JustificationValues.Center));
+
+                    if (rightRow != null) row.Append(rightRow.Cells.ToArray());
+
+                    table.Append(row);
+                }
+
 
                 body.Append(table);
                 mainPart.Document.Save();
 
                 Process.Start(new ProcessStartInfo(fileName) { UseShellExecute = true });
 
-                void AppendTypeSection(Table tbl, IGrouping<string, DelicatesCollForSvod> group, int index)
+                List<TempRow> AppendTypeSection(IGrouping<string, DelicatesCollForSvod> groupLeft)
                 {
-                    bool isLeft = index % 2 == 0;
-                    int startCol = isLeft ? 0 : 4;
+                    var rows = new List<TempRow>();
+                    rows.AddRange(CreateHeaderRow(groupLeft.Key));
 
-                    tbl.Append(CreateHeaderRow(group.Key, startCol));
+                    var groupedProductsLeft = GetGroupedProductsLeft(groupLeft).ToArray();
 
-                    var groupedProducts = group
-                        .GroupBy(r => r.NameT ?? r.Name)
-                        .Select(g => new
-                        {
-                            Name = g.Key,
-                            TotalWeight = g.Sum(r => r.Fass > 0 ? r.ItogFass : r.Itog),
-                            FassIz = g.First().FassIz ?? g.First().Mera ?? "",
-                            Mera = g.First().Mera ?? "",
-                            Fass = g.First().Fass
-                        })
-                        .OrderBy(p => p.Name);
-
-                    foreach (var product in groupedProducts)
+                    foreach (var product in groupedProductsLeft)
                     {
                         var (amountText, unitText) = FormatAmount(product);
-                        tbl.Append(CreateProductRow(product.Name, amountText, unitText, startCol));
+                        rows.AddRange(CreateProductRow(product.Name, amountText, unitText));
                     }
+
+                    return rows;
                 }
 
-                TableRow CreateHeaderRow(string typeName, int startCol)
+                TempRow CreateHeaderRow(string typeName)
                 {
-                    var row = new TableRow();
-                    for (int col = 0; col < 7; col++)
+                    var row = new TempRow();
+
+                    row.AddCell(CreateCell(typeName, true, "E3EAF2", JustificationValues.Center));
+                    row.AddCell(CreateCell(" ", true, "E3EAF2", JustificationValues.Left));
+                    row.AddCell(CreateCell(" ", true, "E3EAF2", JustificationValues.Left));
+                    return row;
+                }
+
+                TempRow CreateProductRow(params string?[] values)
+                {
+                    var texts = values.Select((value, index) => new { Value = value, Index = index })
+                        .ToDictionary(item => item.Index, item => item.Value ?? string.Empty);
+
+                    var row = new TempRow();
+                    for (var col = 0; col < 3; col++)
                     {
-                        string text = string.Empty;
-                        bool bold = false;
-                        string? shading = null;
-                        var justify = JustificationValues.Left;
+                        var justify = JustificationValues.Center;
+                        var text = texts.GetValueOrDefault(col) ?? string.Empty;
 
-                        if (col == startCol)
-                        {
-                            text = typeName;
-                            bold = true;
-                            shading = "E3EAF2";
-                        }
-                        else if (col == startCol + 1)
-                        {
-                            text = "Кол-во";
-                            bold = true;
-                            shading = "DDEBF7";
-                            justify = JustificationValues.Center;
-                        }
-                        else if (col == startCol + 2)
-                        {
-                            text = "ед.";
-                            bold = true;
-                            shading = "DDEBF7";
-                            justify = JustificationValues.Center;
-                        }
-
-                        row.Append(CreateCell(text, bold, shading, justify));
+                        row.AddCell(CreateCell(text, false, null, justify));
                     }
 
                     return row;
                 }
 
-                TableRow CreateProductRow(string name, string amount, string unit, int startCol)
+                TempRow CreateSpacerRow()
                 {
-                    var row = new TableRow();
-                    for (int col = 0; col < 7; col++)
-                    {
-                        string text = string.Empty;
-                        var justify = JustificationValues.Left;
+                    var spacerRow = new TempRow();
+                    spacerRow.AddCell(CreateCell(" ", false, null, JustificationValues.Left));
+                    spacerRow.AddCell(CreateCell(" ", false, null, JustificationValues.Left));
+                    spacerRow.AddCell(CreateCell(" ", false, null, JustificationValues.Left));
 
-                        if (col == startCol)
-                        {
-                            text = name;
-                        }
-                        else if (col == startCol + 1)
-                        {
-                            text = amount;
-                            justify = JustificationValues.Center;
-                        }
-                        else if (col == startCol + 2)
-                        {
-                            text = unit;
-                            justify = JustificationValues.Center;
-                        }
 
-                        row.Append(CreateCell(text, false, null, justify));
-                    }
-
-                    return row;
-                }
-
-                TableRow CreateSpacerRow()
-                {
-                    var spacerCell = CreateCell(" ", false, null, JustificationValues.Left, span: 7);
-                    spacerCell.TableCellProperties ??= new TableCellProperties();
-                    spacerCell.TableCellProperties.TableCellBorders = new TableCellBorders(
-                        new TopBorder { Val = BorderValues.None },
-                        new BottomBorder { Val = BorderValues.None },
-                        new LeftBorder { Val = BorderValues.None },
-                        new RightBorder { Val = BorderValues.None }
-                    );
-                    return new TableRow(spacerCell);
+                    return spacerRow;
                 }
 
                 (string amount, string unit) FormatAmount(dynamic product)
                 {
                     string measureUnit = product.Fass > 0 && !string.IsNullOrEmpty(product.FassIz)
                         ? product.FassIz
-                        : (!string.IsNullOrEmpty(product.Mera) ? product.Mera : "шт");
+                        : !string.IsNullOrEmpty(product.Mera)
+                            ? product.Mera
+                            : "шт";
 
-                    if (string.IsNullOrEmpty(measureUnit))
-                    {
-                        measureUnit = "шт";
-                    }
+                    if (string.IsNullOrEmpty(measureUnit)) measureUnit = "шт";
 
-                    double totalValue = (double)product.TotalWeight;
-                    bool convertedToKg = false;
+                    var totalValue = (double)product.TotalWeight;
+                    var convertedToKg = false;
                     string? mera = product.Mera;
                     string? fassIz = product.FassIz;
 
@@ -376,14 +345,15 @@ public class MenuPrinter
                         !string.IsNullOrEmpty(mera) &&
                         !string.IsNullOrEmpty(fassIz) &&
                         (mera.ToLower().Contains("г") || mera.ToLower().Contains("грамм") || mera.ToLower() == "г") &&
-                        (fassIz.ToLower().Contains("кг") || fassIz.ToLower().Contains("kg") || fassIz.ToLower() == "кг"))
+                        (fassIz.ToLower().Contains("кг") || fassIz.ToLower().Contains("kg") ||
+                         fassIz.ToLower() == "кг"))
                     {
                         totalValue /= 1000.0;
                         measureUnit = "кг";
                         convertedToKg = true;
                     }
 
-                    int roundingPrecision = 2;
+                    var roundingPrecision = 2;
                     var measure = FindMeasure(measureUnit);
                     if (measure != null)
                     {
@@ -392,10 +362,7 @@ public class MenuPrinter
                     else if (!convertedToKg)
                     {
                         measure = FindMeasure(product.Mera);
-                        if (measure != null)
-                        {
-                            roundingPrecision = measure.RoundingPrecision;
-                        }
+                        if (measure != null) roundingPrecision = measure.RoundingPrecision;
                     }
 
                     double roundedValue;
@@ -405,11 +372,11 @@ public class MenuPrinter
                     }
                     else
                     {
-                        double multiplier = Math.Pow(10, roundingPrecision);
+                        var multiplier = Math.Pow(10, roundingPrecision);
                         roundedValue = Math.Ceiling(totalValue * multiplier) / multiplier;
                     }
 
-                    string formattedNumber = roundingPrecision == 0
+                    var formattedNumber = roundingPrecision == 0
                         ? ((int)roundedValue).ToString()
                         : roundedValue.ToString($"F{roundingPrecision}");
 
@@ -429,9 +396,8 @@ public class MenuPrinter
                     var props = new TableCellProperties();
                     if (span > 1) props.Append(new GridSpan { Val = span });
                     if (!string.IsNullOrEmpty(shading))
-                    {
                         props.Append(new Shading { Fill = shading, Val = ShadingPatternValues.Clear });
-                    }
+
                     cell.Append(props);
                     return cell;
                 }
@@ -442,5 +408,41 @@ public class MenuPrinter
             throw new Exception($"Ошибка при создании отчета: {ex.Message}", ex);
         }
     }
+
+    private static IOrderedEnumerable<GroupedProduct> GetGroupedProductsLeft(
+        IGrouping<string, DelicatesCollForSvod> groupLeft)
+    {
+        var groupedProductsLeft = groupLeft
+            .GroupBy(r => r.NameT ?? r.Name)
+            .Select(g => new GroupedProduct
+            {
+                Name = g.Key,
+                TotalWeight = g.Sum(r => r.Fass > 0 ? r.ItogFass : r.Itog),
+                FassIz = g.First().FassIz,
+                Mera = g.First().Mera,
+                Fass = g.First().Fass
+            })
+            .OrderBy(p => p.Name);
+
+        return groupedProductsLeft;
+    }
 }
 
+public record GroupedProduct
+{
+    public string Name { get; init; }
+    public decimal TotalWeight { get; init; }
+    public string FassIz { get; init; }
+    public string Mera { get; init; }
+    public decimal Fass { get; init; }
+}
+
+public record TempRow
+{
+    public List<TableCell> Cells { get; } = [];
+
+    public void AddCell(TableCell cell)
+    {
+        Cells.Add(cell);
+    }
+}
