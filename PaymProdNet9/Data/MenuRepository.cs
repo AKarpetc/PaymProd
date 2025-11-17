@@ -402,10 +402,12 @@ public class MenuRepository
                         ELSE COALESCE(COALESCE(p.Fass, m.Fass_Def), 1) END as Fass,
                    COALESCE(CASE WHEN p.Izmer = p.Ves THEN m.Fass_Izmer 
                             ELSE (SELECT m2.Name_Mera FROM Mera m2 WHERE m2.Mera_ID = p.Izmer) END, 
-                           (SELECT m2.Name_Mera FROM Mera m2 WHERE m2.Mera_ID = p.Izmer)) as FassIzmer
+                           (SELECT m2.Name_Mera FROM Mera m2 WHERE m2.Mera_ID = p.Izmer)) as FassIzmer,
+                   pt.Type_Opis
             FROM Components1 c1
             INNER JOIN Producrs p ON p.Prod_ID = c1.ProductID
             LEFT JOIN Mera m ON m.Mera_ID = p.Izmer
+            INNER JOIN Produkt_Type pt ON p.Type = pt.TypeProdId
             WHERE c1.Idmen = @menuId AND c1.Delic_id = @delicateId";
         
         command.Parameters.AddWithValue("@menuId", menuId);
@@ -428,7 +430,8 @@ public class MenuRepository
                     NameT = reader.GetString(4),
                     Mera = reader.IsDBNull(5) ? "" : reader.GetString(5),
                     Fass = reader.GetDecimal(6),
-                    FassIz = reader.IsDBNull(7) ? "" : reader.GetString(7)
+                    FassIz = reader.IsDBNull(7) ? "" : reader.GetString(7),
+                    Type = reader.GetString(8)
                 });
             }
         }
@@ -445,10 +448,12 @@ public class MenuRepository
                             ELSE COALESCE(COALESCE(p.Fass, m.Fass_Def), 1) END as Fass,
                        COALESCE(CASE WHEN p.Izmer = p.Ves THEN m.Fass_Izmer 
                                 ELSE (SELECT m2.Name_Mera FROM Mera m2 WHERE m2.Mera_ID = p.Izmer) END, 
-                               (SELECT m2.Name_Mera FROM Mera m2 WHERE m2.Mera_ID = p.Izmer)) as FassIzmer
+                               (SELECT m2.Name_Mera FROM Mera m2 WHERE m2.Mera_ID = p.Izmer)) as FassIzmer,
+                       pt.Type_Opis
                 FROM Components c
                 INNER JOIN Producrs p ON p.Prod_ID = c.ProductID
                 LEFT JOIN Mera m ON m.Mera_ID = p.Izmer
+                INNER JOIN Produkt_Type pt ON p.Type = pt.TypeProdId
                 WHERE c.Delic_id = @delicateId";
             
             command.Parameters.AddWithValue("@delicateId", delicateId);
@@ -489,10 +494,12 @@ public class MenuRepository
                         ELSE COALESCE(COALESCE(p.Fass, m.Fass_Def), 1) END as Fass,
                    COALESCE(CASE WHEN p.Izmer = p.Ves THEN m.Fass_Izmer 
                             ELSE (SELECT m2.Name_Mera FROM Mera m2 WHERE m2.Mera_ID = p.Izmer) END, 
-                           (SELECT m2.Name_Mera FROM Mera m2 WHERE m2.Mera_ID = p.Izmer)) as FassIzmer
+                           (SELECT m2.Name_Mera FROM Mera m2 WHERE m2.Mera_ID = p.Izmer)) as FassIzmer,
+                   pt.Type_Opis
             FROM Components1 c1
             INNER JOIN Producrs p ON p.Prod_ID = c1.ProductID
             LEFT JOIN Mera m ON m.Mera_ID = p.Izmer
+            INNER JOIN Produkt_Type pt ON p.Type = pt.TypeProdId
             WHERE c1.Idmen = @menuId AND c1.Delic_id = @delicateId";
         
         command.Parameters.AddWithValue("@menuId", menuId);
@@ -510,7 +517,8 @@ public class MenuRepository
                 NameT = reader.GetString(4),
                 Mera = reader.IsDBNull(5) ? "" : reader.GetString(5),
                 Fass = reader.GetDecimal(6),
-                FassIz = reader.IsDBNull(7) ? "" : reader.GetString(7)
+                FassIz = reader.IsDBNull(7) ? "" : reader.GetString(7),
+                Type = reader.GetString(8)
             });
         }
         
@@ -534,10 +542,12 @@ public class MenuRepository
                         ELSE COALESCE(COALESCE(p.Fass, m.Fass_Def), 1) END as Fass,
                    COALESCE(CASE WHEN p.Izmer = p.Ves THEN m.Fass_Izmer 
                             ELSE (SELECT m2.Name_Mera FROM Mera m2 WHERE m2.Mera_ID = p.Izmer) END, 
-                           (SELECT m2.Name_Mera FROM Mera m2 WHERE m2.Mera_ID = p.Izmer)) as FassIzmer
+                           (SELECT m2.Name_Mera FROM Mera m2 WHERE m2.Mera_ID = p.Izmer)) as FassIzmer,
+                   pt.Type_Opis
             FROM Components c
             INNER JOIN Producrs p ON p.Prod_ID = c.ProductID
             LEFT JOIN Mera m ON m.Mera_ID = p.Izmer
+            INNER JOIN Produkt_Type pt ON p.Type = pt.TypeProdId
             WHERE c.Delic_id = @delicateId";
         
         command.Parameters.AddWithValue("@delicateId", delicateId);
@@ -554,7 +564,8 @@ public class MenuRepository
                 NameT = reader.GetString(4),
                 Mera = reader.IsDBNull(5) ? "" : reader.GetString(5),
                 Fass = reader.GetDecimal(6),
-                FassIz = reader.IsDBNull(7) ? "" : reader.GetString(7)
+                FassIz = reader.IsDBNull(7) ? "" : reader.GetString(7),
+                Type = reader.GetString(8)
             });
         }
         

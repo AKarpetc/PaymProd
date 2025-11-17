@@ -210,56 +210,59 @@ public class MenuPrinter
 
                 body.AppendChild(new Paragraph()); // Пустая строка
 
-                // Группируем по типам продуктов и сортируем по SortOrder
-                var groupedByType = reportData
+                var groupedList = reportData
                     .GroupBy(r => r.Type ?? "Без типа")
                     .OrderBy(g => productTypesDict.ContainsKey(g.Key) ? productTypesDict[g.Key] : int.MaxValue)
-                    .ThenBy(g => g.Key);
+                    .ThenBy(g => g.Key)
+                    .ToList();
 
-                // Создаем таблицу
-                var table = new Table();
-                
-                // Свойства таблицы
-                var tableProperties = new TableProperties(
-                    new TableBorders(
-                        new TopBorder { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 6 },
-                        new BottomBorder { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 6 },
-                        new LeftBorder { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 6 },
-                        new RightBorder { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 6 },
-                        new InsideHorizontalBorder { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 6 },
-                        new InsideVerticalBorder { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 6 }
+                var table = new Table(
+                    new TableProperties(
+                        new TableWidth { Type = TableWidthUnitValues.Pct, Width = "10000" },
+                        new TableBorders(
+                            new TopBorder { Val = BorderValues.None },
+                            new BottomBorder { Val = BorderValues.None },
+                            new LeftBorder { Val = BorderValues.None },
+                            new RightBorder { Val = BorderValues.None },
+                            new InsideHorizontalBorder { Val = BorderValues.None },
+                            new InsideVerticalBorder { Val = BorderValues.None }
+                        )
+                    ),
+                    new TableGrid(
+                        new GridColumn { Width = "4200" },
+                        new GridColumn { Width = "1500" },
+                        new GridColumn { Width = "1000" },
+                        new GridColumn { Width = "400" },
+                        new GridColumn { Width = "4200" },
+                        new GridColumn { Width = "1500" },
+                        new GridColumn { Width = "1000" }
                     )
                 );
-                table.AppendChild(tableProperties);
 
-                foreach (var group in groupedByType)
+                for (int i = 0; i < groupedList.Count; i++)
                 {
-                    // Заголовок группы (тип продукта)
-                    var groupHeaderRow = new TableRow();
-                    var groupHeaderCell = new TableCell();
-                    var groupHeaderCellProperties = new TableCellProperties(
-                        new GridSpan { Val = 2 },
-                        new Shading { Fill = "ADD8E6" }
-                    );
-                    groupHeaderCell.Append(groupHeaderCellProperties);
-                    
-                    var groupHeaderParagraph = new Paragraph();
-                    var groupHeaderRun = new Run();
-                    var groupHeaderRunProps = new RunProperties(new Bold(), new FontSize { Val = "24" });
-                    groupHeaderRun.Append(groupHeaderRunProps);
-                    groupHeaderRun.Append(new Text(group.Key));
-                    groupHeaderParagraph.Append(groupHeaderRun);
-                    groupHeaderCell.Append(groupHeaderParagraph);
-                    groupHeaderRow.Append(groupHeaderCell);
-                    table.Append(groupHeaderRow);
+                    AppendTypeSection(table, groupedList[i], i);
+                    table.Append(CreateSpacerRow());
+                }
 
-                    // Продукты в группе
+                body.Append(table);
+                mainPart.Document.Save();
+
+                Process.Start(new ProcessStartInfo(fileName) { UseShellExecute = true });
+
+                void AppendTypeSection(Table tbl, IGrouping<string, DelicatesCollForSvod> group, int index)
+                {
+                    bool isLeft = index % 2 == 0;
+                    int startCol = isLeft ? 0 : 4;
+
+                    tbl.Append(CreateHeaderRow(group.Key, startCol));
+
                     var groupedProducts = group
                         .GroupBy(r => r.NameT ?? r.Name)
                         .Select(g => new
                         {
                             Name = g.Key,
-                            TotalWeight = g.Sum(r => r.Fass > 0 ? r.ItogFass : r.Itog), // Используем фасовку если Fass > 0, иначе обычный вес
+                            TotalWeight = g.Sum(r => r.Fass > 0 ? r.ItogFass : r.Itog),
                             FassIz = g.First().FassIz ?? g.First().Mera ?? "",
                             Mera = g.First().Mera ?? "",
                             Fass = g.First().Fass
@@ -268,100 +271,170 @@ public class MenuPrinter
 
                     foreach (var product in groupedProducts)
                     {
-                        // Определяем единицу измерения для отображения
-                        // Если есть фасовка (Fass > 0), используем FassIz, иначе Mera
-                        string measureUnit = product.Fass > 0 && !string.IsNullOrEmpty(product.FassIz) 
-                            ? product.FassIz 
-                            : (!string.IsNullOrEmpty(product.Mera) ? product.Mera : "");
-                        
-                        if (string.IsNullOrEmpty(measureUnit))
+                        var (amountText, unitText) = FormatAmount(product);
+                        tbl.Append(CreateProductRow(product.Name, amountText, unitText, startCol));
+                    }
+                }
+
+                TableRow CreateHeaderRow(string typeName, int startCol)
+                {
+                    var row = new TableRow();
+                    for (int col = 0; col < 7; col++)
+                    {
+                        string text = string.Empty;
+                        bool bold = false;
+                        string? shading = null;
+                        var justify = JustificationValues.Left;
+
+                        if (col == startCol)
                         {
-                            measureUnit = "шт"; // По умолчанию штуки, если единица не указана
+                            text = typeName;
+                            bold = true;
+                            shading = "E3EAF2";
                         }
-                        
-                        double totalValue = (double)product.TotalWeight;
-                        
-                        // Конвертируем граммы в килограммы, если исходная мера в граммах, а фасовка в килограммах
-                        bool convertedToKg = false;
-                        string? mera = product.Mera;
-                        string? fassIz = product.FassIz;
-                        
-                        // Конвертируем только если:
-                        // 1. Исходная мера в граммах (г, грамм)
-                        // 2. И фасовка в килограммах (кг, kg)
-                        // 3. И используется фасовка (Fass > 0)
-                        if (product.Fass > 0 && 
-                            !string.IsNullOrEmpty(mera) && 
-                            !string.IsNullOrEmpty(fassIz) &&
-                            (mera.ToLower().Contains("г") || mera.ToLower().Contains("грамм") || mera.ToLower() == "г") && 
-                            (fassIz.ToLower().Contains("кг") || fassIz.ToLower().Contains("kg") || fassIz.ToLower() == "кг"))
+                        else if (col == startCol + 1)
                         {
-                            totalValue = totalValue / 1000.0;
-                            measureUnit = "кг";
-                            convertedToKg = true;
+                            text = "Кол-во";
+                            bold = true;
+                            shading = "DDEBF7";
+                            justify = JustificationValues.Center;
                         }
-                        
-                        // Получаем точность округления из справочника мер
-                        int roundingPrecision = 2; // По умолчанию до сотых
-                        var measure = FindMeasure(measureUnit);
+                        else if (col == startCol + 2)
+                        {
+                            text = "ед.";
+                            bold = true;
+                            shading = "DDEBF7";
+                            justify = JustificationValues.Center;
+                        }
+
+                        row.Append(CreateCell(text, bold, shading, justify));
+                    }
+
+                    return row;
+                }
+
+                TableRow CreateProductRow(string name, string amount, string unit, int startCol)
+                {
+                    var row = new TableRow();
+                    for (int col = 0; col < 7; col++)
+                    {
+                        string text = string.Empty;
+                        var justify = JustificationValues.Left;
+
+                        if (col == startCol)
+                        {
+                            text = name;
+                        }
+                        else if (col == startCol + 1)
+                        {
+                            text = amount;
+                            justify = JustificationValues.Center;
+                        }
+                        else if (col == startCol + 2)
+                        {
+                            text = unit;
+                            justify = JustificationValues.Center;
+                        }
+
+                        row.Append(CreateCell(text, false, null, justify));
+                    }
+
+                    return row;
+                }
+
+                TableRow CreateSpacerRow()
+                {
+                    var spacerCell = CreateCell(" ", false, null, JustificationValues.Left, span: 7);
+                    spacerCell.TableCellProperties ??= new TableCellProperties();
+                    spacerCell.TableCellProperties.TableCellBorders = new TableCellBorders(
+                        new TopBorder { Val = BorderValues.None },
+                        new BottomBorder { Val = BorderValues.None },
+                        new LeftBorder { Val = BorderValues.None },
+                        new RightBorder { Val = BorderValues.None }
+                    );
+                    return new TableRow(spacerCell);
+                }
+
+                (string amount, string unit) FormatAmount(dynamic product)
+                {
+                    string measureUnit = product.Fass > 0 && !string.IsNullOrEmpty(product.FassIz)
+                        ? product.FassIz
+                        : (!string.IsNullOrEmpty(product.Mera) ? product.Mera : "шт");
+
+                    if (string.IsNullOrEmpty(measureUnit))
+                    {
+                        measureUnit = "шт";
+                    }
+
+                    double totalValue = (double)product.TotalWeight;
+                    bool convertedToKg = false;
+                    string? mera = product.Mera;
+                    string? fassIz = product.FassIz;
+
+                    if (product.Fass > 0 &&
+                        !string.IsNullOrEmpty(mera) &&
+                        !string.IsNullOrEmpty(fassIz) &&
+                        (mera.ToLower().Contains("г") || mera.ToLower().Contains("грамм") || "мера".ToLower() == "г") &&
+                        (fassIz.ToLower().Contains("кг") || fassIz.ToLower().Contains("kg") || fassIz.ToLower() == "кг"))
+                    {
+                        totalValue /= 1000.0;
+                        measureUnit = "кг";
+                        convertedToKg = true;
+                    }
+
+                    int roundingPrecision = 2;
+                    var measure = FindMeasure(measureUnit);
+                    if (measure != null)
+                    {
+                        roundingPrecision = measure.RoundingPrecision;
+                    }
+                    else if (!convertedToKg)
+                    {
+                        measure = FindMeasure(product.Mera);
                         if (measure != null)
                         {
                             roundingPrecision = measure.RoundingPrecision;
                         }
-                        else if (!convertedToKg)
-                        {
-                            // Если не конвертировали, пробуем найти по исходной мере
-                            measure = FindMeasure(product.Mera);
-                            if (measure != null)
-                            {
-                                roundingPrecision = measure.RoundingPrecision;
-                            }
-                        }
-                        
-                        // Округляем значение ВСЕГДА В БОЛЬШУЮ СТОРОНУ (вверх)
-                        double roundedValue;
-                        if (roundingPrecision == 0)
-                        {
-                            // Округляем до целого вверх
-                            roundedValue = Math.Ceiling(totalValue);
-                        }
-                        else
-                        {
-                            // Округляем до нужного количества знаков вверх
-                            double multiplier = Math.Pow(10, roundingPrecision);
-                            roundedValue = Math.Ceiling(totalValue * multiplier) / multiplier;
-                        }
-                        
-                        // Форматируем единицу измерения
-                        string formattedValue;
-                        if (roundingPrecision == 0)
-                        {
-                            formattedValue = $"{(int)roundedValue}{measureUnit}";
-                        }
-                        else
-                        {
-                            // Форматируем с нужным количеством знаков после запятой
-                            formattedValue = $"{roundedValue.ToString($"F{roundingPrecision}")}{measureUnit}";
-                        }
-                        
-                        var row = new TableRow();
-                        
-                        // Название продукта
-                        row.Append(new TableCell(new Paragraph(new Run(new Text(product.Name)))));
-                        
-                        // Количество с единицей измерения
-                        row.Append(new TableCell(new Paragraph(new Run(new Text(formattedValue)))));
-                        
-                        table.Append(row);
                     }
+
+                    double roundedValue;
+                    if (roundingPrecision == 0)
+                    {
+                        roundedValue = Math.Ceiling(totalValue);
+                    }
+                    else
+                    {
+                        double multiplier = Math.Pow(10, roundingPrecision);
+                        roundedValue = Math.Ceiling(totalValue * multiplier) / multiplier;
+                    }
+
+                    string formattedNumber = roundingPrecision == 0
+                        ? ((int)roundedValue).ToString()
+                        : roundedValue.ToString($"F{roundingPrecision}");
+
+                    return (formattedNumber, measureUnit);
                 }
 
-                body.Append(table);
-                mainPart.Document.Save();
-            }
+                TableCell CreateCell(string text, bool bold, string? shading, JustificationValues justify, int span = 1)
+                {
+                    var run = new Run(new Text(text ?? string.Empty));
+                    var runProps = new RunProperties();
+                    if (bold) runProps.Append(new Bold());
+                    run.PrependChild(runProps);
 
-            // Открываем файл
-            Process.Start(new ProcessStartInfo(fileName) { UseShellExecute = true });
+                    var paragraph = new Paragraph(new ParagraphProperties(new Justification { Val = justify }), run);
+
+                    var cell = new TableCell(paragraph);
+                    var props = new TableCellProperties();
+                    if (span > 1) props.Append(new GridSpan { Val = span });
+                    if (!string.IsNullOrEmpty(shading))
+                    {
+                        props.Append(new Shading { Fill = shading, Val = ShadingPatternValues.Clear });
+                    }
+                    cell.Append(props);
+                    return cell;
+                }
+            }
         }
         catch (Exception ex)
         {
