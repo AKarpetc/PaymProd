@@ -218,7 +218,8 @@ public class MenuPrinter
 
                 var table = new Table(
                     new TableProperties(
-                        new TableWidth { Type = TableWidthUnitValues.Pct, Width = "10000" },
+                        new TableWidth { Type = TableWidthUnitValues.Dxa, Width = "9000" },
+                        new TableJustification { Val = TableRowAlignmentValues.Center },
                         new TableBorders(
                             new TopBorder { Val = BorderValues.None },
                             new BottomBorder { Val = BorderValues.None },
@@ -229,13 +230,13 @@ public class MenuPrinter
                         )
                     ),
                     new TableGrid(
-                        new GridColumn { Width = "4200" },
-                        new GridColumn { Width = "1500" },
-                        new GridColumn { Width = "1000" },
-                        new GridColumn { Width = "400" },
-                        new GridColumn { Width = "4200" },
-                        new GridColumn { Width = "1500" },
-                        new GridColumn { Width = "1000" }
+                        new GridColumn { Width = "2800" },
+                        new GridColumn { Width = "900" },
+                        new GridColumn { Width = "600" },
+                        new GridColumn { Width = "300" },
+                        new GridColumn { Width = "2800" },
+                        new GridColumn { Width = "900" },
+                        new GridColumn { Width = "600" }
                     )
                 );
 
@@ -374,7 +375,7 @@ public class MenuPrinter
                     if (product.Fass > 0 &&
                         !string.IsNullOrEmpty(mera) &&
                         !string.IsNullOrEmpty(fassIz) &&
-                        (mera.ToLower().Contains("г") || mera.ToLower().Contains("грамм") || "мера".ToLower() == "г") &&
+                        (mera.ToLower().Contains("г") || mera.ToLower().Contains("грамм") || mera.ToLower() == "г") &&
                         (fassIz.ToLower().Contains("кг") || fassIz.ToLower().Contains("kg") || fassIz.ToLower() == "кг"))
                     {
                         totalValue /= 1000.0;
