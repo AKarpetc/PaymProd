@@ -270,6 +270,11 @@ public class MenuPrinter
                     var leftRow = left.Count <= i ? null : left[i];
                     var rightRow = right.Count <= i ? null : right[i];
 
+                    if (leftRow == null && rightRow != null)
+                    {
+                        left.Add(CreateSpacerRow());
+                    }
+
                     var row = new TableRow();
 
                     if (leftRow != null) row.Append(leftRow.Cells.ToArray());
