@@ -239,7 +239,7 @@ public class MenuPrinter
                         new GridColumn { Width = "2800" },
                         new GridColumn { Width = "900" },
                         new GridColumn { Width = "600" },
-                        new GridColumn { Width = "300" },
+                        new GridColumn { Width = "500" },
                         new GridColumn { Width = "2800" },
                         new GridColumn { Width = "900" },
                         new GridColumn { Width = "600" }
@@ -269,7 +269,7 @@ public class MenuPrinter
 
                     if (leftRow != null) row.Append(leftRow.Cells.ToArray());
 
-                    row.Append(CreateCell("  ", false, null, JustificationValues.Center, 1, false));
+                    row.Append(CreateCell(" ", false, null, JustificationValues.Center, 1, true, true));
 
                     if (rightRow != null) row.Append(rightRow.Cells.ToArray());
 
@@ -394,7 +394,7 @@ public class MenuPrinter
                 }
 
                 TableCell CreateCell(string text, bool bold, string? shading, JustificationValues justify, int span = 1,
-                    bool withBorder = true)
+                    bool withBorder = true, bool onlyVerticalBorders = false)
                 {
                     var run = new Run(new Text(text ?? string.Empty));
                     var runProps = new RunProperties();
@@ -410,13 +410,35 @@ public class MenuPrinter
                         props.Append(new Shading { Fill = shading, Val = ShadingPatternValues.Clear });
 
                     if (withBorder)
-                        // Добавляем границы к ячейке
-                        props.Append(new TableCellBorders(
-                            new TopBorder { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 4 },
-                            new BottomBorder { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 4 },
-                            new LeftBorder { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 4 },
-                            new RightBorder { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 4 }
-                        ));
+                    {
+                        if (onlyVerticalBorders)
+                        {
+                            // Только левая и правая границы (без верхней и нижней)
+                            props.Append(new TableCellBorders(
+                                new TopBorder { Val = new EnumValue<BorderValues>(BorderValues.None) },
+                                new BottomBorder { Val = new EnumValue<BorderValues>(BorderValues.None) },
+                                new LeftBorder { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 6 },
+                                new RightBorder { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 6 }
+                            ));
+                            // Добавляем отступы для лучшей видимости
+                            props.Append(new TableCellMargin(
+                                new TopMargin { Width = "0" },
+                                new BottomMargin { Width = "0" },
+                                new LeftMargin { Width = "100" },
+                                new RightMargin { Width = "100" }
+                            ));
+                        }
+                        else
+                        {
+                            // Все границы
+                            props.Append(new TableCellBorders(
+                                new TopBorder { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 4 },
+                                new BottomBorder { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 4 },
+                                new LeftBorder { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 4 },
+                                new RightBorder { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 4 }
+                            ));
+                        }
+                    }
 
                     cell.Append(props);
                     return cell;
