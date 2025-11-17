@@ -223,7 +223,17 @@ public class MenuPrinter
                 var table = new Table(
                     new TableProperties(
                         new TableWidth { Type = TableWidthUnitValues.Dxa, Width = "9000" },
-                        new TableJustification { Val = TableRowAlignmentValues.Center }
+                        new TableJustification { Val = TableRowAlignmentValues.Center },
+                        new TableBorders(
+                            new TopBorder { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 4 },
+                            new BottomBorder { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 4 },
+                            new LeftBorder { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 4 },
+                            new RightBorder { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 4 },
+                            new InsideHorizontalBorder
+                                { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 4 },
+                            new InsideVerticalBorder
+                                { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 4 }
+                        )
                     ),
                     new TableGrid(
                         new GridColumn { Width = "2800" },
@@ -258,8 +268,8 @@ public class MenuPrinter
                     var row = new TableRow();
 
                     if (leftRow != null) row.Append(leftRow.Cells.ToArray());
-                    
-                    row.Append(CreateCell(string.Empty, false,null,JustificationValues.Center));
+
+                    row.Append(CreateCell("  ", false, null, JustificationValues.Center, 1, false));
 
                     if (rightRow != null) row.Append(rightRow.Cells.ToArray());
 
@@ -383,7 +393,8 @@ public class MenuPrinter
                     return (formattedNumber, measureUnit);
                 }
 
-                TableCell CreateCell(string text, bool bold, string? shading, JustificationValues justify, int span = 1)
+                TableCell CreateCell(string text, bool bold, string? shading, JustificationValues justify, int span = 1,
+                    bool withBorder = true)
                 {
                     var run = new Run(new Text(text ?? string.Empty));
                     var runProps = new RunProperties();
@@ -397,6 +408,15 @@ public class MenuPrinter
                     if (span > 1) props.Append(new GridSpan { Val = span });
                     if (!string.IsNullOrEmpty(shading))
                         props.Append(new Shading { Fill = shading, Val = ShadingPatternValues.Clear });
+
+                    if (withBorder)
+                        // Добавляем границы к ячейке
+                        props.Append(new TableCellBorders(
+                            new TopBorder { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 4 },
+                            new BottomBorder { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 4 },
+                            new LeftBorder { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 4 },
+                            new RightBorder { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 4 }
+                        ));
 
                     cell.Append(props);
                     return cell;
