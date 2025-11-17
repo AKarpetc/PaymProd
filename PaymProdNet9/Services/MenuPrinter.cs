@@ -253,6 +253,11 @@ public class MenuPrinter
                     rows.AddRange(CreateSpacerRow());
                 }
 
+                if (rows.Count > 0)
+                {
+                    rows.Remove(rows.Last());
+                }
+
                 var rowsMiddleNumber = rows.Count / 2;
 
                 var left = rows.GetRange(0, rowsMiddleNumber);
@@ -414,12 +419,14 @@ public class MenuPrinter
                         if (onlyVerticalBorders)
                         {
                             // Только левая и правая границы (без верхней и нижней)
-                            props.Append(new TableCellBorders(
-                                new TopBorder { Val = new EnumValue<BorderValues>(BorderValues.None) },
-                                new BottomBorder { Val = new EnumValue<BorderValues>(BorderValues.None) },
-                                new LeftBorder { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 6 },
-                                new RightBorder { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 6 }
-                            ));
+                            // Устанавливаем Nil для верхней и нижней границ, чтобы они не отображались
+                            var borders = new TableCellBorders();
+                            borders.Append(new TopBorder { Val = new EnumValue<BorderValues>(BorderValues.Nil) });
+                            borders.Append(new BottomBorder { Val = new EnumValue<BorderValues>(BorderValues.Nil) });
+                            borders.Append(new LeftBorder { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 6 });
+                            borders.Append(new RightBorder { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 6 });
+                            props.Append(borders);
+                            
                             // Добавляем отступы для лучшей видимости
                             props.Append(new TableCellMargin(
                                 new TopMargin { Width = "0" },
