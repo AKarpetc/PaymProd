@@ -320,6 +320,37 @@ public partial class CurrentMenuPage : Page
     }
 
     /// <summary>
+    /// Обработчик загрузки TextBox количества - устанавливает значение по умолчанию из количества человек
+    /// </summary>
+    private void QuantityTextBox_Loaded(object sender, RoutedEventArgs e)
+    {
+        var textBox = sender as TextBox;
+        if (textBox == null) return;
+
+        // Устанавливаем значение по умолчанию только если поле пустое
+        if (string.IsNullOrWhiteSpace(textBox.Text))
+        {
+            // Получаем значение из PeopleCountTextBox
+            if (!string.IsNullOrWhiteSpace(PeopleCountTextBox.Text) &&
+                int.TryParse(PeopleCountTextBox.Text, out var peopleCount) && peopleCount > 0)
+            {
+                textBox.Text = peopleCount.ToString();
+                
+                // Включаем кнопку добавления, так как значение установлено
+                var parent = textBox.Parent as FrameworkElement;
+                if (parent != null)
+                {
+                    var addButton = FindAddButton(parent);
+                    if (addButton != null)
+                    {
+                        addButton.IsEnabled = true;
+                    }
+                }
+            }
+        }
+    }
+
+    /// <summary>
     /// Обработчик изменения текста в поле количества - включает/выключает кнопку добавления
     /// </summary>
     private void QuantityTextBox_TextChanged(object sender, TextChangedEventArgs e)

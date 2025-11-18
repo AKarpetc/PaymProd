@@ -145,6 +145,7 @@
                                                          materialDesign:HintAssist.Hint="Кол-во"
                                                          PreviewTextInput="NumericTextBox_PreviewTextInput"
                                                          TextChanged="QuantityTextBox_TextChanged"
+                                                         Loaded="QuantityTextBox_Loaded"
                                                          Tag="{Binding}" />
                                                 <TextBlock VerticalAlignment="Center" Margin="5,0,0,0"
                                                            Text="{Binding WeightInfo}" />

@@ -255,12 +255,12 @@ public class MenuPrinter
 
                 if (rows.Count > 0) rows.Remove(rows.Last());
 
-                var rowsMiddleNumber = rows.Count / 2;
+                var rowsMiddleNumber = rows.Count % 2 == 0 ? rows.Count / 2 : rows.Count / 2 + 1;
 
                 var left = rows.GetRange(0, rowsMiddleNumber);
                 var right = rows.GetRange(rowsMiddleNumber, rows.Count - rowsMiddleNumber);
 
-                if (rows.Count < 12)
+                if (rows.Count < 20)
                 {
                     left = rows;
                     right = [];
