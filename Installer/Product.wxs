@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi"
+     xmlns:util="http://schemas.microsoft.com/wix/UtilExtension">
+  
+  <?define ProductName = "PaymProdNet9" ?>
+  <?define ProductVersion = "2.0.0" ?>
+  <?define Manufacturer = "PaymProd Team" ?>
+  <?define ProductCode = "*" ?>
+  <?define UpgradeCode = "A1B2C3D4-E5F6-4A7B-8C9D-0E1F2A3B4C5D" ?>
+  
+  <Product Id="$(var.ProductCode)"
+           Name="$(var.ProductName)"
+           Language="1049"
+           Version="$(var.ProductVersion)"
+           Manufacturer="$(var.Manufacturer)"
+           UpgradeCode="$(var.UpgradeCode)">
+    
+    <Package InstallerVersion="200"
+             Compressed="yes"
+             InstallScope="perMachine"
+             Description="Система управления меню банкетов"
+             Comments="Установщик PaymProdNet9 - Система управления меню банкетов"
+             Manufacturer="$(var.Manufacturer)" />
+    
+    <MajorUpgrade DowngradeErrorMessage="Более новая версия [ProductName] уже установлена." />
+    
+    <MediaTemplate EmbedCab="yes" />
+    
+    <!-- Проверка наличия .NET 9.0 Runtime (опционально, если приложение self-contained) -->
+    <!--
+    <PropertyRef Id="NETFRAMEWORK90" />
+    <Condition Message="Для работы приложения требуется .NET 9.0 Runtime. Пожалуйста, установите его с https://dotnet.microsoft.com/download/dotnet/9.0">
+      <![CDATA[Installed OR NETFRAMEWORK90]]>
+    </Condition>
+    -->
+    
+    <!-- Структура установки -->
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <Directory Id="ProgramFilesFolder">
+        <Directory Id="INSTALLFOLDER" Name="$(var.ProductName)">
+          <!-- Основной исполняемый файл -->
+          <Component Id="MainExecutable" Guid="C1D2E3F4-A5B6-4C7D-8E9F-0A1B2C3D4E5F">
+            <File Id="PaymProdNet9Exe"
+                  Source="..\PaymProdNet9\bin\Release\net9.0-windows\win-x64\publish\PaymProdNet9.exe"
+                  KeyPath="yes" />
+          </Component>
+          
+          <!-- Дополнительные файлы (если есть) -->
+          <Component Id="ApplicationResources" Guid="D2E3F4A5-B6C7-4D8E-9F0A-1B2C3D4E5F6A">
+            <CreateFolder />
+            <!-- Здесь можно добавить дополнительные файлы через File элементы -->
+          </Component>
+        </Directory>
+      </Directory>
+      
+      <!-- Меню Пуск -->
+      <Directory Id="ProgramMenuFolder">
+        <Directory Id="ApplicationProgramsFolder" Name="$(var.ProductName)">
+          <Component Id="ApplicationShortcut" Guid="E3F4A5B6-C7D8-4E9F-0A1B-2C3D4E5F6A7B">
+            <Shortcut Id="StartMenuShortcut"
+                      Name="$(var.ProductName)"
+                      Description="Система управления меню банкетов"
+                      Target="[#PaymProdNet9Exe]"
+                      WorkingDirectory="INSTALLFOLDER" />
+            <RemoveFolder Id="ApplicationProgramsFolder" On="uninstall" />
+            <RegistryValue Root="HKCU"
+                           Key="Software\$(var.Manufacturer)\$(var.ProductName)"
+                           Type="string"
+                           Value=""
+                           KeyPath="yes" />
+          </Component>
+        </Directory>
+      </Directory>
+      
+      <!-- Рабочий стол -->
+      <Directory Id="DesktopFolder" Name="Desktop">
+        <Component Id="DesktopShortcut" Guid="F4A5B6C7-D8E9-4F0A-1B2C-3D4E5F6A7B8C">
+          <Shortcut Id="DesktopShortcut"
+                    Name="$(var.ProductName)"
+                    Description="Система управления меню банкетов"
+                    Target="[#PaymProdNet9Exe]"
+                    WorkingDirectory="INSTALLFOLDER" />
+          <RemoveFolder Id="DesktopFolder" On="uninstall" />
+          <RegistryValue Root="HKCU"
+                         Key="Software\$(var.Manufacturer)\$(var.ProductName)"
+                         Type="string"
+                         Value=""
+                         KeyPath="yes" />
+        </Component>
+      </Directory>
+    </Directory>
+    
+    <!-- Компоненты установки -->
+    <Feature Id="ProductFeature" Title="$(var.ProductName)" Level="1">
+      <ComponentRef Id="MainExecutable" />
+      <ComponentRef Id="ApplicationResources" />
+      <ComponentRef Id="ApplicationShortcut" />
+      <ComponentRef Id="DesktopShortcut" />
+    </Feature>
+    
+    <!-- UI установщика -->
+    <UIRef Id="WixUI_Minimal" />
+    
+  </Product>
+  
+</Wix>
