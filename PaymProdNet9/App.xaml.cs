@@ -32,9 +32,8 @@ public partial class App : Application
 
         var mainWindow = new MainNavigationWindow();
         MainWindow = mainWindow;
-
+        mainWindow.Show();
 
         await UpdateService.CheckForUpdatesAsync(mainWindow);
-        mainWindow.Show();
     }
 }

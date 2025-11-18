@@ -7,6 +7,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using System.Windows;
+using PaymProdNet9.Windows;
 
 namespace PaymProdNet9.Services;
 
@@ -66,7 +67,7 @@ public static class UpdateService
             }
 
             var tempInstallerPath = GetTempInstallerPath(info.InstallerUrl, remoteVersion);
-            await DownloadInstallerAsync(info.InstallerUrl, tempInstallerPath);
+            await DownloadInstallerAsync(info.InstallerUrl, tempInstallerPath, owner ?? Application.Current.MainWindow, remoteVersion);
 
             Process.Start(new ProcessStartInfo(tempInstallerPath)
             {
@@ -82,14 +83,60 @@ public static class UpdateService
         }
     }
 
-    private static async Task DownloadInstallerAsync(string url, string destinationPath)
+    private static async Task DownloadInstallerAsync(string url, string destinationPath, Window? owner, Version remoteVersion)
     {
-        using var response = await HttpClient.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
-        response.EnsureSuccessStatusCode();
+        UpdateDownloadWindow? progressWindow = null;
+        try
+        {
+            if (owner != null)
+            {
+                await owner.Dispatcher.InvokeAsync(() =>
+                {
+                    progressWindow = new UpdateDownloadWindow
+                    {
+                        Owner = owner
+                    };
 
-        await using var input = await response.Content.ReadAsStreamAsync();
-        await using var output = File.Create(destinationPath);
-        await input.CopyToAsync(output);
+                    progressWindow.SetVersion(remoteVersion.ToString());
+                    progressWindow.Show();
+                });
+            }
+
+            using var response = await HttpClient.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
+            response.EnsureSuccessStatusCode();
+
+            var totalBytes = response.Content.Headers.ContentLength ?? -1;
+            long downloaded = 0;
+            var buffer = new byte[81920];
+
+            await using var input = await response.Content.ReadAsStreamAsync();
+            await using var output = File.Create(destinationPath);
+
+            while (true)
+            {
+                var read = await input.ReadAsync(buffer);
+                if (read == 0)
+                {
+                    break;
+                }
+
+                await output.WriteAsync(buffer.AsMemory(0, read));
+                downloaded += read;
+
+                if (progressWindow != null)
+                {
+                    var fraction = totalBytes > 0 ? (double)downloaded / totalBytes : (double?)null;
+                    progressWindow.UpdateProgress(fraction, downloaded, totalBytes);
+                }
+            }
+        }
+        finally
+        {
+            if (progressWindow != null)
+            {
+                await progressWindow.Dispatcher.InvokeAsync(progressWindow.Close);
+            }
+        }
     }
 
     private static string GetTempInstallerPath(string installerUrl, Version version)
