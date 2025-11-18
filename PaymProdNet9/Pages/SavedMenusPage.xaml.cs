@@ -34,38 +34,38 @@ public partial class SavedMenusPage : Page
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Ошибка при загрузке списка меню: {ex.Message}", 
+            MessageBox.Show($"Ошибка при загрузке списка меню: {ex.Message}",
                 "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
-    
+
     /// <summary>
     /// Поиск по сохраненным меню
     /// </summary>
     private void MenuSearch_TextChanged(object sender, TextChangedEventArgs e)
     {
         var searchText = MenuSearchBox.Text.ToLower();
-        
+
         if (string.IsNullOrWhiteSpace(searchText))
         {
             LoadSavedMenus();
             return;
         }
-        
+
         try
         {
             var allMenus = _menuRepository.GetAllMenus();
-            var filtered = allMenus.Where(m => 
-                (m.Name != null && m.Name.ToLower().Contains(searchText)) || 
+            var filtered = allMenus.Where(m =>
+                (m.Name != null && m.Name.ToLower().Contains(searchText)) ||
                 (m.Detail != null && m.Detail.ToLower().Contains(searchText)) ||
                 (m.DateBan != null && m.DateBan.ToLower().Contains(searchText))
             );
-            
+
             SavedMenusDataGrid.ItemsSource = filtered.ToList();
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Ошибка при поиске меню: {ex.Message}", 
+            MessageBox.Show($"Ошибка при поиске меню: {ex.Message}",
                 "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
@@ -82,13 +82,13 @@ public partial class SavedMenusPage : Page
             if (menu == null) return;
 
             _menuRepository.OpenMenu(menu.Id);
-            
+
             // Переходим к странице текущего меню
             Services.NavigationService.Instance.NavigateTo<CurrentMenuPage>();
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Ошибка при открытии меню: {ex.Message}", 
+            MessageBox.Show($"Ошибка при открытии меню: {ex.Message}",
                 "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
@@ -104,9 +104,9 @@ public partial class SavedMenusPage : Page
             var menu = button?.DataContext as Menus;
             if (menu == null) return;
 
-            var result = MessageBox.Show("Удалить меню?", 
+            var result = MessageBox.Show("Удалить меню?",
                 "Подтверждение", MessageBoxButton.YesNo, MessageBoxImage.Question);
-            
+
             if (result == MessageBoxResult.Yes)
             {
                 _menuRepository.DeleteMenu(menu.Id);
@@ -115,9 +115,8 @@ public partial class SavedMenusPage : Page
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Ошибка при удалении меню: {ex.Message}", 
+            MessageBox.Show($"Ошибка при удалении меню: {ex.Message}",
                 "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
 }
-

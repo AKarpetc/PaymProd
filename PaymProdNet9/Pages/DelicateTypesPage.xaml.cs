@@ -11,22 +11,22 @@ namespace PaymProdNet9.Pages;
 public partial class DelicateTypesPage : Page
 {
     private readonly DelicateRepository _delicateRepository;
-    
+
     private ObservableCollection<DelicateType> _allDelicateTypes;
     private int? _currentDelicateTypeId;
 
     public DelicateTypesPage()
     {
         InitializeComponent();
-        
+
         _delicateRepository = new DelicateRepository();
         _allDelicateTypes = new ObservableCollection<DelicateType>();
-        
+
         DelicateTypesDataGrid.ItemsSource = _allDelicateTypes;
-        
-        this.Loaded += DelicateTypesPage_LoadedInternal;
+
+        Loaded += DelicateTypesPage_LoadedInternal;
     }
-    
+
     private void DelicateTypesPage_LoadedInternal(object sender, RoutedEventArgs e)
     {
         if (NavigationService != null)
@@ -35,7 +35,7 @@ public partial class DelicateTypesPage : Page
             NavigationService.Navigating += DelicateTypesPage_Navigating;
         }
     }
-    
+
     private void DelicateTypesPage_Navigating(object sender, NavigatingCancelEventArgs e)
     {
         if (DelicateTypeEditView.Visibility == Visibility.Visible && e.NavigationMode == NavigationMode.Back)
@@ -50,13 +50,13 @@ public partial class DelicateTypesPage : Page
         LoadDelicateTypes();
         ShowListView();
     }
-    
+
     private void ShowListView()
     {
         DelicateTypesListView.Visibility = Visibility.Visible;
         DelicateTypeEditView.Visibility = Visibility.Collapsed;
     }
-    
+
     private void ShowEditView(bool isEdit)
     {
         DelicateTypesListView.Visibility = Visibility.Collapsed;
@@ -71,44 +71,38 @@ public partial class DelicateTypesPage : Page
         {
             _allDelicateTypes.Clear();
             var types = _delicateRepository.GetDelicateTypes();
-            foreach (var type in types)
-            {
-                _allDelicateTypes.Add(type);
-            }
+            foreach (var type in types) _allDelicateTypes.Add(type);
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Ошибка при загрузке типов блюд: {ex.Message}", 
+            MessageBox.Show($"Ошибка при загрузке типов блюд: {ex.Message}",
                 "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
-    
+
     private void DelicateTypeSearch_TextChanged(object sender, TextChangedEventArgs e)
     {
         var searchText = DelicateTypeSearchBox.Text.ToLower();
-        
+
         if (string.IsNullOrWhiteSpace(searchText))
         {
             LoadDelicateTypes();
             return;
         }
-        
+
         try
         {
             _allDelicateTypes.Clear();
             var allTypes = _delicateRepository.GetDelicateTypes();
-            var filtered = allTypes.Where(t => 
+            var filtered = allTypes.Where(t =>
                 t.Name.ToLower().Contains(searchText)
             );
-            
-            foreach (var type in filtered)
-            {
-                _allDelicateTypes.Add(type);
-            }
+
+            foreach (var type in filtered) _allDelicateTypes.Add(type);
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Ошибка при поиске типов блюд: {ex.Message}", 
+            MessageBox.Show($"Ошибка при поиске типов блюд: {ex.Message}",
                 "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
@@ -120,24 +114,24 @@ public partial class DelicateTypesPage : Page
         if (delicateType == null) return;
 
         _currentDelicateTypeId = delicateType.Id;
-        
+
         DelicateTypeNameTextBox.Text = delicateType.Name;
         DelicateTypeSortOrderTextBox.Text = delicateType.SortOrder.ToString();
-        
+
         ShowEditView(true);
     }
 
     private void NewDelicateType_Click(object sender, RoutedEventArgs e)
     {
         _currentDelicateTypeId = null;
-        
+
         DelicateTypeNameTextBox.Clear();
         DelicateTypeSortOrderTextBox.Text = "0";
-        
+
         ShowEditView(false);
         DelicateTypeNameTextBox.Focus();
     }
-    
+
     private void CancelEdit_Click(object sender, RoutedEventArgs e)
     {
         ShowListView();
@@ -151,9 +145,9 @@ public partial class DelicateTypesPage : Page
             var delicateType = button?.DataContext as DelicateType;
             if (delicateType == null) return;
 
-            var result = MessageBox.Show($"Удалить тип блюда '{delicateType.Name}'?", 
+            var result = MessageBox.Show($"Удалить тип блюда '{delicateType.Name}'?",
                 "Подтверждение", MessageBoxButton.YesNo, MessageBoxImage.Question);
-            
+
             if (result == MessageBoxResult.Yes)
             {
                 _delicateRepository.DeleteDelicateType(delicateType.Id);
@@ -163,7 +157,7 @@ public partial class DelicateTypesPage : Page
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Ошибка при удалении типа блюда: {ex.Message}", 
+            MessageBox.Show($"Ошибка при удалении типа блюда: {ex.Message}",
                 "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
@@ -174,31 +168,28 @@ public partial class DelicateTypesPage : Page
         {
             if (string.IsNullOrWhiteSpace(DelicateTypeNameTextBox.Text))
             {
-                MessageBox.Show("Введите название типа блюда!", 
+                MessageBox.Show("Введите название типа блюда!",
                     "Внимание", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
-            if (!int.TryParse(DelicateTypeSortOrderTextBox.Text, out int sortOrder))
-            {
-                sortOrder = 0;
-            }
+            if (!int.TryParse(DelicateTypeSortOrderTextBox.Text, out var sortOrder)) sortOrder = 0;
 
             if (_currentDelicateTypeId.HasValue)
             {
                 _delicateRepository.UpdateDelicateType(
-                    _currentDelicateTypeId.Value, 
+                    _currentDelicateTypeId.Value,
                     DelicateTypeNameTextBox.Text,
                     sortOrder);
-                
-                MessageBox.Show("Тип блюда обновлен!", 
+
+                MessageBox.Show("Тип блюда обновлен!",
                     "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             else
             {
                 _delicateRepository.AddDelicateType(DelicateTypeNameTextBox.Text, sortOrder);
-                
-                MessageBox.Show("Тип блюда создан!", 
+
+                MessageBox.Show("Тип блюда создан!",
                     "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
             }
 
@@ -207,7 +198,7 @@ public partial class DelicateTypesPage : Page
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Ошибка при сохранении типа блюда: {ex.Message}", 
+            MessageBox.Show($"Ошибка при сохранении типа блюда: {ex.Message}",
                 "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
@@ -218,4 +209,3 @@ public partial class DelicateTypesPage : Page
         e.Handled = !e.Text.All(char.IsDigit);
     }
 }
-

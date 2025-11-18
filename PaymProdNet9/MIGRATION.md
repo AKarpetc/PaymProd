@@ -1,6 +1,7 @@
 # Руководство по миграции из старой версии
 
-Это руководство поможет вам перенести данные из старой версии приложения (на .NET Framework 4.8 с SQL Server CE) в новую версию (на .NET 9 с SQLite).
+Это руководство поможет вам перенести данные из старой версии приложения (на .NET Framework 4.8 с SQL Server CE) в новую
+версию (на .NET 9 с SQLite).
 
 ## Автоматическая миграция (рекомендуется)
 
@@ -17,23 +18,25 @@
 
 ### Шаг 1: Экспорт данных из SQL Server CE
 
-1. Установите [SQL Server Compact Toolbox](https://marketplace.visualstudio.com/items?itemName=ErikEJ.SQLServerCompactSQLiteToolbox)
+1.
+Установите [SQL Server Compact Toolbox](https://marketplace.visualstudio.com/items?itemName=ErikEJ.SQLServerCompactSQLiteToolbox)
 2. Откройте базу данных `MenuCaolc.mdf`
 3. Экспортируйте таблицы в SQL скрипты:
-   - Меры (Mera)
-   - Типы продуктов (Produkt_Type)
-   - Продукты (Producrs)
-   - Типы блюд (Type_Del)
-   - Блюда (Delicates)
-   - Компоненты (Components)
-   - Меню (Menus)
-   - Связи меню-блюда (Menu_Delicates)
+    - Меры (Mera)
+    - Типы продуктов (Produkt_Type)
+    - Продукты (Producrs)
+    - Типы блюд (Type_Del)
+    - Блюда (Delicates)
+    - Компоненты (Components)
+    - Меню (Menus)
+    - Связи меню-блюда (Menu_Delicates)
 
 ### Шаг 2: Адаптация SQL скриптов для SQLite
 
 SQL Server CE и SQLite имеют некоторые отличия в синтаксисе:
 
 #### Типы данных:
+
 - `INT` → `INTEGER`
 - `NVARCHAR(MAX)` → `TEXT`
 - `DECIMAL(18,2)` → `REAL`
@@ -41,12 +44,15 @@ SQL Server CE и SQLite имеют некоторые отличия в синт
 - `BIT` → `INTEGER` (0 или 1)
 
 #### IDENTITY колонки:
+
 SQL Server CE:
+
 ```sql
 [Id] INT IDENTITY(1,1) PRIMARY KEY
 ```
 
 SQLite:
+
 ```sql
 Id INTEGER PRIMARY KEY AUTOINCREMENT
 ```
@@ -54,6 +60,7 @@ Id INTEGER PRIMARY KEY AUTOINCREMENT
 #### Пример конвертации:
 
 **SQL Server CE:**
+
 ```sql
 CREATE TABLE Producrs (
     Prod_ID INT IDENTITY(1,1) PRIMARY KEY,
@@ -66,6 +73,7 @@ CREATE TABLE Producrs (
 ```
 
 **SQLite:**
+
 ```sql
 CREATE TABLE Producrs (
     Prod_ID INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -107,6 +115,7 @@ sqlite3 MenuCalc.db < migrated_data.sql
 ### Проблема 2: Ошибки с датами
 
 **Решение:** Конвертируйте даты в формат ISO8601:
+
 ```sql
 -- SQL Server CE
 SELECT CONVERT(VARCHAR, DateField, 120) FROM Table
@@ -117,6 +126,7 @@ SELECT CONVERT(VARCHAR, DateField, 120) FROM Table
 ### Проблема 3: Нарушение внешних ключей
 
 **Решение:** Импортируйте таблицы в правильном порядке:
+
 1. Mera
 2. Produkt_Type
 3. Type_Del
@@ -167,6 +177,7 @@ Write-Host "Conversion completed! Import $outputFile into SQLite"
 ## Поддержка
 
 Если у вас возникли проблемы с миграцией:
+
 1. Сохраните копию старой базы данных
 2. Опишите проблему
 3. Приложите скриншоты ошибок

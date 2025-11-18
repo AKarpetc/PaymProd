@@ -5,46 +5,46 @@
 
     <Page.Resources>
         <Style TargetType="Button">
-            <Setter Property="Padding" Value="15,8"/>
-            <Setter Property="Margin" Value="5"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="Background" Value="#4CAF50"/>
-            <Setter Property="Foreground" Value="White"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Padding" Value="15,8" />
+            <Setter Property="Margin" Value="5" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Background" Value="#4CAF50" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="FontSize" Value="14" />
             <Style.Triggers>
                 <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="#45a049"/>
+                    <Setter Property="Background" Value="#45a049" />
                 </Trigger>
             </Style.Triggers>
         </Style>
 
         <Style x:Key="DangerButton" TargetType="Button">
-            <Setter Property="Padding" Value="15,8"/>
-            <Setter Property="Margin" Value="5"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="Background" Value="#f44336"/>
-            <Setter Property="Foreground" Value="White"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Padding" Value="15,8" />
+            <Setter Property="Margin" Value="5" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Background" Value="#f44336" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="FontSize" Value="14" />
             <Style.Triggers>
                 <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="#da190b"/>
+                    <Setter Property="Background" Value="#da190b" />
                 </Trigger>
             </Style.Triggers>
         </Style>
 
         <Style x:Key="InfoButton" TargetType="Button">
-            <Setter Property="Padding" Value="15,8"/>
-            <Setter Property="Margin" Value="5"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="Background" Value="#2196F3"/>
-            <Setter Property="Foreground" Value="White"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Padding" Value="15,8" />
+            <Setter Property="Margin" Value="5" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Background" Value="#2196F3" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="FontSize" Value="14" />
             <Style.Triggers>
                 <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="#0b7dda"/>
+                    <Setter Property="Background" Value="#0b7dda" />
                 </Trigger>
             </Style.Triggers>
         </Style>
@@ -52,47 +52,47 @@
 
     <Grid Margin="20">
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
         <!-- Заголовок -->
-        <TextBlock Grid.Row="0" 
+        <TextBlock Grid.Row="0"
                    Text="Управление базой данных"
                    FontSize="24"
                    FontWeight="Bold"
-                   Margin="0,0,0,20"/>
+                   Margin="0,0,0,20" />
 
         <!-- Основные операции -->
         <GroupBox Grid.Row="1" Header="Операции с базой данных" Padding="10" Margin="0,0,0,15">
             <StackPanel>
                 <!-- Текущая база -->
-                <TextBlock Text="Текущая база данных:" FontWeight="Bold" Margin="0,0,0,5"/>
-                <TextBlock Name="CurrentDbPathText" 
+                <TextBlock Text="Текущая база данных:" FontWeight="Bold" Margin="0,0,0,5" />
+                <TextBlock Name="CurrentDbPathText"
                            Text="Загрузка..."
                            TextWrapping="Wrap"
                            Foreground="DarkBlue"
-                           Margin="0,0,0,15"/>
+                           Margin="0,0,0,15" />
 
                 <!-- Кнопки операций -->
                 <WrapPanel HorizontalAlignment="Center">
-                    <Button Name="ExportButton" 
+                    <Button Name="ExportButton"
                             Content="💾 Экспорт базы данных"
                             Click="ExportButton_Click"
-                            ToolTip="Сохранить копию базы данных в выбранную папку"/>
-                    
-                    <Button Name="ImportButton" 
+                            ToolTip="Сохранить копию базы данных в выбранную папку" />
+
+                    <Button Name="ImportButton"
                             Content="📂 Импорт базы данных"
                             Style="{StaticResource InfoButton}"
                             Click="ImportButton_Click"
-                            ToolTip="Загрузить базу данных из файла"/>
-                    
-                    <Button Name="AutoBackupButton" 
+                            ToolTip="Загрузить базу данных из файла" />
+
+                    <Button Name="AutoBackupButton"
                             Content="🔄 Создать резервную копию"
                             Click="AutoBackupButton_Click"
-                            ToolTip="Создать автоматическую резервную копию"/>
+                            ToolTip="Создать автоматическую резервную копию" />
                 </WrapPanel>
             </StackPanel>
         </GroupBox>
@@ -101,8 +101,8 @@
         <GroupBox Grid.Row="2" Header="Доступные резервные копии" Padding="10">
             <Grid>
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="*"/>
-                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
 
                 <!-- Список -->
@@ -117,33 +117,32 @@
                           GridLinesVisibility="Horizontal"
                           HeadersVisibility="Column">
                     <DataGrid.Columns>
-                        <DataGridTextColumn Header="Имя файла" Binding="{Binding FileName}" Width="*"/>
-                        <DataGridTextColumn Header="Дата создания" Binding="{Binding FormattedDate}" Width="150"/>
-                        <DataGridTextColumn Header="Размер" Binding="{Binding FormattedSize}" Width="100"/>
+                        <DataGridTextColumn Header="Имя файла" Binding="{Binding FileName}" Width="*" />
+                        <DataGridTextColumn Header="Дата создания" Binding="{Binding FormattedDate}" Width="150" />
+                        <DataGridTextColumn Header="Размер" Binding="{Binding FormattedSize}" Width="100" />
                     </DataGrid.Columns>
                 </DataGrid>
 
                 <!-- Кнопки управления резервными копиями -->
                 <WrapPanel Grid.Row="1" HorizontalAlignment="Center" Margin="0,10,0,0">
-                    <Button Name="RefreshButton" 
+                    <Button Name="RefreshButton"
                             Content="🔄 Обновить список"
                             Style="{StaticResource InfoButton}"
-                            Click="RefreshButton_Click"/>
-                    
-                    <Button Name="RestoreButton" 
+                            Click="RefreshButton_Click" />
+
+                    <Button Name="RestoreButton"
                             Content="↩️ Восстановить выбранную"
                             Style="{StaticResource DangerButton}"
                             Click="RestoreButton_Click"
-                            IsEnabled="{Binding ElementName=BackupsDataGrid, Path=SelectedItem, Converter={StaticResource NullToBoolConverter}}"/>
-                    
-                    <Button Name="OpenFolderButton" 
+                            IsEnabled="{Binding ElementName=BackupsDataGrid, Path=SelectedItem, Converter={StaticResource NullToBoolConverter}}" />
+
+                    <Button Name="OpenFolderButton"
                             Content="📁 Открыть папку с копиями"
                             Style="{StaticResource InfoButton}"
-                            Click="OpenFolderButton_Click"/>
+                            Click="OpenFolderButton_Click" />
                 </WrapPanel>
             </Grid>
         </GroupBox>
 
     </Grid>
 </Page>
-

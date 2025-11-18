@@ -253,15 +253,18 @@ public class MenuPrinter
                     rows.AddRange(CreateSpacerRow());
                 }
 
-                if (rows.Count > 0)
-                {
-                    rows.Remove(rows.Last());
-                }
+                if (rows.Count > 0) rows.Remove(rows.Last());
 
                 var rowsMiddleNumber = rows.Count / 2;
 
                 var left = rows.GetRange(0, rowsMiddleNumber);
                 var right = rows.GetRange(rowsMiddleNumber, rows.Count - rowsMiddleNumber);
+
+                if (rows.Count < 12)
+                {
+                    left = rows;
+                    right = [];
+                }
 
                 var count = left.Count > right.Count ? left.Count : right.Count;
 
@@ -270,16 +273,14 @@ public class MenuPrinter
                     var leftRow = left.Count <= i ? null : left[i];
                     var rightRow = right.Count <= i ? null : right[i];
 
-                    if (leftRow == null && rightRow != null)
-                    {
-                        left.Add(CreateSpacerRow());
-                    }
+                    if (leftRow == null && rightRow != null) left.Add(CreateSpacerRow());
 
                     var row = new TableRow();
 
                     if (leftRow != null) row.Append(leftRow.Cells.ToArray());
 
-                    row.Append(CreateCell(" ", false, null, JustificationValues.Center, 1, true, true));
+                    row.Append(CreateCell(" ", false, null, JustificationValues.Center, 1,
+                        false, true));
 
                     if (rightRow != null) row.Append(rightRow.Cells.ToArray());
 
@@ -338,10 +339,9 @@ public class MenuPrinter
                 TempRow CreateSpacerRow()
                 {
                     var spacerRow = new TempRow();
-                    spacerRow.AddCell(CreateCell(" ", false, null, JustificationValues.Left));
-                    spacerRow.AddCell(CreateCell(" ", false, null, JustificationValues.Left));
-                    spacerRow.AddCell(CreateCell(" ", false, null, JustificationValues.Left));
-
+                    spacerRow.AddCell(CreateSpaceCell());
+                    spacerRow.AddCell(CreateSpaceCell());
+                    spacerRow.AddCell(CreateSpaceCell());
 
                     return spacerRow;
                 }
@@ -403,8 +403,13 @@ public class MenuPrinter
                     return (formattedNumber, measureUnit);
                 }
 
+                TableCell CreateSpaceCell()
+                {
+                    return CreateCell(" ", false, null, JustificationValues.Left, 0, true);
+                }
+
                 TableCell CreateCell(string text, bool bold, string? shading, JustificationValues justify, int span = 1,
-                    bool withBorder = true, bool onlyVerticalBorders = false)
+                    bool onlyHorizontalBorder = false, bool withoutBorders = false)
                 {
                     var run = new Run(new Text(text ?? string.Empty));
                     var runProps = new RunProperties();
@@ -419,38 +424,55 @@ public class MenuPrinter
                     if (!string.IsNullOrEmpty(shading))
                         props.Append(new Shading { Fill = shading, Val = ShadingPatternValues.Clear });
 
-                    if (withBorder)
+                    if (withoutBorders)
                     {
-                        if (onlyVerticalBorders)
-                        {
-                            // Только левая и правая границы (без верхней и нижней)
-                            // Устанавливаем Nil для верхней и нижней границ, чтобы они не отображались
-                            var borders = new TableCellBorders();
-                            borders.Append(new TopBorder { Val = new EnumValue<BorderValues>(BorderValues.Nil) });
-                            borders.Append(new BottomBorder { Val = new EnumValue<BorderValues>(BorderValues.Nil) });
-                            borders.Append(new LeftBorder { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 6 });
-                            borders.Append(new RightBorder { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 6 });
-                            props.Append(borders);
-                            
-                            // Добавляем отступы для лучшей видимости
-                            props.Append(new TableCellMargin(
-                                new TopMargin { Width = "0" },
-                                new BottomMargin { Width = "0" },
-                                new LeftMargin { Width = "100" },
-                                new RightMargin { Width = "100" }
-                            ));
-                        }
-                        else
-                        {
-                            // Все границы
-                            props.Append(new TableCellBorders(
-                                new TopBorder { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 4 },
-                                new BottomBorder { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 4 },
-                                new LeftBorder { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 4 },
-                                new RightBorder { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 4 }
-                            ));
-                        }
+                        var borders = new TableCellBorders();
+                        borders.Append(new TopBorder { Val = new EnumValue<BorderValues>(BorderValues.Nil) });
+                        borders.Append(new BottomBorder { Val = new EnumValue<BorderValues>(BorderValues.Nil) });
+                        borders.Append(new LeftBorder
+                            { Val = new EnumValue<BorderValues>(BorderValues.Nil) });
+                        borders.Append(new RightBorder
+                            { Val = new EnumValue<BorderValues>(BorderValues.Nil)});
+                        props.Append(borders);
+
+                        // Добавляем отступы для лучшей видимости
+                        props.Append(new TableCellMargin(
+                            new TopMargin { Width = "0" },
+                            new BottomMargin { Width = "0" },
+                            new LeftMargin { Width = "100" },
+                            new RightMargin { Width = "100" }
+                        ));
                     }
+                    else if (onlyHorizontalBorder)
+                    {
+                        var borders = new TableCellBorders();
+                        borders.Append(new LeftBorder { Val = new EnumValue<BorderValues>(BorderValues.Nil) });
+                        borders.Append(new RightBorder { Val = new EnumValue<BorderValues>(BorderValues.Nil) });
+                        borders.Append(new TopBorder
+                            { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 6 });
+                        borders.Append(new BottomBorder
+                            { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 6 });
+                        props.Append(borders);
+
+                        // Добавляем отступы для лучшей видимости
+                        props.Append(new TableCellMargin(
+                            new TopMargin { Width = "0" },
+                            new BottomMargin { Width = "0" },
+                            new LeftMargin { Width = "100" },
+                            new RightMargin { Width = "100" }
+                        ));
+                    }
+                    else
+                    {
+                        // Все границы
+                        props.Append(new TableCellBorders(
+                            new TopBorder { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 4 },
+                            new BottomBorder { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 4 },
+                            new LeftBorder { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 4 },
+                            new RightBorder { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 4 }
+                        ));
+                    }
+
 
                     cell.Append(props);
                     return cell;

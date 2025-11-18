@@ -3,11 +3,11 @@
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
       Loaded="Page_Loaded">
-    
+
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
         <!-- Меню -->
@@ -15,12 +15,12 @@
             <MenuItem Header="Документ">
                 <MenuItem Header="Сохранить в Word" Click="SaveToWord_Click">
                     <MenuItem.Icon>
-                        <materialDesign:PackIcon Kind="FileWord"/>
+                        <materialDesign:PackIcon Kind="FileWord" />
                     </MenuItem.Icon>
                 </MenuItem>
                 <MenuItem Header="Печать" Click="Print_Click">
                     <MenuItem.Icon>
-                        <materialDesign:PackIcon Kind="Printer"/>
+                        <materialDesign:PackIcon Kind="Printer" />
                     </MenuItem.Icon>
                 </MenuItem>
             </MenuItem>
@@ -30,11 +30,11 @@
         <materialDesign:Card Grid.Row="1" Margin="10" Padding="20">
             <FlowDocumentScrollViewer>
                 <FlowDocument x:Name="ReportDocument">
-                    <Paragraph x:Name="HeaderParagraph" TextAlignment="Center" FontSize="16" FontWeight="Bold"/>
+                    <Paragraph x:Name="HeaderParagraph" TextAlignment="Center" FontSize="16" FontWeight="Bold" />
                     <Table x:Name="ReportTable" CellSpacing="1" BorderBrush="Black" BorderThickness="1">
                         <Table.Columns>
-                            <TableColumn Width="3*"/>
-                            <TableColumn Width="1*"/>
+                            <TableColumn Width="3*" />
+                            <TableColumn Width="1*" />
                         </Table.Columns>
                     </Table>
                 </FlowDocument>
@@ -42,4 +42,3 @@
         </materialDesign:Card>
     </Grid>
 </Page>
-

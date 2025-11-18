@@ -24,49 +24,77 @@ public class MenuDel_act : INotifyPropertyChanged
     private int _del_id;
     private string _sost = string.Empty;
     private decimal _countpor;
-    private List<Components> _lcomp = new List<Components>();
+    private List<Components> _lcomp = new();
     private bool _isModified;
 
     public int Idmen
     {
         get => _idmen;
-        set { _idmen = value; OnPropertyChanged(nameof(Idmen)); }
+        set
+        {
+            _idmen = value;
+            OnPropertyChanged(nameof(Idmen));
+        }
     }
 
     public string Del
     {
         get => _del;
-        set { _del = value; OnPropertyChanged(nameof(Del)); }
+        set
+        {
+            _del = value;
+            OnPropertyChanged(nameof(Del));
+        }
     }
 
     public int Del_id
     {
         get => _del_id;
-        set { _del_id = value; OnPropertyChanged(nameof(Del_id)); }
+        set
+        {
+            _del_id = value;
+            OnPropertyChanged(nameof(Del_id));
+        }
     }
 
     public string Sost
     {
         get => _sost;
-        set { _sost = value; OnPropertyChanged(nameof(Sost)); }
+        set
+        {
+            _sost = value;
+            OnPropertyChanged(nameof(Sost));
+        }
     }
 
     public decimal Countpor
     {
         get => _countpor;
-        set { _countpor = value; OnPropertyChanged(nameof(Countpor)); }
+        set
+        {
+            _countpor = value;
+            OnPropertyChanged(nameof(Countpor));
+        }
     }
 
     public List<Components> Lcomp
     {
         get => _lcomp;
-        set { _lcomp = value; OnPropertyChanged(nameof(Lcomp)); }
+        set
+        {
+            _lcomp = value;
+            OnPropertyChanged(nameof(Lcomp));
+        }
     }
 
     public bool IsModified
     {
         get => _isModified;
-        set { _isModified = value; OnPropertyChanged(nameof(IsModified)); }
+        set
+        {
+            _isModified = value;
+            OnPropertyChanged(nameof(IsModified));
+        }
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;
@@ -90,7 +118,7 @@ public class DelicatesColl
     public string Opis { get; set; } = string.Empty;
     public int? IDType { get; set; }
     public int TypeSortOrder { get; set; }
-    public List<Components> Lcomp { get; set; } = new List<Components>();
+    public List<Components> Lcomp { get; set; } = new();
 }
 
 /// <summary>
@@ -129,79 +157,131 @@ public class Components : INotifyPropertyChanged
     public decimal Fass1
     {
         get => _fass1;
-        set { _fass1 = value; OnPropertyChanged(nameof(Fass1)); }
+        set
+        {
+            _fass1 = value;
+            OnPropertyChanged(nameof(Fass1));
+        }
     }
 
     public int Id
     {
         get => _id;
-        set { _id = value; OnPropertyChanged(nameof(Id)); }
+        set
+        {
+            _id = value;
+            OnPropertyChanged(nameof(Id));
+        }
     }
 
     public int Delid
     {
         get => _delid;
-        set { _delid = value; OnPropertyChanged(nameof(Delid)); }
+        set
+        {
+            _delid = value;
+            OnPropertyChanged(nameof(Delid));
+        }
     }
 
     public int Prodid
     {
         get => _prodid;
-        set { _prodid = value; OnPropertyChanged(nameof(Prodid)); }
+        set
+        {
+            _prodid = value;
+            OnPropertyChanged(nameof(Prodid));
+        }
     }
 
     public string Name
     {
         get => _name;
-        set { _name = value; OnPropertyChanged(nameof(Name)); }
+        set
+        {
+            _name = value;
+            OnPropertyChanged(nameof(Name));
+        }
     }
 
     public string Type
     {
         get => _type;
-        set { _type = value; OnPropertyChanged(nameof(Type)); }
+        set
+        {
+            _type = value;
+            OnPropertyChanged(nameof(Type));
+        }
     }
 
     public decimal Ves
     {
         get => _ves;
-        set { _ves = value; OnPropertyChanged(nameof(Ves)); }
+        set
+        {
+            _ves = value;
+            OnPropertyChanged(nameof(Ves));
+        }
     }
 
     public string Mera
     {
         get => _mera;
-        set { _mera = value; OnPropertyChanged(nameof(Mera)); }
+        set
+        {
+            _mera = value;
+            OnPropertyChanged(nameof(Mera));
+        }
     }
 
     public decimal Fass
     {
         get => _fass;
-        set { _fass = value; OnPropertyChanged(nameof(Fass)); }
+        set
+        {
+            _fass = value;
+            OnPropertyChanged(nameof(Fass));
+        }
     }
 
     public string FassIz
     {
         get => _fassIz;
-        set { _fassIz = value; OnPropertyChanged(nameof(FassIz)); }
+        set
+        {
+            _fassIz = value;
+            OnPropertyChanged(nameof(FassIz));
+        }
     }
 
     public decimal Count
     {
         get => _count;
-        set { _count = value; OnPropertyChanged(nameof(Count)); }
+        set
+        {
+            _count = value;
+            OnPropertyChanged(nameof(Count));
+        }
     }
 
     public int Flag
     {
         get => _flag;
-        set { _flag = value; OnPropertyChanged(nameof(Flag)); }
+        set
+        {
+            _flag = value;
+            OnPropertyChanged(nameof(Flag));
+        }
     }
 
     public string NameT
     {
         get => _nameT;
-        set { _nameT = value; OnPropertyChanged(nameof(NameT)); }
+        set
+        {
+            _nameT = value;
+            OnPropertyChanged(nameof(NameT));
+        }
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;
@@ -236,91 +316,151 @@ public class ProductView : INotifyPropertyChanged
     public string Name
     {
         get => _name;
-        set { _name = value; OnPropertyChanged(nameof(Name)); }
+        set
+        {
+            _name = value;
+            OnPropertyChanged(nameof(Name));
+        }
     }
 
     public string Type
     {
         get => _type;
-        set { _type = value; OnPropertyChanged(nameof(Type)); }
+        set
+        {
+            _type = value;
+            OnPropertyChanged(nameof(Type));
+        }
     }
 
     public string Ves
     {
         get => _ves;
-        set { _ves = value; OnPropertyChanged(nameof(Ves)); }
+        set
+        {
+            _ves = value;
+            OnPropertyChanged(nameof(Ves));
+        }
     }
 
     public int ID
     {
         get => _id;
-        set { _id = value; OnPropertyChanged(nameof(ID)); }
+        set
+        {
+            _id = value;
+            OnPropertyChanged(nameof(ID));
+        }
     }
 
     public decimal Fass
     {
         get => _fass;
-        set { _fass = value; OnPropertyChanged(nameof(Fass)); }
+        set
+        {
+            _fass = value;
+            OnPropertyChanged(nameof(Fass));
+        }
     }
 
     public int TID
     {
         get => _tid;
-        set { _tid = value; OnPropertyChanged(nameof(TID)); }
+        set
+        {
+            _tid = value;
+            OnPropertyChanged(nameof(TID));
+        }
     }
 
     public int VID
     {
         get => _vid;
-        set { _vid = value; OnPropertyChanged(nameof(VID)); }
+        set
+        {
+            _vid = value;
+            OnPropertyChanged(nameof(VID));
+        }
     }
 
     public int Iz
     {
         get => _iz;
-        set { _iz = value; OnPropertyChanged(nameof(Iz)); }
+        set
+        {
+            _iz = value;
+            OnPropertyChanged(nameof(Iz));
+        }
     }
 
     public string IzName
     {
         get => _izname;
-        set { _izname = value; OnPropertyChanged(nameof(IzName)); }
+        set
+        {
+            _izname = value;
+            OnPropertyChanged(nameof(IzName));
+        }
     }
 
     public int PrizMen
     {
         get => _prizMen;
-        set { _prizMen = value; OnPropertyChanged(nameof(PrizMen)); }
+        set
+        {
+            _prizMen = value;
+            OnPropertyChanged(nameof(PrizMen));
+        }
     }
 
     public bool PrizMen1
     {
         get => _prizMen1;
-        set { _prizMen1 = value; OnPropertyChanged(nameof(PrizMen1)); }
+        set
+        {
+            _prizMen1 = value;
+            OnPropertyChanged(nameof(PrizMen1));
+        }
     }
 
     public decimal Count
     {
         get => _count;
-        set { _count = value; OnPropertyChanged(nameof(Count)); }
+        set
+        {
+            _count = value;
+            OnPropertyChanged(nameof(Count));
+        }
     }
 
     public bool AutoAdd
     {
         get => _autoAdd;
-        set { _autoAdd = value; OnPropertyChanged(nameof(AutoAdd)); }
+        set
+        {
+            _autoAdd = value;
+            OnPropertyChanged(nameof(AutoAdd));
+        }
     }
 
     public int CountPeople
     {
         get => _countPeople;
-        set { _countPeople = value; OnPropertyChanged(nameof(CountPeople)); }
+        set
+        {
+            _countPeople = value;
+            OnPropertyChanged(nameof(CountPeople));
+        }
     }
 
     public bool MainCount
     {
         get => _mainCount;
-        set { _mainCount = value; OnPropertyChanged(nameof(MainCount)); }
+        set
+        {
+            _mainCount = value;
+            OnPropertyChanged(nameof(MainCount));
+        }
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;
@@ -348,4 +488,3 @@ public static class ProductEdit
     public static bool Flag { get; set; }
     public static ProductView? Pv { get; set; }
 }
-

@@ -3,11 +3,11 @@
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
       Loaded="Page_Loaded">
-    
+
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
         <!-- Меню -->
@@ -15,17 +15,17 @@
             <MenuItem Header="Документ">
                 <MenuItem Header="Сохранить в Word" Click="SaveToWord_Click">
                     <MenuItem.Icon>
-                        <materialDesign:PackIcon Kind="FileWord"/>
+                        <materialDesign:PackIcon Kind="FileWord" />
                     </MenuItem.Icon>
                 </MenuItem>
                 <MenuItem Header="Выгрузить в Excel" Click="ExportToExcel_Click">
                     <MenuItem.Icon>
-                        <materialDesign:PackIcon Kind="FileExcel"/>
+                        <materialDesign:PackIcon Kind="FileExcel" />
                     </MenuItem.Icon>
                 </MenuItem>
                 <MenuItem Header="Печать" Click="Print_Click">
                     <MenuItem.Icon>
-                        <materialDesign:PackIcon Kind="Printer"/>
+                        <materialDesign:PackIcon Kind="Printer" />
                     </MenuItem.Icon>
                 </MenuItem>
             </MenuItem>
@@ -33,18 +33,18 @@
 
         <!-- Вкладки -->
         <TabControl Grid.Row="1" Style="{StaticResource MaterialDesignTabControl}"
-                   materialDesign:ColorZoneAssist.Mode="PrimaryMid">
-            
+                    materialDesign:ColorZoneAssist.Mode="PrimaryMid">
+
             <!-- Вкладка отчета по продуктам -->
             <TabItem Header="Отчет по продуктам">
                 <materialDesign:Card Margin="10" Padding="20">
                     <FlowDocumentScrollViewer>
                         <FlowDocument x:Name="ReportDocument">
-                            <Paragraph x:Name="HeaderParagraph" TextAlignment="Center" FontSize="16" FontWeight="Bold"/>
+                            <Paragraph x:Name="HeaderParagraph" TextAlignment="Center" FontSize="16" FontWeight="Bold" />
                             <Table x:Name="ReportTable" CellSpacing="1" BorderBrush="Black" BorderThickness="1">
                                 <Table.Columns>
-                                    <TableColumn Width="3*"/>
-                                    <TableColumn Width="1*"/>
+                                    <TableColumn Width="3*" />
+                                    <TableColumn Width="1*" />
                                 </Table.Columns>
                             </Table>
                         </FlowDocument>
@@ -55,22 +55,22 @@
             <!-- Вкладка сводной таблицы -->
             <TabItem Header="Сводная таблица">
                 <materialDesign:Card Margin="10" Padding="10">
-                    <DataGrid x:Name="SummaryDataGrid" 
-                            AutoGenerateColumns="False"
-                            CanUserAddRows="False"
-                            IsReadOnly="True"
-                            materialDesign:DataGridAssist.CellPadding="10">
+                    <DataGrid x:Name="SummaryDataGrid"
+                              AutoGenerateColumns="False"
+                              CanUserAddRows="False"
+                              IsReadOnly="True"
+                              materialDesign:DataGridAssist.CellPadding="10">
                         <DataGrid.Columns>
-                            <DataGridTextColumn Header="Блюдо" Binding="{Binding Del}" Width="2*"/>
-                            <DataGridTextColumn Header="Количество" Binding="{Binding Countpor}" Width="*"/>
-                            <DataGridTextColumn Header="Продукт" Binding="{Binding Name}" Width="2*"/>
-                            <DataGridTextColumn Header="Тип" Binding="{Binding Type}" Width="*"/>
-                            <DataGridTextColumn Header="Вес" Binding="{Binding Ves}" Width="*"/>
-                            <DataGridTextColumn Header="Мера" Binding="{Binding Mera}" Width="*"/>
-                            <DataGridTextColumn Header="Фасовка" Binding="{Binding Fass}" Width="*"/>
-                            <DataGridTextColumn Header="Мера фасовки" Binding="{Binding FassIz}" Width="*"/>
-                            <DataGridTextColumn Header="Сумма продукта в нат ед" Binding="{Binding Itog}" Width="*"/>
-                            <DataGridTextColumn Header="Сумма продукта" Binding="{Binding ItogFass}" Width="*"/>
+                            <DataGridTextColumn Header="Блюдо" Binding="{Binding Del}" Width="2*" />
+                            <DataGridTextColumn Header="Количество" Binding="{Binding Countpor}" Width="*" />
+                            <DataGridTextColumn Header="Продукт" Binding="{Binding Name}" Width="2*" />
+                            <DataGridTextColumn Header="Тип" Binding="{Binding Type}" Width="*" />
+                            <DataGridTextColumn Header="Вес" Binding="{Binding Ves}" Width="*" />
+                            <DataGridTextColumn Header="Мера" Binding="{Binding Mera}" Width="*" />
+                            <DataGridTextColumn Header="Фасовка" Binding="{Binding Fass}" Width="*" />
+                            <DataGridTextColumn Header="Мера фасовки" Binding="{Binding FassIz}" Width="*" />
+                            <DataGridTextColumn Header="Сумма продукта в нат ед" Binding="{Binding Itog}" Width="*" />
+                            <DataGridTextColumn Header="Сумма продукта" Binding="{Binding ItogFass}" Width="*" />
                         </DataGrid.Columns>
                     </DataGrid>
                 </materialDesign:Card>
@@ -78,4 +78,3 @@
         </TabControl>
     </Grid>
 </Page>
-

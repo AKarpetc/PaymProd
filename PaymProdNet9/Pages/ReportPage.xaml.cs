@@ -26,7 +26,7 @@ public partial class ReportPage : Page
     public ReportPage()
     {
         InitializeComponent();
-        
+
         _menuDelicates = new ObservableCollection<MenuDel_act>();
         _banquetInfo = new List<string>();
         _summaryData = new List<DelicatesCollForSvod>();
@@ -59,32 +59,30 @@ public partial class ReportPage : Page
             // Генерируем сводные данные для группировки
             var summaryData = new List<DelicatesCollForSvod>();
             foreach (var delicate in _menuDelicates.Where(d => d.Lcomp != null && d.Lcomp.Any()))
+            foreach (var component in delicate.Lcomp)
             {
-                foreach (var component in delicate.Lcomp)
+                var item = new DelicatesCollForSvod
                 {
-                    var item = new DelicatesCollForSvod
-                    {
-                        Del = delicate.Del,
-                        Del_id = delicate.Del_id,
-                        Countpor = delicate.Countpor,
-                        Name = component.Name,
-                        Type = component.Type,
-                        Ves = component.Ves,
-                        Mera = component.Mera,
-                        Fass = component.Fass,
-                        FassIz = component.FassIz,
-                        NameT = component.NameT,
-                        Itog = component.Ves * delicate.Countpor,
-                        ItogFass = component.Fass == 0 
-                            ? component.Ves * delicate.Countpor 
-                            : Math.Round((component.Ves * delicate.Countpor) / component.Fass, 2)
-                    };
-                    summaryData.Add(item);
-                }
+                    Del = delicate.Del,
+                    Del_id = delicate.Del_id,
+                    Countpor = delicate.Countpor,
+                    Name = component.Name,
+                    Type = component.Type,
+                    Ves = component.Ves,
+                    Mera = component.Mera,
+                    Fass = component.Fass,
+                    FassIz = component.FassIz,
+                    NameT = component.NameT,
+                    Itog = component.Ves * delicate.Countpor,
+                    ItogFass = component.Fass == 0
+                        ? component.Ves * delicate.Countpor
+                        : Math.Round(component.Ves * delicate.Countpor / component.Fass, 2)
+                };
+                summaryData.Add(item);
             }
 
             // Получаем типы продуктов для сортировки
-            var productRepository = new Data.ProductRepository();
+            var productRepository = new ProductRepository();
             var productTypes = productRepository.GetProductTypes();
             var productTypesDict = productTypes.ToDictionary(pt => pt.Name, pt => pt.SortOrder);
 
@@ -95,12 +93,12 @@ public partial class ReportPage : Page
                 .ThenBy(g => g.Key);
 
             var rowGroup = new TableRowGroup();
-            
+
             foreach (var group in groupedByType)
             {
                 // Заголовок группы (тип продукта)
                 var headerRow = new TableRow();
-                var headerCell = new TableCell(new Paragraph(new Run(group.Key) 
+                var headerCell = new TableCell(new Paragraph(new Run(group.Key)
                     { FontWeight = FontWeights.Bold }))
                 {
                     ColumnSpan = 2,
@@ -128,7 +126,7 @@ public partial class ReportPage : Page
                 foreach (var product in groupedProducts)
                 {
                     var row = new TableRow();
-                    
+
                     // Название продукта
                     var nameCell = new TableCell(new Paragraph(new Run(product.Name)))
                     {
@@ -139,35 +137,34 @@ public partial class ReportPage : Page
                     row.Cells.Add(nameCell);
 
                     // Количество с единицей измерения
-                    string measureUnit = product.Fass > 0 && !string.IsNullOrEmpty(product.FassIz) 
-                        ? product.FassIz 
-                        : (!string.IsNullOrEmpty(product.Mera) ? product.Mera : "шт");
-                    
-                    double totalValue = (double)product.TotalWeight;
-                    
+                    var measureUnit = product.Fass > 0 && !string.IsNullOrEmpty(product.FassIz)
+                        ? product.FassIz
+                        : !string.IsNullOrEmpty(product.Mera)
+                            ? product.Mera
+                            : "шт";
+
+                    var totalValue = (double)product.TotalWeight;
+
                     // Конвертируем граммы в килограммы, если нужно
-                    if (product.Fass > 0 && 
-                        !string.IsNullOrEmpty(product.Mera) && 
+                    if (product.Fass > 0 &&
+                        !string.IsNullOrEmpty(product.Mera) &&
                         !string.IsNullOrEmpty(product.FassIz) &&
-                        (product.Mera.ToLower().Contains("г") || product.Mera.ToLower().Contains("грамм")) && 
+                        (product.Mera.ToLower().Contains("г") || product.Mera.ToLower().Contains("грамм")) &&
                         (product.FassIz.ToLower().Contains("кг") || product.FassIz.ToLower().Contains("kg")))
                     {
                         totalValue = totalValue / 1000.0;
                         measureUnit = "кг";
                     }
-                    
+
                     // Получаем точность округления
                     var measures = productRepository.GetMeasures();
-                    int roundingPrecision = 2;
-                    var measure = measures.FirstOrDefault(m => 
+                    var roundingPrecision = 2;
+                    var measure = measures.FirstOrDefault(m =>
                         m.Name.ToLower().Trim() == measureUnit.ToLower().Trim() ||
                         measureUnit.ToLower().Contains(m.Name.ToLower()) ||
                         m.Name.ToLower().Contains(measureUnit.ToLower()));
-                    if (measure != null)
-                    {
-                        roundingPrecision = measure.RoundingPrecision;
-                    }
-                    
+                    if (measure != null) roundingPrecision = measure.RoundingPrecision;
+
                     // Округляем вверх
                     double roundedValue;
                     if (roundingPrecision == 0)
@@ -176,20 +173,16 @@ public partial class ReportPage : Page
                     }
                     else
                     {
-                        double multiplier = Math.Pow(10, roundingPrecision);
+                        var multiplier = Math.Pow(10, roundingPrecision);
                         roundedValue = Math.Ceiling(totalValue * multiplier) / multiplier;
                     }
-                    
+
                     string formattedValue;
                     if (roundingPrecision == 0)
-                    {
                         formattedValue = $"{(int)roundedValue}{measureUnit}";
-                    }
                     else
-                    {
                         formattedValue = $"{roundedValue.ToString($"F{roundingPrecision}")}{measureUnit}";
-                    }
-                    
+
                     var countCell = new TableCell(new Paragraph(new Run(formattedValue)))
                     {
                         BorderBrush = Brushes.Black,
@@ -207,7 +200,7 @@ public partial class ReportPage : Page
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Ошибка при генерации отчета: {ex.Message}", 
+            MessageBox.Show($"Ошибка при генерации отчета: {ex.Message}",
                 "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
@@ -222,36 +215,34 @@ public partial class ReportPage : Page
             _summaryData.Clear();
 
             foreach (var delicate in _menuDelicates.Where(d => d.Lcomp != null && d.Lcomp.Any()))
+            foreach (var component in delicate.Lcomp)
             {
-                foreach (var component in delicate.Lcomp)
+                var item = new DelicatesCollForSvod
                 {
-                    var item = new DelicatesCollForSvod
-                    {
-                        Del = delicate.Del,
-                        Del_id = delicate.Del_id,
-                        Countpor = delicate.Countpor,
-                        Name = component.Name,
-                        Type = component.Type,
-                        Ves = component.Ves,
-                        Mera = component.Mera,
-                        Fass = component.Fass,
-                        FassIz = component.FassIz,
-                        NameT = component.NameT,
-                        Itog = component.Ves * delicate.Countpor,
-                        ItogFass = component.Fass == 0 
-                            ? component.Ves * delicate.Countpor 
-                            : Math.Round((component.Ves * delicate.Countpor) / component.Fass, 2)
-                    };
-                    
-                    _summaryData.Add(item);
-                }
+                    Del = delicate.Del,
+                    Del_id = delicate.Del_id,
+                    Countpor = delicate.Countpor,
+                    Name = component.Name,
+                    Type = component.Type,
+                    Ves = component.Ves,
+                    Mera = component.Mera,
+                    Fass = component.Fass,
+                    FassIz = component.FassIz,
+                    NameT = component.NameT,
+                    Itog = component.Ves * delicate.Countpor,
+                    ItogFass = component.Fass == 0
+                        ? component.Ves * delicate.Countpor
+                        : Math.Round(component.Ves * delicate.Countpor / component.Fass, 2)
+                };
+
+                _summaryData.Add(item);
             }
 
             SummaryDataGrid.ItemsSource = _summaryData;
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Ошибка при генерации сводных данных: {ex.Message}", 
+            MessageBox.Show($"Ошибка при генерации сводных данных: {ex.Message}",
                 "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
@@ -263,12 +254,12 @@ public partial class ReportPage : Page
     {
         try
         {
-            _menuPrinter.PrintReport(_summaryData, 
+            _menuPrinter.PrintReport(_summaryData,
                 $"{_banquetInfo[0]}, {_banquetInfo[1]} человек, {_banquetInfo[2]}");
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Ошибка при создании документа: {ex.Message}", 
+            MessageBox.Show($"Ошибка при создании документа: {ex.Message}",
                 "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
@@ -298,17 +289,20 @@ public partial class ReportPage : Page
                 worksheet.Cell(3, 1).Value = $"Дата: {_banquetInfo[2]}";
 
                 // Заголовки колонок
-                var headers = new[] { "Блюдо", "Количество", "Продукт", "Тип", "Вес", "Мера", 
-                    "Фасовка", "Мера фасовки", "Сумма продукта в нат ед", "Сумма продукта" };
-                
-                for (int i = 0; i < headers.Length; i++)
+                var headers = new[]
+                {
+                    "Блюдо", "Количество", "Продукт", "Тип", "Вес", "Мера",
+                    "Фасовка", "Мера фасовки", "Сумма продукта в нат ед", "Сумма продукта"
+                };
+
+                for (var i = 0; i < headers.Length; i++)
                 {
                     worksheet.Cell(5, i + 1).Value = headers[i];
                     worksheet.Cell(5, i + 1).Style.Font.Bold = true;
                 }
 
                 // Данные
-                int row = 6;
+                var row = 6;
                 foreach (var item in _summaryData)
                 {
                     worksheet.Cell(row, 1).Value = item.Del;
@@ -328,14 +322,14 @@ public partial class ReportPage : Page
                 worksheet.Columns().AdjustToContents();
 
                 workbook.SaveAs(dialog.FileName);
-                
-                MessageBox.Show("Файл успешно сохранен!", 
+
+                MessageBox.Show("Файл успешно сохранен!",
                     "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
             }
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Ошибка при экспорте в Excel: {ex.Message}", 
+            MessageBox.Show($"Ошибка при экспорте в Excel: {ex.Message}",
                 "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
@@ -349,17 +343,14 @@ public partial class ReportPage : Page
         {
             var printDialog = new PrintDialog();
             if (printDialog.ShowDialog() == true)
-            {
                 printDialog.PrintDocument(
-                    ((IDocumentPaginatorSource)ReportDocument).DocumentPaginator, 
+                    ((IDocumentPaginatorSource)ReportDocument).DocumentPaginator,
                     "Отчет по меню");
-            }
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Ошибка при печати: {ex.Message}", 
+            MessageBox.Show($"Ошибка при печати: {ex.Message}",
                 "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
 }
-

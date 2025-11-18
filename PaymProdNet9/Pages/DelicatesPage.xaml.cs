@@ -12,31 +12,31 @@ public partial class DelicatesPage : Page
 {
     private readonly DelicateRepository _delicateRepository;
     private readonly ProductRepository _productRepository;
-    
+
     private ObservableCollection<DelicatesColl> _allDelicates;
     private ObservableCollection<ProductView> _allProducts;
     private ObservableCollection<Components> _currentDelicateComponents;
-    
+
     private int? _currentDelicateId;
     private bool _isEditMode; // true = редактирование, false = создание
 
     public DelicatesPage()
     {
         InitializeComponent();
-        
+
         _delicateRepository = new DelicateRepository();
         _productRepository = new ProductRepository();
-        
+
         _allDelicates = new ObservableCollection<DelicatesColl>();
         _allProducts = new ObservableCollection<ProductView>();
         _currentDelicateComponents = new ObservableCollection<Components>();
-        
+
         DelicateComponentsGrid.ItemsSource = _currentDelicateComponents;
-        
+
         // Подписываемся на событие Loaded для установки обработчика навигации
-        this.Loaded += DelicatesPage_LoadedInternal;
+        Loaded += DelicatesPage_LoadedInternal;
     }
-    
+
     /// <summary>
     /// Обработчик загрузки страницы для установки навигационного обработчика
     /// </summary>
@@ -49,7 +49,7 @@ public partial class DelicatesPage : Page
             NavigationService.Navigating += DelicatesPage_Navigating;
         }
     }
-    
+
     /// <summary>
     /// Обработка навигации назад - работает как "Отмена" в режиме редактирования
     /// </summary>
@@ -60,7 +60,7 @@ public partial class DelicatesPage : Page
         {
             // Отменяем навигацию
             e.Cancel = true;
-            
+
             // Вызываем метод отмены (возвращаемся к списку)
             ShowListView();
         }
@@ -84,48 +84,42 @@ public partial class DelicatesPage : Page
             var delicates = _delicateRepository.GetAllDelicates()
                 .OrderByDescending(d => d.Id) // Новые блюда вверху
                 .ToList();
-            
-            foreach (var delicate in delicates)
-            {
-                _allDelicates.Add(delicate);
-            }
-            
+
+            foreach (var delicate in delicates) _allDelicates.Add(delicate);
+
             DelicatesDataGrid.ItemsSource = _allDelicates;
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Ошибка при загрузке блюд: {ex.Message}", 
+            MessageBox.Show($"Ошибка при загрузке блюд: {ex.Message}",
                 "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
-    
+
     private void DelicateSearch_TextChanged(object sender, TextChangedEventArgs e)
     {
         var searchText = DelicateSearchBox.Text.ToLower();
-        
+
         if (string.IsNullOrWhiteSpace(searchText))
         {
             LoadDelicates();
             return;
         }
-        
+
         try
         {
             _allDelicates.Clear();
             var allDelicates = _delicateRepository.GetAllDelicates();
-            var filtered = allDelicates.Where(d => 
-                d.Name.ToLower().Contains(searchText) || 
+            var filtered = allDelicates.Where(d =>
+                d.Name.ToLower().Contains(searchText) ||
                 (d.Type != null && d.Type.ToLower().Contains(searchText))
             ).OrderByDescending(d => d.Id);
-            
-            foreach (var delicate in filtered)
-            {
-                _allDelicates.Add(delicate);
-            }
+
+            foreach (var delicate in filtered) _allDelicates.Add(delicate);
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Ошибка при поиске блюд: {ex.Message}", 
+            MessageBox.Show($"Ошибка при поиске блюд: {ex.Message}",
                 "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
@@ -136,15 +130,12 @@ public partial class DelicatesPage : Page
         {
             _allProducts.Clear();
             var products = _productRepository.GetAllProducts();
-            foreach (var product in products)
-            {
-                _allProducts.Add(product);
-            }
+            foreach (var product in products) _allProducts.Add(product);
             AvailableProductsList.ItemsSource = _allProducts;
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Ошибка при загрузке продуктов: {ex.Message}", 
+            MessageBox.Show($"Ошибка при загрузке продуктов: {ex.Message}",
                 "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
@@ -158,7 +149,7 @@ public partial class DelicatesPage : Page
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Ошибка при загрузке типов блюд: {ex.Message}", 
+            MessageBox.Show($"Ошибка при загрузке типов блюд: {ex.Message}",
                 "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
@@ -178,10 +169,10 @@ public partial class DelicatesPage : Page
     private void ShowEditView(bool isEdit)
     {
         _isEditMode = isEdit;
-        
+
         ListViewPanel.Visibility = Visibility.Collapsed;
         EditViewPanel.Visibility = Visibility.Visible;
-        
+
         if (isEdit)
         {
             EditPanelTitle.Text = "Редактирование блюда";
@@ -205,7 +196,7 @@ public partial class DelicatesPage : Page
         DelicateCountTextBox.Clear();
         DelicateTypeComboBox.SelectedIndex = -1;
         _currentDelicateComponents.Clear();
-        
+
         ShowEditView(false);
         DelicateNameTextBox.Focus();
     }
@@ -222,27 +213,24 @@ public partial class DelicatesPage : Page
             if (delicate == null) return;
 
             _currentDelicateId = delicate.Id;
-            
+
             DelicateNameTextBox.Text = delicate.Name;
             DelicateWeightTextBox.Text = delicate.Ves.ToString();
             DelicateCountTextBox.Text = delicate.Count.ToString();
-            
+
             // Устанавливаем тип
             var types = _delicateRepository.GetDelicateTypes();
             var typeToSelect = types.FirstOrDefault(t => t.Name == delicate.Type);
-            if (typeToSelect != null && typeToSelect.Id > 0)
-            {
-                DelicateTypeComboBox.SelectedValue = typeToSelect.Id;
-            }
-            
+            if (typeToSelect != null && typeToSelect.Id > 0) DelicateTypeComboBox.SelectedValue = typeToSelect.Id;
+
             // Загружаем компоненты
             LoadDelicateComponents(delicate.Id);
-            
+
             ShowEditView(true);
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Ошибка при загрузке блюда: {ex.Message}", 
+            MessageBox.Show($"Ошибка при загрузке блюда: {ex.Message}",
                 "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
@@ -254,16 +242,12 @@ public partial class DelicatesPage : Page
             _currentDelicateComponents.Clear();
             var delicate = _delicateRepository.GetDelicateById(delicateId);
             if (delicate?.Lcomp != null)
-            {
                 foreach (var component in delicate.Lcomp)
-                {
                     _currentDelicateComponents.Add(component);
-                }
-            }
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Ошибка при загрузке состава блюда: {ex.Message}", 
+            MessageBox.Show($"Ошибка при загрузке состава блюда: {ex.Message}",
                 "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
@@ -278,7 +262,7 @@ public partial class DelicatesPage : Page
             // Валидация
             if (string.IsNullOrWhiteSpace(DelicateNameTextBox.Text))
             {
-                MessageBox.Show("Введите название блюда!", 
+                MessageBox.Show("Введите название блюда!",
                     "Внимание", MessageBoxButton.OK, MessageBoxImage.Warning);
                 DelicateNameTextBox.Focus();
                 return;
@@ -286,7 +270,7 @@ public partial class DelicatesPage : Page
 
             if (DelicateTypeComboBox.SelectedValue == null)
             {
-                MessageBox.Show("Выберите тип блюда!", 
+                MessageBox.Show("Выберите тип блюда!",
                     "Внимание", MessageBoxButton.OK, MessageBoxImage.Warning);
                 DelicateTypeComboBox.Focus();
                 return;
@@ -301,11 +285,11 @@ public partial class DelicatesPage : Page
                 // Обновление существующего блюда
                 _delicateRepository.UpdateDelicate(
                     _currentDelicateId.Value, typeId, DelicateNameTextBox.Text, ves, count);
-                
+
                 // Сохранение компонентов
                 SaveDelicateComponents(_currentDelicateId.Value);
-                
-                MessageBox.Show("Блюдо успешно обновлено!", 
+
+                MessageBox.Show("Блюдо успешно обновлено!",
                     "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             else
@@ -313,14 +297,11 @@ public partial class DelicatesPage : Page
                 // Создание нового блюда
                 var newId = _delicateRepository.AddDelicate(typeId, DelicateNameTextBox.Text, ves, count);
                 _currentDelicateId = newId;
-                
+
                 // Сохранение компонентов
-                if (_currentDelicateComponents.Count > 0)
-                {
-                    SaveDelicateComponents(newId);
-                }
-                
-                MessageBox.Show("Блюдо успешно создано!", 
+                if (_currentDelicateComponents.Count > 0) SaveDelicateComponents(newId);
+
+                MessageBox.Show("Блюдо успешно создано!",
                     "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
             }
 
@@ -329,7 +310,7 @@ public partial class DelicatesPage : Page
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Ошибка при сохранении блюда: {ex.Message}", 
+            MessageBox.Show($"Ошибка при сохранении блюда: {ex.Message}",
                 "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
@@ -344,25 +325,17 @@ public partial class DelicatesPage : Page
             // Удаляем старые компоненты
             var existing = _delicateRepository.GetDelicateById(delicateId);
             if (existing?.Lcomp != null)
-            {
                 foreach (var component in existing.Lcomp)
-                {
                     _delicateRepository.DeleteComponentByProductAndDelicate(component.Prodid, delicateId);
-                }
-            }
-            
+
             // Добавляем новые компоненты
             foreach (var component in _currentDelicateComponents)
-            {
                 if (component.Ves > 0) // Только если указан вес
-                {
                     _delicateRepository.AddComponent(delicateId, component.Prodid, component.Ves);
-                }
-            }
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Ошибка при сохранении состава блюда: {ex.Message}", 
+            MessageBox.Show($"Ошибка при сохранении состава блюда: {ex.Message}",
                 "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
@@ -372,13 +345,10 @@ public partial class DelicatesPage : Page
     /// </summary>
     private void CancelEdit_Click(object sender, RoutedEventArgs e)
     {
-        var result = MessageBox.Show("Отменить изменения и вернуться к списку?", 
+        var result = MessageBox.Show("Отменить изменения и вернуться к списку?",
             "Подтверждение", MessageBoxButton.YesNo, MessageBoxImage.Question);
-        
-        if (result == MessageBoxResult.Yes)
-        {
-            ShowListView();
-        }
+
+        if (result == MessageBoxResult.Yes) ShowListView();
     }
 
     /// <summary>
@@ -392,21 +362,21 @@ public partial class DelicatesPage : Page
             var delicate = button?.DataContext as DelicatesColl;
             if (delicate == null) return;
 
-            var result = MessageBox.Show($"Удалить блюдо \"{delicate.Name}\"?", 
+            var result = MessageBox.Show($"Удалить блюдо \"{delicate.Name}\"?",
                 "Подтверждение", MessageBoxButton.YesNo, MessageBoxImage.Question);
-            
+
             if (result == MessageBoxResult.Yes)
             {
                 _delicateRepository.DeleteDelicate(delicate.Id);
                 LoadDelicates();
-                
-                MessageBox.Show("Блюдо успешно удалено!", 
+
+                MessageBox.Show("Блюдо успешно удалено!",
                     "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
             }
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Ошибка при удалении блюда: {ex.Message}", 
+            MessageBox.Show($"Ошибка при удалении блюда: {ex.Message}",
                 "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
@@ -420,7 +390,7 @@ public partial class DelicatesPage : Page
         {
             if (_currentDelicateComponents.Any(c => c.Prodid == selectedProduct.ID))
             {
-                MessageBox.Show("Этот продукт уже добавлен в состав", "Внимание", 
+                MessageBox.Show("Этот продукт уже добавлен в состав", "Внимание",
                     MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
@@ -437,7 +407,7 @@ public partial class DelicatesPage : Page
         }
         else
         {
-            MessageBox.Show("Выберите продукт из списка", "Внимание", 
+            MessageBox.Show("Выберите продукт из списка", "Внимание",
                 MessageBoxButton.OK, MessageBoxImage.Warning);
         }
     }
@@ -448,14 +418,10 @@ public partial class DelicatesPage : Page
     private void RemoveProductFromDelicate_Click(object sender, RoutedEventArgs e)
     {
         if (DelicateComponentsGrid.SelectedItem is Components selectedComponent)
-        {
             _currentDelicateComponents.Remove(selectedComponent);
-        }
         else
-        {
-            MessageBox.Show("Выберите продукт из состава для удаления", "Внимание", 
+            MessageBox.Show("Выберите продукт из состава для удаления", "Внимание",
                 MessageBoxButton.OK, MessageBoxImage.Warning);
-        }
     }
 
     /// <summary>
@@ -470,7 +436,7 @@ public partial class DelicatesPage : Page
         }
         else
         {
-            var filtered = _allProducts.Where(p => 
+            var filtered = _allProducts.Where(p =>
                 p.Name.ToLower().Contains(searchText)).ToList();
             AvailableProductsList.ItemsSource = filtered;
         }

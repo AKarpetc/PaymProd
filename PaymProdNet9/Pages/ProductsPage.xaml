@@ -6,26 +6,26 @@
 
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="*"/>
+            <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
         <!-- РЕЖИМ ПРОСМОТРА СПИСКА -->
         <Grid x:Name="ProductsListView" Visibility="Visible">
             <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
             </Grid.RowDefinitions>
 
             <!-- Кнопка создания нового продукта и поиск -->
             <materialDesign:Card Grid.Row="0" Margin="10,10,10,5" Padding="10">
                 <Grid>
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
                     </Grid.ColumnDefinitions>
-                    
+
                     <Button Grid.Column="0"
-                            Content="➕ Создать новый продукт" 
+                            Content="➕ Создать новый продукт"
                             Style="{StaticResource MaterialDesignRaisedButton}"
                             materialDesign:ButtonAssist.CornerRadius="8"
                             Background="#4CAF50"
@@ -40,10 +40,10 @@
                             ToolTip="Создать новый продукт"
                             Margin="0,0,15,0">
                         <Button.Effect>
-                            <DropShadowEffect Color="#4CAF50" BlurRadius="8" ShadowDepth="2" Opacity="0.3"/>
+                            <DropShadowEffect Color="#4CAF50" BlurRadius="8" ShadowDepth="2" Opacity="0.3" />
                         </Button.Effect>
                     </Button>
-                    
+
                     <TextBox Grid.Column="1"
                              x:Name="ProductSearchBox"
                              materialDesign:HintAssist.Hint="Поиск..."
@@ -51,7 +51,7 @@
                              VerticalAlignment="Center"
                              FontSize="14"
                              TextChanged="ProductSearch_TextChanged"
-                             HorizontalAlignment="Stretch"/>
+                             HorizontalAlignment="Stretch" />
                 </Grid>
             </materialDesign:Card>
 
@@ -59,15 +59,15 @@
             <materialDesign:Card Grid.Row="1" Margin="10" Padding="10">
                 <Grid>
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
                     </Grid.RowDefinitions>
 
-                    <TextBlock Grid.Row="0" Text="Все продукты:" 
+                    <TextBlock Grid.Row="0" Text="Все продукты:"
                                Style="{StaticResource MaterialDesignHeadline6TextBlock}"
-                               Margin="0,0,0,10"/>
+                               Margin="0,0,0,10" />
 
-                    <DataGrid Grid.Row="1" x:Name="ProductsDataGrid" 
+                    <DataGrid Grid.Row="1" x:Name="ProductsDataGrid"
                               AutoGenerateColumns="False"
                               CanUserAddRows="False"
                               SelectionMode="Single"
@@ -84,9 +84,9 @@
                                                 Width="24"
                                                 Height="24"
                                                 ToolTip="Удалить продукт">
-                                            <materialDesign:PackIcon Kind="Delete" 
-                                                                     Width="14" 
-                                                                     Height="14"/>
+                                            <materialDesign:PackIcon Kind="Delete"
+                                                                     Width="14"
+                                                                     Height="14" />
                                         </Button>
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
@@ -100,17 +100,17 @@
                                                 Width="24"
                                                 Height="24"
                                                 ToolTip="Редактировать продукт">
-                                            <materialDesign:PackIcon Kind="Pencil" 
-                                                                     Width="14" 
-                                                                     Height="14"/>
+                                            <materialDesign:PackIcon Kind="Pencil"
+                                                                     Width="14"
+                                                                     Height="14" />
                                         </Button>
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
 
-                            <DataGridTextColumn Header="Название" Binding="{Binding Name}" Width="2*"/>
-                            <DataGridTextColumn Header="Тип" Binding="{Binding Type}" Width="*"/>
-                            <DataGridTextColumn Header="Единица измерения" Binding="{Binding IzName}" Width="*"/>
+                            <DataGridTextColumn Header="Название" Binding="{Binding Name}" Width="2*" />
+                            <DataGridTextColumn Header="Тип" Binding="{Binding Type}" Width="*" />
+                            <DataGridTextColumn Header="Единица измерения" Binding="{Binding IzName}" Width="*" />
                         </DataGrid.Columns>
                     </DataGrid>
                 </Grid>
@@ -120,15 +120,15 @@
         <!-- РЕЖИМ СОЗДАНИЯ/РЕДАКТИРОВАНИЯ -->
         <Grid x:Name="ProductEditView" Visibility="Collapsed">
             <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="*"/>
-                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
-            <TextBlock Grid.Row="0" x:Name="EditModeTitle" 
+            <TextBlock Grid.Row="0" x:Name="EditModeTitle"
                        Style="{StaticResource MaterialDesignHeadline5TextBlock}"
                        Margin="20,10,20,15"
-                       Text="Создание нового продукта"/>
+                       Text="Создание нового продукта" />
 
             <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Margin="10">
                 <materialDesign:Card Padding="20">
@@ -136,47 +136,47 @@
                         <!-- Форма редактирования продукта -->
                         <TextBlock Text="Основная информация"
                                    Style="{StaticResource MaterialDesignHeadline6TextBlock}"
-                                   Margin="0,0,0,15"/>
+                                   Margin="0,0,0,15" />
 
                         <Grid>
                             <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto" />
                             </Grid.RowDefinitions>
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
                             </Grid.ColumnDefinitions>
 
                             <StackPanel Grid.Column="0" Margin="0,0,10,0">
-                                <TextBlock Text="Название продукта:" 
+                                <TextBlock Text="Название продукта:"
                                            Style="{StaticResource MaterialDesignBody2TextBlock}"
-                                           Margin="0,0,0,5"/>
-                                <TextBox x:Name="ProductNameTextBox" 
+                                           Margin="0,0,0,5" />
+                                <TextBox x:Name="ProductNameTextBox"
                                          materialDesign:HintAssist.Hint="Введите название продукта"
-                                         Style="{StaticResource MaterialDesignOutlinedTextBox}"/>
+                                         Style="{StaticResource MaterialDesignOutlinedTextBox}" />
                             </StackPanel>
 
                             <StackPanel Grid.Column="1" Margin="5,0">
-                                <TextBlock Text="Тип продукта:" 
+                                <TextBlock Text="Тип продукта:"
                                            Style="{StaticResource MaterialDesignBody2TextBlock}"
-                                           Margin="0,0,0,5"/>
-                                <ComboBox x:Name="ProductTypeComboBox" 
+                                           Margin="0,0,0,5" />
+                                <ComboBox x:Name="ProductTypeComboBox"
                                           DisplayMemberPath="Name"
                                           SelectedValuePath="Id"
                                           Style="{StaticResource MaterialDesignOutlinedComboBox}"
-                                          materialDesign:HintAssist.Hint="Выберите тип"/>
+                                          materialDesign:HintAssist.Hint="Выберите тип" />
                             </StackPanel>
 
                             <StackPanel Grid.Column="2" Margin="10,0,0,0">
-                                <TextBlock Text="Единица измерения:" 
+                                <TextBlock Text="Единица измерения:"
                                            Style="{StaticResource MaterialDesignBody2TextBlock}"
-                                           Margin="0,0,0,5"/>
-                                <ComboBox x:Name="ProductMeasureComboBox" 
+                                           Margin="0,0,0,5" />
+                                <ComboBox x:Name="ProductMeasureComboBox"
                                           DisplayMemberPath="Name"
                                           SelectedValuePath="Id"
                                           Style="{StaticResource MaterialDesignOutlinedComboBox}"
-                                          materialDesign:HintAssist.Hint="Выберите меру"/>
+                                          materialDesign:HintAssist.Hint="Выберите меру" />
                             </StackPanel>
                         </Grid>
                     </StackPanel>
@@ -186,18 +186,18 @@
             <!-- Кнопки действий -->
             <materialDesign:Card Grid.Row="2" Margin="10" Padding="15">
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                    <Button Content="❌ Отмена" 
+                    <Button Content="❌ Отмена"
                             Style="{StaticResource MaterialDesignOutlinedButton}"
-                            Click="CancelEdit_Click" 
+                            Click="CancelEdit_Click"
                             Margin="0,0,15,0"
                             Padding="30,15"
                             FontSize="15"
                             FontWeight="SemiBold"
                             MinHeight="50"
                             MinWidth="150"
-                            ToolTip="Отменить и вернуться к списку"/>
+                            ToolTip="Отменить и вернуться к списку" />
                     <Button x:Name="SaveButton"
-                            Content="💾 Создать продукт" 
+                            Content="💾 Создать продукт"
                             Style="{StaticResource MaterialDesignRaisedButton}"
                             Click="SaveProduct_Click"
                             Background="#4CAF50"
@@ -206,10 +206,9 @@
                             FontWeight="SemiBold"
                             MinHeight="50"
                             MinWidth="180"
-                            ToolTip="Сохранить продукт"/>
+                            ToolTip="Сохранить продукт" />
                 </StackPanel>
             </materialDesign:Card>
         </Grid>
     </Grid>
 </Page>
-

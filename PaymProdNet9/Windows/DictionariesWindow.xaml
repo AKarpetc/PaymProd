@@ -9,55 +9,55 @@
 
     <Grid>
         <TabControl Style="{StaticResource MaterialDesignTabControl}"
-                   materialDesign:ColorZoneAssist.Mode="PrimaryMid">
-            
+                    materialDesign:ColorZoneAssist.Mode="PrimaryMid">
+
             <!-- Справочник блюд -->
             <TabItem Header="Справочник блюд">
                 <Grid>
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="*"/>
-                        <RowDefinition Height="5"/>
-                        <RowDefinition Height="300"/>
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="5" />
+                        <RowDefinition Height="300" />
                     </Grid.RowDefinitions>
 
-                    <GridSplitter Grid.Row="1" HorizontalAlignment="Stretch" 
-                                Background="Gray" Height="5"/>
+                    <GridSplitter Grid.Row="1" HorizontalAlignment="Stretch"
+                                  Background="Gray" Height="5" />
 
                     <!-- Верхняя часть - список блюд -->
                     <materialDesign:Card Grid.Row="0" Margin="10" Padding="10">
                         <Grid>
                             <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="*" />
                             </Grid.RowDefinitions>
 
-                            <TextBlock Grid.Row="0" Text="Все блюда:" 
-                                     Style="{StaticResource MaterialDesignHeadline6TextBlock}"
-                                     Margin="0,0,0,10"/>
+                            <TextBlock Grid.Row="0" Text="Все блюда:"
+                                       Style="{StaticResource MaterialDesignHeadline6TextBlock}"
+                                       Margin="0,0,0,10" />
 
-                            <DataGrid Grid.Row="1" x:Name="DelicatesDataGrid" 
-                                    AutoGenerateColumns="False"
-                                    CanUserAddRows="False"
-                                    SelectionMode="Single"
-                                    IsReadOnly="True"
-                                    SelectionChanged="DelicatesDataGrid_SelectionChanged"
-                                    materialDesign:DataGridAssist.CellPadding="10">
+                            <DataGrid Grid.Row="1" x:Name="DelicatesDataGrid"
+                                      AutoGenerateColumns="False"
+                                      CanUserAddRows="False"
+                                      SelectionMode="Single"
+                                      IsReadOnly="True"
+                                      SelectionChanged="DelicatesDataGrid_SelectionChanged"
+                                      materialDesign:DataGridAssist.CellPadding="10">
                                 <DataGrid.Columns>
                                     <DataGridTemplateColumn Width="50">
                                         <DataGridTemplateColumn.CellTemplate>
                                             <DataTemplate>
                                                 <Button Style="{StaticResource MaterialDesignIconButton}"
-                                                      Click="DeleteDelicate_Click" Foreground="Red">
-                                                    <materialDesign:PackIcon Kind="Delete"/>
+                                                        Click="DeleteDelicate_Click" Foreground="Red">
+                                                    <materialDesign:PackIcon Kind="Delete" />
                                                 </Button>
                                             </DataTemplate>
                                         </DataGridTemplateColumn.CellTemplate>
                                     </DataGridTemplateColumn>
 
-                                    <DataGridTextColumn Header="Название" Binding="{Binding Name}" Width="2*"/>
-                                    <DataGridTextColumn Header="Тип" Binding="{Binding Type}" Width="*"/>
-                                    <DataGridTextColumn Header="Вес" Binding="{Binding Ves}" Width="*"/>
-                                    <DataGridTextColumn Header="Количество" Binding="{Binding Count}" Width="*"/>
+                                    <DataGridTextColumn Header="Название" Binding="{Binding Name}" Width="2*" />
+                                    <DataGridTextColumn Header="Тип" Binding="{Binding Type}" Width="*" />
+                                    <DataGridTextColumn Header="Вес" Binding="{Binding Ves}" Width="*" />
+                                    <DataGridTextColumn Header="Количество" Binding="{Binding Count}" Width="*" />
                                 </DataGrid.Columns>
                             </DataGrid>
                         </Grid>
@@ -67,163 +67,163 @@
                     <materialDesign:Card Grid.Row="2" Margin="10" Padding="15">
                         <Grid>
                             <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="*"/>
-                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="*" />
+                                <RowDefinition Height="Auto" />
                             </Grid.RowDefinitions>
 
-                            <TextBlock Grid.Row="0" 
-                                     Text="Создайте новое блюдо или выберите существующее для редактирования"
-                                     Style="{StaticResource MaterialDesignBody2TextBlock}"
-                                     Margin="0,0,0,15"/>
+                            <TextBlock Grid.Row="0"
+                                       Text="Создайте новое блюдо или выберите существующее для редактирования"
+                                       Style="{StaticResource MaterialDesignBody2TextBlock}"
+                                       Margin="0,0,0,15" />
 
                             <!-- Кнопка создания нового блюда - ВСЕГДА АКТИВНА -->
                             <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,10">
-                                <Button Content="➕ Создать новое блюдо" 
-                                      Style="{StaticResource MaterialDesignRaisedButton}"
-                                      materialDesign:ButtonAssist.CornerRadius="10"
-                                      Background="#4CAF50"
-                                      BorderBrush="#4CAF50"
-                                      Foreground="White"
-                                      Click="NewDelicate_Click"
-                                      Padding="20,10"
-                                      FontWeight="SemiBold"
-                                      ToolTip="Создать новое блюдо"/>
+                                <Button Content="➕ Создать новое блюдо"
+                                        Style="{StaticResource MaterialDesignRaisedButton}"
+                                        materialDesign:ButtonAssist.CornerRadius="10"
+                                        Background="#4CAF50"
+                                        BorderBrush="#4CAF50"
+                                        Foreground="White"
+                                        Click="NewDelicate_Click"
+                                        Padding="20,10"
+                                        FontWeight="SemiBold"
+                                        ToolTip="Создать новое блюдо" />
                             </StackPanel>
 
                             <!-- Панель редактирования блюда - отключена по умолчанию -->
                             <Grid Grid.Row="2" x:Name="DelicateEditPanel" IsEnabled="False">
                                 <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="*"/>
-                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="*" />
+                                    <RowDefinition Height="Auto" />
                                 </Grid.RowDefinitions>
 
-                            <!-- Форма редактирования блюда -->
-                            <Grid Grid.Row="0">
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="Auto"/>
-                                </Grid.RowDefinitions>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="*"/>
-                                </Grid.ColumnDefinitions>
+                                <!-- Форма редактирования блюда -->
+                                <Grid Grid.Row="0">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                    </Grid.RowDefinitions>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
 
-                                <!-- Первая строка: Название и Тип -->
-                                <StackPanel Grid.Row="0" Grid.Column="0" Margin="0,0,10,10">
-                                    <TextBlock Text="Название блюда:" 
-                                             Style="{StaticResource MaterialDesignBody2TextBlock}"
-                                             Margin="0,0,0,5"/>
-                                    <TextBox x:Name="DelicateNameTextBox" 
-                                           materialDesign:HintAssist.Hint="Введите название блюда"
-                                           Style="{StaticResource MaterialDesignOutlinedTextBox}"/>
-                                </StackPanel>
+                                    <!-- Первая строка: Название и Тип -->
+                                    <StackPanel Grid.Row="0" Grid.Column="0" Margin="0,0,10,10">
+                                        <TextBlock Text="Название блюда:"
+                                                   Style="{StaticResource MaterialDesignBody2TextBlock}"
+                                                   Margin="0,0,0,5" />
+                                        <TextBox x:Name="DelicateNameTextBox"
+                                                 materialDesign:HintAssist.Hint="Введите название блюда"
+                                                 Style="{StaticResource MaterialDesignOutlinedTextBox}" />
+                                    </StackPanel>
 
-                                <StackPanel Grid.Row="0" Grid.Column="1" Margin="10,0,0,10">
-                                    <TextBlock Text="Тип блюда:" 
-                                             Style="{StaticResource MaterialDesignBody2TextBlock}"
-                                             Margin="0,0,0,5"/>
-                                    <ComboBox x:Name="DelicateTypeComboBox" 
-                                            DisplayMemberPath="Name"
-                                            Style="{StaticResource MaterialDesignOutlinedComboBox}"
-                                            materialDesign:HintAssist.Hint="Выберите тип"/>
-                                </StackPanel>
+                                    <StackPanel Grid.Row="0" Grid.Column="1" Margin="10,0,0,10">
+                                        <TextBlock Text="Тип блюда:"
+                                                   Style="{StaticResource MaterialDesignBody2TextBlock}"
+                                                   Margin="0,0,0,5" />
+                                        <ComboBox x:Name="DelicateTypeComboBox"
+                                                  DisplayMemberPath="Name"
+                                                  Style="{StaticResource MaterialDesignOutlinedComboBox}"
+                                                  materialDesign:HintAssist.Hint="Выберите тип" />
+                                    </StackPanel>
 
-                                <!-- Вторая строка: Вес и Количество -->
-                                <StackPanel Grid.Row="1" Grid.Column="0" Margin="0,0,10,0">
-                                    <TextBlock Text="Вес порции (грамм):" 
-                                             Style="{StaticResource MaterialDesignBody2TextBlock}"
-                                             Margin="0,0,0,5"/>
-                                    <TextBox x:Name="DelicateWeightTextBox" 
-                                           materialDesign:HintAssist.Hint="Например: 250"
-                                           Style="{StaticResource MaterialDesignOutlinedTextBox}"
-                                           PreviewTextInput="NumericOnly_PreviewTextInput"/>
-                                </StackPanel>
+                                    <!-- Вторая строка: Вес и Количество -->
+                                    <StackPanel Grid.Row="1" Grid.Column="0" Margin="0,0,10,0">
+                                        <TextBlock Text="Вес порции (грамм):"
+                                                   Style="{StaticResource MaterialDesignBody2TextBlock}"
+                                                   Margin="0,0,0,5" />
+                                        <TextBox x:Name="DelicateWeightTextBox"
+                                                 materialDesign:HintAssist.Hint="Например: 250"
+                                                 Style="{StaticResource MaterialDesignOutlinedTextBox}"
+                                                 PreviewTextInput="NumericOnly_PreviewTextInput" />
+                                    </StackPanel>
 
-                                <StackPanel Grid.Row="1" Grid.Column="1" Margin="10,0,0,0">
-                                    <TextBlock Text="Количество порций:" 
-                                             Style="{StaticResource MaterialDesignBody2TextBlock}"
-                                             Margin="0,0,0,5"/>
-                                    <TextBox x:Name="DelicateCountTextBox" 
-                                           materialDesign:HintAssist.Hint="По умолчанию: 1"
-                                           Style="{StaticResource MaterialDesignOutlinedTextBox}"
-                                           PreviewTextInput="NumericOnly_PreviewTextInput"/>
-                                </StackPanel>
-                            </Grid>
-
-                            <!-- Состав блюда -->
-                            <Grid Grid.Row="1" Margin="0,15,0,15">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="80"/>
-                                    <ColumnDefinition Width="*"/>
-                                </Grid.ColumnDefinitions>
-
-                                <!-- Доступные продукты -->
-                                <GroupBox Grid.Column="0" Header="Доступные продукты">
-                                    <Grid>
-                                        <Grid.RowDefinitions>
-                                            <RowDefinition Height="Auto"/>
-                                            <RowDefinition Height="*"/>
-                                        </Grid.RowDefinitions>
-
-                                        <TextBox Grid.Row="0" x:Name="ProductSearchBox" 
-                                               materialDesign:HintAssist.Hint="Поиск..."
-                                               TextChanged="ProductSearch_TextChanged" Margin="0,0,0,5"/>
-
-                                        <ListBox Grid.Row="1" x:Name="AvailableProductsList" 
-                                               DisplayMemberPath="Name" 
-                                               SelectionMode="Single"/>
-                                    </Grid>
-                                </GroupBox>
-
-                                <!-- Кнопки управления составом -->
-                                <StackPanel Grid.Column="1" VerticalAlignment="Center" 
-                                          HorizontalAlignment="Center">
-                                    <Button Style="{StaticResource MaterialDesignFloatingActionMiniButton}"
-                                          Click="AddProductToDelicate_Click" Margin="0,0,0,10"
-                                          ToolTip="Добавить в состав">
-                                        <materialDesign:PackIcon Kind="ArrowRight"/>
-                                    </Button>
-                                    <Button Style="{StaticResource MaterialDesignFloatingActionMiniButton}"
-                                          Click="RemoveProductFromDelicate_Click"
-                                          ToolTip="Убрать из состава">
-                                        <materialDesign:PackIcon Kind="ArrowLeft"/>
-                                    </Button>
-                                </StackPanel>
+                                    <StackPanel Grid.Row="1" Grid.Column="1" Margin="10,0,0,0">
+                                        <TextBlock Text="Количество порций:"
+                                                   Style="{StaticResource MaterialDesignBody2TextBlock}"
+                                                   Margin="0,0,0,5" />
+                                        <TextBox x:Name="DelicateCountTextBox"
+                                                 materialDesign:HintAssist.Hint="По умолчанию: 1"
+                                                 Style="{StaticResource MaterialDesignOutlinedTextBox}"
+                                                 PreviewTextInput="NumericOnly_PreviewTextInput" />
+                                    </StackPanel>
+                                </Grid>
 
                                 <!-- Состав блюда -->
-                                <GroupBox Grid.Column="2" Header="Состав блюда">
-                                    <DataGrid x:Name="DelicateComponentsGrid" 
-                                            AutoGenerateColumns="False"
-                                            CanUserAddRows="False"
-                                            materialDesign:DataGridAssist.CellPadding="5">
-                                        <DataGrid.Columns>
-                                            <DataGridTextColumn Header="Продукт" Binding="{Binding NameT}" 
-                                                              Width="*" IsReadOnly="True"/>
-                                            <DataGridTextColumn Header="Вес" Binding="{Binding Ves}" 
-                                                              Width="80"/>
-                                            <DataGridTextColumn Header="Мера" Binding="{Binding Mera}" 
-                                                              Width="60" IsReadOnly="True"/>
-                                        </DataGrid.Columns>
-                                    </DataGrid>
-                                </GroupBox>
-                            </Grid>
+                                <Grid Grid.Row="1" Margin="0,15,0,15">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="80" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
 
-                            <!-- Кнопки действий -->
-                            <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right">
-                                <Button Content="Перейти к составу" 
-                                      Style="{StaticResource MaterialDesignRaisedButton}"
-                                      Click="GoToComposition_Click" Margin="0,0,10,0"
-                                      ToolTip="Перейти к редактированию состава блюда"/>
-                                <Button Content="💾 Сохранить блюдо" 
-                                      Style="{StaticResource MaterialDesignRaisedButton}"
-                                      Click="UpdateDelicate_Click"
-                                      ToolTip="Сохранить изменения блюда"/>
-                            </StackPanel>
+                                    <!-- Доступные продукты -->
+                                    <GroupBox Grid.Column="0" Header="Доступные продукты">
+                                        <Grid>
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto" />
+                                                <RowDefinition Height="*" />
+                                            </Grid.RowDefinitions>
+
+                                            <TextBox Grid.Row="0" x:Name="ProductSearchBox"
+                                                     materialDesign:HintAssist.Hint="Поиск..."
+                                                     TextChanged="ProductSearch_TextChanged" Margin="0,0,0,5" />
+
+                                            <ListBox Grid.Row="1" x:Name="AvailableProductsList"
+                                                     DisplayMemberPath="Name"
+                                                     SelectionMode="Single" />
+                                        </Grid>
+                                    </GroupBox>
+
+                                    <!-- Кнопки управления составом -->
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center"
+                                                HorizontalAlignment="Center">
+                                        <Button Style="{StaticResource MaterialDesignFloatingActionMiniButton}"
+                                                Click="AddProductToDelicate_Click" Margin="0,0,0,10"
+                                                ToolTip="Добавить в состав">
+                                            <materialDesign:PackIcon Kind="ArrowRight" />
+                                        </Button>
+                                        <Button Style="{StaticResource MaterialDesignFloatingActionMiniButton}"
+                                                Click="RemoveProductFromDelicate_Click"
+                                                ToolTip="Убрать из состава">
+                                            <materialDesign:PackIcon Kind="ArrowLeft" />
+                                        </Button>
+                                    </StackPanel>
+
+                                    <!-- Состав блюда -->
+                                    <GroupBox Grid.Column="2" Header="Состав блюда">
+                                        <DataGrid x:Name="DelicateComponentsGrid"
+                                                  AutoGenerateColumns="False"
+                                                  CanUserAddRows="False"
+                                                  materialDesign:DataGridAssist.CellPadding="5">
+                                            <DataGrid.Columns>
+                                                <DataGridTextColumn Header="Продукт" Binding="{Binding NameT}"
+                                                                    Width="*" IsReadOnly="True" />
+                                                <DataGridTextColumn Header="Вес" Binding="{Binding Ves}"
+                                                                    Width="80" />
+                                                <DataGridTextColumn Header="Мера" Binding="{Binding Mera}"
+                                                                    Width="60" IsReadOnly="True" />
+                                            </DataGrid.Columns>
+                                        </DataGrid>
+                                    </GroupBox>
+                                </Grid>
+
+                                <!-- Кнопки действий -->
+                                <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right">
+                                    <Button Content="Перейти к составу"
+                                            Style="{StaticResource MaterialDesignRaisedButton}"
+                                            Click="GoToComposition_Click" Margin="0,0,10,0"
+                                            ToolTip="Перейти к редактированию состава блюда" />
+                                    <Button Content="💾 Сохранить блюдо"
+                                            Style="{StaticResource MaterialDesignRaisedButton}"
+                                            Click="UpdateDelicate_Click"
+                                            ToolTip="Сохранить изменения блюда" />
+                                </StackPanel>
                             </Grid>
                         </Grid>
                     </materialDesign:Card>
@@ -234,77 +234,77 @@
             <TabItem Header="Справочник продуктов">
                 <Grid>
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
                     </Grid.RowDefinitions>
 
                     <!-- Форма добавления продукта -->
                     <materialDesign:Card Grid.Row="0" Margin="10" Padding="15">
                         <Grid>
                             <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
                             </Grid.RowDefinitions>
 
                             <Grid Grid.Row="0">
                                 <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
                                 </Grid.ColumnDefinitions>
 
-                                <TextBlock Grid.Column="0" Text="Название:" 
-                                         VerticalAlignment="Center" Margin="0,0,10,0"/>
-                                <TextBox Grid.Column="1" x:Name="ProductNameTextBox" 
-                                       materialDesign:HintAssist.Hint="Введите название" Margin="0,0,20,0"/>
+                                <TextBlock Grid.Column="0" Text="Название:"
+                                           VerticalAlignment="Center" Margin="0,0,10,0" />
+                                <TextBox Grid.Column="1" x:Name="ProductNameTextBox"
+                                         materialDesign:HintAssist.Hint="Введите название" Margin="0,0,20,0" />
 
-                                <TextBlock Grid.Column="2" Text="Тип:" 
-                                         VerticalAlignment="Center" Margin="0,0,10,0"/>
-                                <ComboBox Grid.Column="3" x:Name="ProductTypeComboBox" 
-                                        DisplayMemberPath="Name" Margin="0,0,20,0"/>
+                                <TextBlock Grid.Column="2" Text="Тип:"
+                                           VerticalAlignment="Center" Margin="0,0,10,0" />
+                                <ComboBox Grid.Column="3" x:Name="ProductTypeComboBox"
+                                          DisplayMemberPath="Name" Margin="0,0,20,0" />
 
-                                <TextBlock Grid.Column="4" Text="В чем измеряется:" 
-                                         VerticalAlignment="Center" Margin="0,0,10,0"/>
-                                <ComboBox Grid.Column="5" x:Name="ProductMeasureComboBox" 
-                                        DisplayMemberPath="Name"/>
+                                <TextBlock Grid.Column="4" Text="В чем измеряется:"
+                                           VerticalAlignment="Center" Margin="0,0,10,0" />
+                                <ComboBox Grid.Column="5" x:Name="ProductMeasureComboBox"
+                                          DisplayMemberPath="Name" />
                             </Grid>
 
-                            <StackPanel Grid.Row="1" Orientation="Horizontal" 
-                                      HorizontalAlignment="Right" Margin="0,10,0,0">
-                                <Button Content="Добавить продукт" 
-                                      Style="{StaticResource MaterialDesignRaisedButton}"
-                                      Click="AddProduct_Click"/>
+                            <StackPanel Grid.Row="1" Orientation="Horizontal"
+                                        HorizontalAlignment="Right" Margin="0,10,0,0">
+                                <Button Content="Добавить продукт"
+                                        Style="{StaticResource MaterialDesignRaisedButton}"
+                                        Click="AddProduct_Click" />
                             </StackPanel>
                         </Grid>
                     </materialDesign:Card>
 
                     <!-- Список продуктов -->
                     <materialDesign:Card Grid.Row="1" Margin="10" Padding="10">
-                        <DataGrid x:Name="ProductsDataGrid" 
-                                AutoGenerateColumns="False"
-                                CanUserAddRows="False"
-                                SelectionMode="Single"
-                                IsReadOnly="True"
-                                materialDesign:DataGridAssist.CellPadding="10">
+                        <DataGrid x:Name="ProductsDataGrid"
+                                  AutoGenerateColumns="False"
+                                  CanUserAddRows="False"
+                                  SelectionMode="Single"
+                                  IsReadOnly="True"
+                                  materialDesign:DataGridAssist.CellPadding="10">
                             <DataGrid.Columns>
                                 <DataGridTemplateColumn Width="50">
                                     <DataGridTemplateColumn.CellTemplate>
                                         <DataTemplate>
                                             <Button Style="{StaticResource MaterialDesignIconButton}"
-                                                  Click="DeleteProduct_Click" Foreground="Red">
-                                                <materialDesign:PackIcon Kind="Delete"/>
+                                                    Click="DeleteProduct_Click" Foreground="Red">
+                                                <materialDesign:PackIcon Kind="Delete" />
                                             </Button>
                                         </DataTemplate>
                                     </DataGridTemplateColumn.CellTemplate>
                                 </DataGridTemplateColumn>
 
-                                <DataGridTextColumn Header="Название" Binding="{Binding Name}" Width="2*"/>
-                                <DataGridTextColumn Header="Категория" Binding="{Binding Type}" Width="*"/>
-                                <DataGridTextColumn Header="Измерение" Binding="{Binding Ves}" Width="*"/>
-                                <DataGridTextColumn Header="Фасовка" Binding="{Binding Fass}" Width="*"/>
+                                <DataGridTextColumn Header="Название" Binding="{Binding Name}" Width="2*" />
+                                <DataGridTextColumn Header="Категория" Binding="{Binding Type}" Width="*" />
+                                <DataGridTextColumn Header="Измерение" Binding="{Binding Ves}" Width="*" />
+                                <DataGridTextColumn Header="Фасовка" Binding="{Binding Fass}" Width="*" />
                             </DataGrid.Columns>
                         </DataGrid>
                     </materialDesign:Card>
@@ -313,4 +313,3 @@
         </TabControl>
     </Grid>
 </Window>
-

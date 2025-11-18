@@ -20,10 +20,7 @@ public static class DatabaseBackupHelper
         try
         {
             // Создаем папку если не существует
-            if (!Directory.Exists(targetFolder))
-            {
-                Directory.CreateDirectory(targetFolder);
-            }
+            if (!Directory.Exists(targetFolder)) Directory.CreateDirectory(targetFolder);
 
             // Формируем имя файла если не указано
             if (string.IsNullOrEmpty(fileName))
@@ -36,17 +33,15 @@ public static class DatabaseBackupHelper
 
             // Получаем путь к текущей базе данных
             var currentDbPath = GetCurrentDatabasePath();
-            
+
             if (!File.Exists(currentDbPath))
-            {
                 throw new FileNotFoundException($"База данных не найдена: {currentDbPath}");
-            }
 
             // Закрываем все соединения перед копированием
             SqliteConnection.ClearAllPools();
 
             // Копируем файл базы данных
-            File.Copy(currentDbPath, targetPath, overwrite: true);
+            File.Copy(currentDbPath, targetPath, true);
 
             return targetPath;
         }
@@ -67,15 +62,11 @@ public static class DatabaseBackupHelper
         try
         {
             if (!File.Exists(sourceFilePath))
-            {
                 throw new FileNotFoundException($"Файл базы данных не найден: {sourceFilePath}");
-            }
 
             // Проверяем что это валидная база данных SQLite
             if (!IsValidSqliteDatabase(sourceFilePath))
-            {
                 throw new InvalidDataException("Указанный файл не является валидной базой данных SQLite");
-            }
 
             var currentDbPath = GetCurrentDatabasePath();
             var backupPath = currentDbPath + ".backup";
@@ -87,7 +78,7 @@ public static class DatabaseBackupHelper
                 SqliteConnection.ClearAllPools();
 
                 // Делаем резервную копию
-                File.Copy(currentDbPath, backupPath, overwrite: true);
+                File.Copy(currentDbPath, backupPath, true);
             }
 
             try
@@ -96,16 +87,13 @@ public static class DatabaseBackupHelper
                 SqliteConnection.ClearAllPools();
 
                 // Копируем новую базу данных
-                File.Copy(sourceFilePath, currentDbPath, overwrite: replaceExisting);
+                File.Copy(sourceFilePath, currentDbPath, replaceExisting);
 
                 // Обновляем строку подключения
                 DatabaseHelper.InitializeDatabase(currentDbPath);
 
                 // Удаляем резервную копию если все прошло успешно
-                if (File.Exists(backupPath))
-                {
-                    File.Delete(backupPath);
-                }
+                if (File.Exists(backupPath)) File.Delete(backupPath);
 
                 return true;
             }
@@ -114,9 +102,10 @@ public static class DatabaseBackupHelper
                 // Восстанавливаем из резервной копии при ошибке
                 if (File.Exists(backupPath))
                 {
-                    File.Copy(backupPath, currentDbPath, overwrite: true);
+                    File.Copy(backupPath, currentDbPath, true);
                     File.Delete(backupPath);
                 }
+
                 throw;
             }
         }
@@ -140,7 +129,6 @@ public static class DatabaseBackupHelper
         };
 
         if (dialog.ShowDialog() == true)
-        {
             try
             {
                 var folder = Path.GetDirectoryName(dialog.FileName);
@@ -151,7 +139,6 @@ public static class DatabaseBackupHelper
             {
                 throw new Exception($"Ошибка при экспорте базы данных: {ex.Message}", ex);
             }
-        }
 
         return null;
     }
@@ -168,10 +155,7 @@ public static class DatabaseBackupHelper
             DefaultExt = ".db"
         };
 
-        if (dialog.ShowDialog() == true)
-        {
-            return LoadDatabaseFromFile(dialog.FileName, replaceExisting: true);
-        }
+        if (dialog.ShowDialog() == true) return LoadDatabaseFromFile(dialog.FileName, true);
 
         return false;
     }
@@ -211,12 +195,12 @@ public static class DatabaseBackupHelper
         {
             using var connection = new SqliteConnection($"Data Source={filePath}");
             connection.Open();
-            
+
             // Проверяем что можем прочитать таблицы
             using var command = connection.CreateCommand();
             command.CommandText = "SELECT name FROM sqlite_master WHERE type='table'";
             using var reader = command.ExecuteReader();
-            
+
             return reader.HasRows;
         }
         catch
@@ -274,4 +258,3 @@ public class BackupInfo
 
     public string FormattedDate => CreatedDate.ToString("dd.MM.yyyy HH:mm:ss");
 }
-

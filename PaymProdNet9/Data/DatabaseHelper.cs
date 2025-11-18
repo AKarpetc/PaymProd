@@ -20,15 +20,16 @@ public static class DatabaseHelper
                 var appDataPath = Path.Combine(
                     Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                     "PaymProdNet9", "MenuCalc.db");
-                
+
                 // Then try application directory
                 var binPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "MenuCalc.db");
-                
+
                 // Use AppData if it exists, otherwise use bin directory
                 var dbPath = File.Exists(appDataPath) ? appDataPath : binPath;
-                
+
                 _connectionString = $"Data Source={dbPath}";
             }
+
             return _connectionString;
         }
     }
@@ -44,7 +45,7 @@ public static class DatabaseHelper
         connection.Open();
 
         var command = connection.CreateCommand();
-        
+
         // Создание таблицы мер
         command.CommandText = @"
             CREATE TABLE IF NOT EXISTS Mera (
@@ -55,7 +56,7 @@ public static class DatabaseHelper
                 RoundingPrecision INTEGER DEFAULT 2
             );";
         command.ExecuteNonQuery();
-        
+
         // Миграция: добавляем RoundingPrecision, если его нет
         try
         {
@@ -75,7 +76,7 @@ public static class DatabaseHelper
                 SortOrder INTEGER DEFAULT 0
             );";
         command.ExecuteNonQuery();
-        
+
         // Миграция: добавляем SortOrder, если его нет
         try
         {
@@ -115,7 +116,7 @@ public static class DatabaseHelper
                 SortOrder INTEGER DEFAULT 0
             );";
         command.ExecuteNonQuery();
-        
+
         // Миграция: добавляем SortOrder, если его нет
         try
         {
@@ -209,7 +210,7 @@ public static class DatabaseHelper
         // Проверка и добавление базовых мер
         command.CommandText = "SELECT COUNT(*) FROM Mera";
         var count = Convert.ToInt32(command.ExecuteScalar());
-        
+
         if (count == 0)
         {
             command.CommandText = @"
@@ -226,7 +227,7 @@ public static class DatabaseHelper
         // Проверка и добавление базовых типов продуктов
         command.CommandText = "SELECT COUNT(*) FROM Produkt_Type";
         count = Convert.ToInt32(command.ExecuteScalar());
-        
+
         if (count == 0)
         {
             command.CommandText = @"
@@ -245,7 +246,7 @@ public static class DatabaseHelper
         // Проверка и добавление базовых типов блюд
         command.CommandText = "SELECT COUNT(*) FROM Type_Del";
         count = Convert.ToInt32(command.ExecuteScalar());
-        
+
         if (count == 0)
         {
             command.CommandText = @"
@@ -270,4 +271,3 @@ public static class DatabaseHelper
         return new SqliteConnection(ConnectionString);
     }
 }
-

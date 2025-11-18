@@ -21,7 +21,7 @@ public partial class ReportWindow : Window
     public ReportWindow(ObservableCollection<MenuDel_act> menuDelicates, List<string> banquetInfo)
     {
         InitializeComponent();
-        
+
         _menuDelicates = menuDelicates;
         _banquetInfo = banquetInfo;
         _summaryData = new List<DelicatesCollForSvod>();
@@ -54,12 +54,12 @@ public partial class ReportWindow : Window
                 .OrderBy(g => g.Key);
 
             var rowGroup = new TableRowGroup();
-            
+
             foreach (var group in groupedDelicates)
             {
                 // Заголовок группы
                 var headerRow = new TableRow();
-                var headerCell = new TableCell(new Paragraph(new Run(group.Key) 
+                var headerCell = new TableCell(new Paragraph(new Run(group.Key)
                     { FontWeight = FontWeights.Bold }))
                 {
                     ColumnSpan = 3,
@@ -75,7 +75,7 @@ public partial class ReportWindow : Window
                 foreach (var delicate in group)
                 {
                     var row = new TableRow();
-                    
+
                     // Название блюда
                     var nameCell = new TableCell(new Paragraph(new Run(delicate.Del)))
                     {
@@ -113,7 +113,7 @@ public partial class ReportWindow : Window
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Ошибка при генерации отчета: {ex.Message}", 
+            MessageBox.Show($"Ошибка при генерации отчета: {ex.Message}",
                 "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
@@ -128,36 +128,34 @@ public partial class ReportWindow : Window
             _summaryData.Clear();
 
             foreach (var delicate in _menuDelicates.Where(d => d.Lcomp != null && d.Lcomp.Any()))
+            foreach (var component in delicate.Lcomp)
             {
-                foreach (var component in delicate.Lcomp)
+                var item = new DelicatesCollForSvod
                 {
-                    var item = new DelicatesCollForSvod
-                    {
-                        Del = delicate.Del,
-                        Del_id = delicate.Del_id,
-                        Countpor = delicate.Countpor,
-                        Name = component.Name,
-                        Type = component.Type,
-                        Ves = component.Ves,
-                        Mera = component.Mera,
-                        Fass = component.Fass,
-                        FassIz = component.FassIz,
-                        NameT = component.NameT,
-                        Itog = component.Ves * delicate.Countpor,
-                        ItogFass = component.Fass == 0 
-                            ? component.Ves * delicate.Countpor 
-                            : Math.Round((component.Ves * delicate.Countpor) / component.Fass, 2)
-                    };
-                    
-                    _summaryData.Add(item);
-                }
+                    Del = delicate.Del,
+                    Del_id = delicate.Del_id,
+                    Countpor = delicate.Countpor,
+                    Name = component.Name,
+                    Type = component.Type,
+                    Ves = component.Ves,
+                    Mera = component.Mera,
+                    Fass = component.Fass,
+                    FassIz = component.FassIz,
+                    NameT = component.NameT,
+                    Itog = component.Ves * delicate.Countpor,
+                    ItogFass = component.Fass == 0
+                        ? component.Ves * delicate.Countpor
+                        : Math.Round(component.Ves * delicate.Countpor / component.Fass, 2)
+                };
+
+                _summaryData.Add(item);
             }
 
             SummaryDataGrid.ItemsSource = _summaryData;
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Ошибка при генерации сводных данных: {ex.Message}", 
+            MessageBox.Show($"Ошибка при генерации сводных данных: {ex.Message}",
                 "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
@@ -169,12 +167,12 @@ public partial class ReportWindow : Window
     {
         try
         {
-            _menuPrinter.PrintReport(_summaryData, 
+            _menuPrinter.PrintReport(_summaryData,
                 $"{_banquetInfo[0]}, {_banquetInfo[1]} человек, {_banquetInfo[2]}");
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Ошибка при создании документа: {ex.Message}", 
+            MessageBox.Show($"Ошибка при создании документа: {ex.Message}",
                 "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
@@ -204,17 +202,20 @@ public partial class ReportWindow : Window
                 worksheet.Cell(3, 1).Value = $"Дата: {_banquetInfo[2]}";
 
                 // Заголовки колонок
-                var headers = new[] { "Блюдо", "Количество", "Продукт", "Тип", "Вес", "Мера", 
-                    "Фасовка", "Мера фасовки", "Сумма продукта в нат ед", "Сумма продукта" };
-                
-                for (int i = 0; i < headers.Length; i++)
+                var headers = new[]
+                {
+                    "Блюдо", "Количество", "Продукт", "Тип", "Вес", "Мера",
+                    "Фасовка", "Мера фасовки", "Сумма продукта в нат ед", "Сумма продукта"
+                };
+
+                for (var i = 0; i < headers.Length; i++)
                 {
                     worksheet.Cell(5, i + 1).Value = headers[i];
                     worksheet.Cell(5, i + 1).Style.Font.Bold = true;
                 }
 
                 // Данные
-                int row = 6;
+                var row = 6;
                 foreach (var item in _summaryData)
                 {
                     worksheet.Cell(row, 1).Value = item.Del;
@@ -234,14 +235,14 @@ public partial class ReportWindow : Window
                 worksheet.Columns().AdjustToContents();
 
                 workbook.SaveAs(dialog.FileName);
-                
-                MessageBox.Show("Файл успешно сохранен!", 
+
+                MessageBox.Show("Файл успешно сохранен!",
                     "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
             }
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Ошибка при экспорте в Excel: {ex.Message}", 
+            MessageBox.Show($"Ошибка при экспорте в Excel: {ex.Message}",
                 "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
@@ -255,17 +256,14 @@ public partial class ReportWindow : Window
         {
             var printDialog = new PrintDialog();
             if (printDialog.ShowDialog() == true)
-            {
                 printDialog.PrintDocument(
-                    ((IDocumentPaginatorSource)ReportDocument).DocumentPaginator, 
+                    ((IDocumentPaginatorSource)ReportDocument).DocumentPaginator,
                     "Отчет по меню");
-            }
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Ошибка при печати: {ex.Message}", 
+            MessageBox.Show($"Ошибка при печати: {ex.Message}",
                 "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
 }
-

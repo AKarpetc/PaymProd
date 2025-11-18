@@ -42,7 +42,8 @@ public class MigrateTool
             // Connect to SQL Server LocalDB
             Console.WriteLine("Connecting to LocalDB...");
             var fullPath = Path.GetFullPath(sourceFile);
-            var connStr = $"Data Source=(LocalDB)\\MSSQLLocalDB;AttachDbFilename={fullPath};Integrated Security=True;Connect Timeout=30";
+            var connStr =
+                $"Data Source=(LocalDB)\\MSSQLLocalDB;AttachDbFilename={fullPath};Integrated Security=True;Connect Timeout=30";
             using var sourceConn = new SqlConnection(connStr);
             sourceConn.Open();
             Console.WriteLine("[OK] Connected to LocalDB");
@@ -70,6 +71,7 @@ public class MigrateTool
                 ";
                 cmd.ExecuteNonQuery();
             }
+
             Console.WriteLine("[OK] Tables created\n");
 
             // Migrate data
@@ -80,11 +82,13 @@ public class MigrateTool
 
             Console.WriteLine("\nMigrating products and dishes...");
             MigrateTable(sourceConn, targetConn, "Producrs", "Prod_ID, Name, Type, Ves, Fass, Izmer");
-            MigrateTable(sourceConn, targetConn, "Delicates", "Del_id, Del_Name, Del_Type, Del_Ves, Del_count, Del_opis, Datew");
+            MigrateTable(sourceConn, targetConn, "Delicates",
+                "Del_id, Del_Name, Del_Type, Del_Ves, Del_count, Del_opis, Datew");
             MigrateTable(sourceConn, targetConn, "Components", "Comp_Id, Delic_id, ProductID, Ves, Detail");
 
             Console.WriteLine("\nMigrating menus...");
-            MigrateTable(sourceConn, targetConn, "Menus", "Menu_Id, Name_menu, Count_Human, Data_menu, Opis, Data_soz, Data_Red");
+            MigrateTable(sourceConn, targetConn, "Menus",
+                "Menu_Id, Name_menu, Count_Human, Data_menu, Opis, Data_soz, Data_Red");
             MigrateTable(sourceConn, targetConn, "Menu_Delicates", "id_row, Id_menu, Id_delic, Count_por");
 
             // Copy Components to Components1
@@ -109,7 +113,7 @@ public class MigrateTool
         }
     }
 
-    static void MigrateTable(SqlConnection source, SqliteConnection target, string tableName, string columns)
+    private static void MigrateTable(SqlConnection source, SqliteConnection target, string tableName, string columns)
     {
         try
         {
@@ -121,13 +125,13 @@ public class MigrateTool
             var placeholders = string.Join(", ", Enumerable.Range(0, columnArray.Length).Select(i => $"@p{i}"));
             var insertSQL = $"INSERT INTO {tableName} ({columns}) VALUES ({placeholders})";
 
-            int count = 0;
+            var count = 0;
             while (reader.Read())
             {
                 using var cmd = target.CreateCommand();
                 cmd.CommandText = insertSQL;
 
-                for (int i = 0; i < columnArray.Length; i++)
+                for (var i = 0; i < columnArray.Length; i++)
                 {
                     var value = reader.IsDBNull(i) ? DBNull.Value : reader.GetValue(i);
                     cmd.Parameters.AddWithValue($"@p{i}", value);
@@ -145,4 +149,3 @@ public class MigrateTool
         }
     }
 }
-

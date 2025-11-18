@@ -15,13 +15,13 @@ public class DelicateRepository
     public ObservableCollection<DelicatesColl> GetAllDelicates()
     {
         var delicates = new ObservableCollection<DelicatesColl>();
-        
+
         using var connection = DatabaseHelper.GetConnection();
         connection.Open();
-        
+
         // Получаем все компоненты
         var allComponents = GetAllComponents(connection);
-        
+
         // Получаем блюда
         var command = connection.CreateCommand();
         command.CommandText = @"
@@ -32,12 +32,12 @@ public class DelicateRepository
             INNER JOIN Type_Del td ON td.Type_Del_ID = d.Del_Type
             WHERE d.Del_Type != -1
             ORDER BY COALESCE(td.SortOrder, 0), td.Type_del_opis, d.Del_Name";
-        
+
         using var reader = command.ExecuteReader();
         while (reader.Read())
         {
             var delId = reader.GetInt32(0);
-            
+
             var delicate = new DelicatesColl
             {
                 Id = delId,
@@ -50,10 +50,10 @@ public class DelicateRepository
                 TypeSortOrder = reader.GetInt32(7),
                 Lcomp = allComponents.Where(c => c.Delid == delId).ToList()
             };
-            
+
             delicates.Add(delicate);
         }
-        
+
         return delicates;
     }
 
@@ -63,7 +63,7 @@ public class DelicateRepository
     private List<Components> GetAllComponents(SqliteConnection connection)
     {
         var components = new List<Components>();
-        
+
         var command = connection.CreateCommand();
         command.CommandText = @"
             SELECT c.Comp_Id, c.Delic_id, c.ProductID, 
@@ -73,10 +73,9 @@ public class DelicateRepository
             INNER JOIN Producrs p ON p.Prod_ID = c.ProductID
             INNER JOIN Produkt_Type pt ON p.Type = pt.TypeProdId
             INNER JOIN Mera m ON m.Mera_ID = p.Ves";
-        
+
         using var reader = command.ExecuteReader();
         while (reader.Read())
-        {
             components.Add(new Components
             {
                 Id = reader.GetInt32(0),
@@ -89,8 +88,7 @@ public class DelicateRepository
                 Fass = reader.GetDecimal(7),
                 Name = reader.GetString(8)
             });
-        }
-        
+
         return components;
     }
 
@@ -101,10 +99,10 @@ public class DelicateRepository
     {
         using var connection = DatabaseHelper.GetConnection();
         connection.Open();
-        
+
         // Получаем компоненты блюда
         var components = GetDelicateComponents(connection, id);
-        
+
         var command = connection.CreateCommand();
         command.CommandText = @"
             SELECT d.Del_id, d.Del_Name, COALESCE(d.Del_opis, ''), 
@@ -113,12 +111,11 @@ public class DelicateRepository
             FROM Delicates d
             INNER JOIN Type_Del td ON td.Type_Del_ID = d.Del_Type
             WHERE d.Del_id = @id";
-        
+
         command.Parameters.AddWithValue("@id", id);
-        
+
         using var reader = command.ExecuteReader();
         if (reader.Read())
-        {
             return new DelicatesColl
             {
                 Id = reader.GetInt32(0),
@@ -131,8 +128,7 @@ public class DelicateRepository
                 IDType = reader.GetInt32(6),
                 Lcomp = components
             };
-        }
-        
+
         return null;
     }
 
@@ -142,7 +138,7 @@ public class DelicateRepository
     private List<Components> GetDelicateComponents(SqliteConnection connection, int delicateId)
     {
         var components = new List<Components>();
-        
+
         var command = connection.CreateCommand();
         command.CommandText = @"
             SELECT c.Comp_Id, c.Delic_id, c.ProductID, 
@@ -161,12 +157,11 @@ public class DelicateRepository
             INNER JOIN Produkt_Type pt ON p.Type = pt.TypeProdId
             INNER JOIN Mera m ON m.Mera_ID = p.Ves
             WHERE c.Delic_id = @delicateId";
-        
+
         command.Parameters.AddWithValue("@delicateId", delicateId);
-        
+
         using var reader = command.ExecuteReader();
         while (reader.Read())
-        {
             components.Add(new Components
             {
                 Id = reader.GetInt32(0),
@@ -181,8 +176,7 @@ public class DelicateRepository
                 Flag = reader.GetInt32(9),
                 Name = reader.GetString(10)
             });
-        }
-        
+
         return components;
     }
 
@@ -193,18 +187,18 @@ public class DelicateRepository
     {
         using var connection = DatabaseHelper.GetConnection();
         connection.Open();
-        
+
         var command = connection.CreateCommand();
         command.CommandText = @"
             INSERT INTO Delicates (Del_Type, Del_Name, Del_Ves, Del_count, Datew) 
             VALUES (@type, @name, @ves, @count, datetime('now'));
             SELECT last_insert_rowid();";
-        
+
         command.Parameters.AddWithValue("@type", typeId);
         command.Parameters.AddWithValue("@name", name);
         command.Parameters.AddWithValue("@ves", (double)ves);
         command.Parameters.AddWithValue("@count", (double)count);
-        
+
         return Convert.ToInt32(command.ExecuteScalar());
     }
 
@@ -215,19 +209,19 @@ public class DelicateRepository
     {
         using var connection = DatabaseHelper.GetConnection();
         connection.Open();
-        
+
         var command = connection.CreateCommand();
         command.CommandText = @"
             UPDATE Delicates 
             SET Del_Name = @name, Del_Type = @type, Del_Ves = @ves, Del_count = @count, Datew = datetime('now')
             WHERE Del_id = @id";
-        
+
         command.Parameters.AddWithValue("@id", id);
         command.Parameters.AddWithValue("@type", typeId);
         command.Parameters.AddWithValue("@name", name);
         command.Parameters.AddWithValue("@ves", (double)ves);
         command.Parameters.AddWithValue("@count", (double)count);
-        
+
         command.ExecuteNonQuery();
     }
 
@@ -238,7 +232,7 @@ public class DelicateRepository
     {
         using var connection = DatabaseHelper.GetConnection();
         connection.Open();
-        
+
         var command = connection.CreateCommand();
         command.CommandText = @"
             DELETE FROM Components WHERE Delic_id = @id;
@@ -246,7 +240,7 @@ public class DelicateRepository
             DELETE FROM Menu_Delicates WHERE Id_delic = @id;
             DELETE FROM Delicates WHERE Del_id = @id;";
         command.Parameters.AddWithValue("@id", id);
-        
+
         command.ExecuteNonQuery();
     }
 
@@ -257,17 +251,17 @@ public class DelicateRepository
     {
         using var connection = DatabaseHelper.GetConnection();
         connection.Open();
-        
+
         var command = connection.CreateCommand();
         command.CommandText = @"
             INSERT INTO Components (Delic_id, ProductID, Ves, Detail) 
             VALUES (@delicateId, @productId, @ves, @detail)";
-        
+
         command.Parameters.AddWithValue("@delicateId", delicateId);
         command.Parameters.AddWithValue("@productId", productId);
         command.Parameters.AddWithValue("@ves", (double)ves);
         command.Parameters.AddWithValue("@detail", (object?)detail ?? DBNull.Value);
-        
+
         command.ExecuteNonQuery();
     }
 
@@ -278,11 +272,11 @@ public class DelicateRepository
     {
         using var connection = DatabaseHelper.GetConnection();
         connection.Open();
-        
+
         var command = connection.CreateCommand();
         command.CommandText = "DELETE FROM Components WHERE Comp_Id = @id";
         command.Parameters.AddWithValue("@id", componentId);
-        
+
         command.ExecuteNonQuery();
     }
 
@@ -293,12 +287,12 @@ public class DelicateRepository
     {
         using var connection = DatabaseHelper.GetConnection();
         connection.Open();
-        
+
         var command = connection.CreateCommand();
         command.CommandText = "DELETE FROM Components WHERE ProductID = @productId AND Delic_id = @delicateId";
         command.Parameters.AddWithValue("@productId", productId);
         command.Parameters.AddWithValue("@delicateId", delicateId);
-        
+
         command.ExecuteNonQuery();
     }
 
@@ -309,17 +303,17 @@ public class DelicateRepository
     {
         using var connection = DatabaseHelper.GetConnection();
         connection.Open();
-        
+
         var command = connection.CreateCommand();
         command.CommandText = @"
             UPDATE Components 
             SET Ves = @ves 
             WHERE Delic_id = @delicateId AND ProductID = @productId";
-        
+
         command.Parameters.AddWithValue("@ves", (double)ves);
         command.Parameters.AddWithValue("@delicateId", delicateId);
         command.Parameters.AddWithValue("@productId", productId);
-        
+
         command.ExecuteNonQuery();
     }
 
@@ -329,24 +323,23 @@ public class DelicateRepository
     public List<DelicateType> GetDelicateTypes()
     {
         var types = new List<DelicateType>();
-        
+
         using var connection = DatabaseHelper.GetConnection();
         connection.Open();
-        
+
         var command = connection.CreateCommand();
-        command.CommandText = "SELECT Type_Del_ID, Type_del_opis, COALESCE(SortOrder, 0) FROM Type_Del ORDER BY COALESCE(SortOrder, 0), Type_del_opis";
-        
+        command.CommandText =
+            "SELECT Type_Del_ID, Type_del_opis, COALESCE(SortOrder, 0) FROM Type_Del ORDER BY COALESCE(SortOrder, 0), Type_del_opis";
+
         using var reader = command.ExecuteReader();
         while (reader.Read())
-        {
             types.Add(new DelicateType
             {
                 Id = reader.GetInt32(0),
                 Name = reader.GetString(1),
                 SortOrder = reader.GetInt32(2)
             });
-        }
-        
+
         return types;
     }
 
@@ -357,17 +350,17 @@ public class DelicateRepository
     {
         using var connection = DatabaseHelper.GetConnection();
         connection.Open();
-        
+
         var command = connection.CreateCommand();
         command.CommandText = @"
             INSERT INTO Type_Del (Type_del_opis, SortOrder) VALUES (@name, @sortOrder);
             SELECT last_insert_rowid();";
         command.Parameters.AddWithValue("@name", name);
         command.Parameters.AddWithValue("@sortOrder", sortOrder);
-        
+
         return Convert.ToInt32(command.ExecuteScalar());
     }
-    
+
     /// <summary>
     /// Обновить тип блюда
     /// </summary>
@@ -375,7 +368,7 @@ public class DelicateRepository
     {
         using var connection = DatabaseHelper.GetConnection();
         connection.Open();
-        
+
         var command = connection.CreateCommand();
         command.CommandText = @"
             UPDATE Type_Del 
@@ -384,10 +377,10 @@ public class DelicateRepository
         command.Parameters.AddWithValue("@id", id);
         command.Parameters.AddWithValue("@name", name);
         command.Parameters.AddWithValue("@sortOrder", sortOrder);
-        
+
         command.ExecuteNonQuery();
     }
-    
+
     /// <summary>
     /// Удалить тип блюда
     /// </summary>
@@ -395,11 +388,11 @@ public class DelicateRepository
     {
         using var connection = DatabaseHelper.GetConnection();
         connection.Open();
-        
+
         var command = connection.CreateCommand();
         command.CommandText = "DELETE FROM Type_Del WHERE Type_Del_ID = @id";
         command.Parameters.AddWithValue("@id", id);
-        
+
         return command.ExecuteNonQuery() > 0;
     }
 
@@ -409,35 +402,29 @@ public class DelicateRepository
     public List<DelicatesColl> GetAvailableDelicatesForMenu(string? typeFilter = null)
     {
         var delicates = new List<DelicatesColl>();
-        
+
         using var connection = DatabaseHelper.GetConnection();
         connection.Open();
-        
+
         var sql = @"
             SELECT d.Del_id, d.Del_Name, COALESCE(d.Del_Ves, 0), 
                    COALESCE(d.Del_count, 0), td.Type_del_opis, td.Type_Del_ID, COALESCE(td.SortOrder, 0)
             FROM Delicates d
             INNER JOIN Type_Del td ON td.Type_Del_ID = d.Del_Type
             WHERE d.Del_Type != -1";
-        
-        if (!string.IsNullOrEmpty(typeFilter) && typeFilter != "%")
-        {
-            sql += " AND td.Type_del_opis = @type";
-        }
-        
+
+        if (!string.IsNullOrEmpty(typeFilter) && typeFilter != "%") sql += " AND td.Type_del_opis = @type";
+
         sql += " ORDER BY COALESCE(td.SortOrder, 0), td.Type_del_opis, d.Del_Name";
-        
+
         var command = connection.CreateCommand();
         command.CommandText = sql;
-        
+
         if (!string.IsNullOrEmpty(typeFilter) && typeFilter != "%")
-        {
             command.Parameters.AddWithValue("@type", typeFilter);
-        }
-        
+
         using var reader = command.ExecuteReader();
         while (reader.Read())
-        {
             delicates.Add(new DelicatesColl
             {
                 Id = reader.GetInt32(0),
@@ -448,9 +435,7 @@ public class DelicateRepository
                 IDType = reader.GetInt32(5),
                 TypeSortOrder = reader.GetInt32(6)
             });
-        }
-        
+
         return delicates;
     }
 }
-

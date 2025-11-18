@@ -27,13 +27,13 @@ public partial class DatabaseManagerPage : Page
             var binPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "MenuCalc.db");
 
             var currentPath = File.Exists(appDataPath) ? appDataPath : binPath;
-            
+
             if (File.Exists(currentPath))
             {
                 var fileInfo = new FileInfo(currentPath);
                 CurrentDbPathText.Text = $"{currentPath}\n" +
-                    $"Размер: {fileInfo.Length / 1024:N0} KB, " +
-                    $"Изменена: {fileInfo.LastWriteTime:dd.MM.yyyy HH:mm:ss}";
+                                         $"Размер: {fileInfo.Length / 1024:N0} KB, " +
+                                         $"Изменена: {fileInfo.LastWriteTime:dd.MM.yyyy HH:mm:ss}";
             }
             else
             {
@@ -52,13 +52,11 @@ public partial class DatabaseManagerPage : Page
         {
             var backups = DatabaseBackupHelper.GetAvailableBackups();
             BackupsDataGrid.ItemsSource = backups;
-            
+
             if (backups.Count == 0)
-            {
                 MessageBox.Show("Резервные копии не найдены.\n\n" +
-                    "Создайте первую резервную копию нажав кнопку 'Создать резервную копию'.",
+                                "Создайте первую резервную копию нажав кнопку 'Создать резервную копию'.",
                     "Информация", MessageBoxButton.OK, MessageBoxImage.Information);
-            }
         }
         catch (Exception ex)
         {
@@ -72,12 +70,12 @@ public partial class DatabaseManagerPage : Page
         try
         {
             var savedPath = DatabaseBackupHelper.ExportDatabaseWithDialog();
-            
+
             if (!string.IsNullOrEmpty(savedPath))
             {
                 MessageBox.Show($"База данных успешно экспортирована:\n{savedPath}",
                     "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
-                
+
                 LoadBackups();
             }
         }
@@ -99,7 +97,6 @@ public partial class DatabaseManagerPage : Page
             MessageBoxImage.Warning);
 
         if (result == MessageBoxResult.Yes)
-        {
             try
             {
                 if (DatabaseBackupHelper.ImportDatabaseWithDialog())
@@ -119,7 +116,6 @@ public partial class DatabaseManagerPage : Page
                 MessageBox.Show($"Ошибка при импорте базы данных:\n{ex.Message}",
                     "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
             }
-        }
     }
 
     private void AutoBackupButton_Click(object sender, RoutedEventArgs e)
@@ -127,10 +123,10 @@ public partial class DatabaseManagerPage : Page
         try
         {
             var backupPath = DatabaseBackupHelper.CreateAutoBackup();
-            
+
             MessageBox.Show($"Резервная копия успешно создана:\n{backupPath}",
                 "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
-            
+
             LoadBackups();
         }
         catch (Exception ex)
@@ -154,7 +150,6 @@ public partial class DatabaseManagerPage : Page
                 MessageBoxImage.Warning);
 
             if (result == MessageBoxResult.Yes)
-            {
                 try
                 {
                     if (DatabaseBackupHelper.LoadDatabaseFromFile(backup.FilePath))
@@ -174,7 +169,6 @@ public partial class DatabaseManagerPage : Page
                     MessageBox.Show($"Ошибка при восстановлении базы данных:\n{ex.Message}",
                         "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
-            }
         }
         else
         {
@@ -197,10 +191,7 @@ public partial class DatabaseManagerPage : Page
                 Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
                 "PaymProd", "Backups");
 
-            if (!Directory.Exists(backupFolder))
-            {
-                Directory.CreateDirectory(backupFolder);
-            }
+            if (!Directory.Exists(backupFolder)) Directory.CreateDirectory(backupFolder);
 
             Process.Start("explorer.exe", backupFolder);
         }
@@ -210,6 +201,4 @@ public partial class DatabaseManagerPage : Page
                 "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
-
 }
-

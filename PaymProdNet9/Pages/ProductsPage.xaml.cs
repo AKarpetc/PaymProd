@@ -10,23 +10,23 @@ namespace PaymProdNet9.Pages;
 public partial class ProductsPage : Page
 {
     private readonly ProductRepository _productRepository;
-    
+
     private ObservableCollection<ProductView> _allProducts;
     private int? _currentProductId;
 
     public ProductsPage()
     {
         InitializeComponent();
-        
+
         _productRepository = new ProductRepository();
         _allProducts = new ObservableCollection<ProductView>();
-        
+
         ProductsDataGrid.ItemsSource = _allProducts;
-        
+
         // Подписываемся на событие Loaded для установки обработчика навигации
-        this.Loaded += ProductsPage_LoadedInternal;
+        Loaded += ProductsPage_LoadedInternal;
     }
-    
+
     /// <summary>
     /// Обработчик загрузки страницы для установки навигационного обработчика
     /// </summary>
@@ -39,7 +39,7 @@ public partial class ProductsPage : Page
             NavigationService.Navigating += ProductsPage_Navigating;
         }
     }
-    
+
     /// <summary>
     /// Обработка навигации назад - работает как "Отмена" в режиме редактирования
     /// </summary>
@@ -50,7 +50,7 @@ public partial class ProductsPage : Page
         {
             // Отменяем навигацию
             e.Cancel = true;
-            
+
             // Вызываем метод отмены (возвращаемся к списку)
             ShowListView();
         }
@@ -63,13 +63,13 @@ public partial class ProductsPage : Page
         LoadMeasures();
         ShowListView(); // Start in list view
     }
-    
+
     private void ShowListView()
     {
         ProductsListView.Visibility = Visibility.Visible;
         ProductEditView.Visibility = Visibility.Collapsed;
     }
-    
+
     private void ShowEditView(bool isEdit)
     {
         ProductsListView.Visibility = Visibility.Collapsed;
@@ -84,46 +84,40 @@ public partial class ProductsPage : Page
         {
             _allProducts.Clear();
             var products = _productRepository.GetAllProducts();
-            foreach (var product in products)
-            {
-                _allProducts.Add(product);
-            }
+            foreach (var product in products) _allProducts.Add(product);
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Ошибка при загрузке продуктов: {ex.Message}", 
+            MessageBox.Show($"Ошибка при загрузке продуктов: {ex.Message}",
                 "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
-    
+
     private void ProductSearch_TextChanged(object sender, TextChangedEventArgs e)
     {
         var searchText = ProductSearchBox.Text.ToLower();
-        
+
         if (string.IsNullOrWhiteSpace(searchText))
         {
             LoadProducts();
             return;
         }
-        
+
         try
         {
             _allProducts.Clear();
             var allProducts = _productRepository.GetAllProducts();
-            var filtered = allProducts.Where(p => 
-                p.Name.ToLower().Contains(searchText) || 
+            var filtered = allProducts.Where(p =>
+                p.Name.ToLower().Contains(searchText) ||
                 (p.Type != null && p.Type.ToLower().Contains(searchText)) ||
                 (p.IzName != null && p.IzName.ToLower().Contains(searchText))
             );
-            
-            foreach (var product in filtered)
-            {
-                _allProducts.Add(product);
-            }
+
+            foreach (var product in filtered) _allProducts.Add(product);
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Ошибка при поиске продуктов: {ex.Message}", 
+            MessageBox.Show($"Ошибка при поиске продуктов: {ex.Message}",
                 "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
@@ -139,7 +133,7 @@ public partial class ProductsPage : Page
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Ошибка при загрузке типов продуктов: {ex.Message}", 
+            MessageBox.Show($"Ошибка при загрузке типов продуктов: {ex.Message}",
                 "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
@@ -155,7 +149,7 @@ public partial class ProductsPage : Page
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Ошибка при загрузке единиц измерения: {ex.Message}", 
+            MessageBox.Show($"Ошибка при загрузке единиц измерения: {ex.Message}",
                 "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
@@ -167,40 +161,35 @@ public partial class ProductsPage : Page
         if (product == null) return;
 
         _currentProductId = product.ID;
-        
+
         ProductNameTextBox.Text = product.Name;
-        
+
         // Устанавливаем тип
         var types = _productRepository.GetProductTypes();
         var typeToSelect = types.FirstOrDefault(t => t.Name == product.Type);
-        if (typeToSelect != null && typeToSelect.Id > 0)
-        {
-            ProductTypeComboBox.SelectedValue = typeToSelect.Id;
-        }
-        
+        if (typeToSelect != null && typeToSelect.Id > 0) ProductTypeComboBox.SelectedValue = typeToSelect.Id;
+
         // Устанавливаем единицу измерения
         var measures = _productRepository.GetMeasures();
         var measureToSelect = measures.FirstOrDefault(m => m.Name == product.IzName);
         if (measureToSelect != null && measureToSelect.Id > 0)
-        {
             ProductMeasureComboBox.SelectedValue = measureToSelect.Id;
-        }
-        
+
         ShowEditView(true);
     }
 
     private void NewProduct_Click(object sender, RoutedEventArgs e)
     {
         _currentProductId = null;
-        
+
         ProductNameTextBox.Clear();
         ProductTypeComboBox.SelectedIndex = -1;
         ProductMeasureComboBox.SelectedIndex = -1;
-        
+
         ShowEditView(false);
         ProductNameTextBox.Focus();
     }
-    
+
     private void CancelEdit_Click(object sender, RoutedEventArgs e)
     {
         ShowListView();
@@ -214,9 +203,9 @@ public partial class ProductsPage : Page
             var product = button?.DataContext as ProductView;
             if (product == null) return;
 
-            var result = MessageBox.Show($"Удалить продукт '{product.Name}'?", 
+            var result = MessageBox.Show($"Удалить продукт '{product.Name}'?",
                 "Подтверждение", MessageBoxButton.YesNo, MessageBoxImage.Question);
-            
+
             if (result == MessageBoxResult.Yes)
             {
                 _productRepository.DeleteProduct(product.ID);
@@ -226,7 +215,7 @@ public partial class ProductsPage : Page
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Ошибка при удалении продукта: {ex.Message}", 
+            MessageBox.Show($"Ошибка при удалении продукта: {ex.Message}",
                 "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
@@ -237,21 +226,21 @@ public partial class ProductsPage : Page
         {
             if (string.IsNullOrWhiteSpace(ProductNameTextBox.Text))
             {
-                MessageBox.Show("Введите название продукта!", 
+                MessageBox.Show("Введите название продукта!",
                     "Внимание", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
             if (ProductTypeComboBox.SelectedValue == null)
             {
-                MessageBox.Show("Выберите тип продукта!", 
+                MessageBox.Show("Выберите тип продукта!",
                     "Внимание", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
             if (ProductMeasureComboBox.SelectedValue == null)
             {
-                MessageBox.Show("Выберите единицу измерения!", 
+                MessageBox.Show("Выберите единицу измерения!",
                     "Внимание", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
@@ -263,34 +252,34 @@ public partial class ProductsPage : Page
             {
                 // Обновление существующего продукта
                 _productRepository.UpdateProduct(
-                    _currentProductId.Value, 
-                    ProductNameTextBox.Text, 
+                    _currentProductId.Value,
+                    ProductNameTextBox.Text,
                     null, // vesId
-                    typeId, 
+                    typeId,
                     0, // fass
-                    measureId, 
+                    measureId,
                     0, // prizMenu
                     0, // count
                     false, // automat
                     0, // countPeople
                     false // mainCount
                 );
-                
-                MessageBox.Show("Продукт обновлен!", 
+
+                MessageBox.Show("Продукт обновлен!",
                     "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             else
             {
                 // Создание нового продукта
                 _productRepository.AddProduct(
-                    ProductNameTextBox.Text, 
+                    ProductNameTextBox.Text,
                     null, // vesId
-                    typeId, 
+                    typeId,
                     0, // fass
                     measureId
                 );
-                
-                MessageBox.Show("Продукт создан!", 
+
+                MessageBox.Show("Продукт создан!",
                     "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
             }
 
@@ -299,7 +288,7 @@ public partial class ProductsPage : Page
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Ошибка при сохранении продукта: {ex.Message}", 
+            MessageBox.Show($"Ошибка при сохранении продукта: {ex.Message}",
                 "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }

@@ -1,6 +1,7 @@
 using PaymProdNet9.Data;
 using PaymProdNet9.Models;
 using PaymProdNet9.Services;
+using System;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows;
@@ -22,7 +23,7 @@ public partial class ProductsReportPage : Page
     public ProductsReportPage()
     {
         InitializeComponent();
-        
+
         _menuDelicates = new ObservableCollection<MenuDel_act>();
         _banquetInfo = new List<string>();
         _menuPrinter = new MenuPrinter();
@@ -85,41 +86,169 @@ public partial class ProductsReportPage : Page
                 .ThenBy(g => g.Key)
                 .ToList();
 
-            var outerTable = new Table
+            // Создаем таблицу с 7 колонками (3 для левой части, 1 разделитель, 3 для правой части)
+            var mainTable = new Table
             {
-                CellSpacing = 12,
-                TextAlignment = TextAlignment.Left
+                CellSpacing = 0,
+                BorderBrush = Brushes.Black,
+                BorderThickness = new Thickness(1)
             };
-            outerTable.Columns.Add(new TableColumn { Width = GridLength.Auto });
-            outerTable.Columns.Add(new TableColumn { Width = GridLength.Auto });
 
-            var outerGroup = new TableRowGroup();
-            outerTable.RowGroups.Add(outerGroup);
+            // Определяем ширины колонок
+            mainTable.Columns.Add(new TableColumn { Width = new GridLength(280) }); // Продукт (лево)
+            mainTable.Columns.Add(new TableColumn { Width = new GridLength(70) }); // Количество (лево)
+            mainTable.Columns.Add(new TableColumn { Width = new GridLength(50) }); // Ед. (лево)
+            mainTable.Columns.Add(new TableColumn { Width = new GridLength(50) }); // Разделитель
+            mainTable.Columns.Add(new TableColumn { Width = new GridLength(280) }); // Продукт (право)
+            mainTable.Columns.Add(new TableColumn { Width = new GridLength(70) }); // Количество (право)
+            mainTable.Columns.Add(new TableColumn { Width = new GridLength(50) }); // Ед. (право)
 
-            for (int i = 0; i < groupedByType.Count; i += 2)
+            var mainGroup = new TableRowGroup();
+            mainTable.RowGroups.Add(mainGroup);
+
+            // Создаем список строк для левой и правой частей
+            var rows = new List<List<TableCell>>();
+
+            foreach (var group in groupedByType)
+            {
+                var groupRows = CreateTypeSectionRows(group, measures);
+                rows.AddRange(groupRows);
+                rows.Add(CreateSpacerRow());
+            }
+
+            // Удаляем последний спейсер, если есть
+            if (rows.Count > 0 && rows.Last().All(c => string.IsNullOrWhiteSpace(GetCellText(c))))
+                rows.RemoveAt(rows.Count - 1);
+
+            // Разделяем на левую и правую части
+            var middleIndex = rows.Count / 2;
+            var leftRows = rows.Take(middleIndex).ToList();
+            var rightRows = rows.Skip(middleIndex).ToList();
+
+            // Создаем строки основной таблицы
+            var maxRows = Math.Max(leftRows.Count, rightRows.Count);
+            for (var i = 0; i < maxRows; i++)
             {
                 var row = new TableRow();
-                row.Cells.Add(CreateGroupCell(groupedByType[i], measures, TextAlignment.Right));
 
-                if (i + 1 < groupedByType.Count)
+                // Левая часть
+                if (i < leftRows.Count)
                 {
-                    row.Cells.Add(CreateGroupCell(groupedByType[i + 1], measures, TextAlignment.Left));
+                    var leftCells = leftRows[i];
+                    if (leftCells.Count == 1 && leftCells[0].ColumnSpan > 1)
+                    {
+                        // Заголовок типа продукта (занимает 3 колонки)
+                        row.Cells.Add(leftCells[0]);
+                        row.Cells.Add(CreateSeparatorCell());
+                        // Правая часть - проверяем, есть ли правая часть
+                        if (i < rightRows.Count)
+                        {
+                            var rightCells = rightRows[i];
+                            if (rightCells.Count == 1 && rightCells[0].ColumnSpan > 1)
+                            {
+                                row.Cells.Add(rightCells[0]);
+                            }
+                            else if (rightCells.Count >= 3)
+                            {
+                                row.Cells.Add(rightCells[0]);
+                                row.Cells.Add(rightCells[1]);
+                                row.Cells.Add(rightCells[2]);
+                            }
+                            else
+                            {
+                                row.Cells.Add(CreateEmptyCell());
+                                row.Cells.Add(CreateEmptyCell());
+                                row.Cells.Add(CreateEmptyCell());
+                            }
+                        }
+                        else
+                        {
+                            row.Cells.Add(CreateEmptyCell());
+                            row.Cells.Add(CreateEmptyCell());
+                            row.Cells.Add(CreateEmptyCell());
+                        }
+                    }
+                    else if (leftCells.Count >= 3)
+                    {
+                        // Обычная строка с 3 ячейками
+                        row.Cells.Add(leftCells[0]);
+                        row.Cells.Add(leftCells[1]);
+                        row.Cells.Add(leftCells[2]);
+                        row.Cells.Add(CreateSeparatorCell());
+                        // Правая часть
+                        if (i < rightRows.Count && rightRows[i].Count >= 3)
+                        {
+                            row.Cells.Add(rightRows[i][0]);
+                            row.Cells.Add(rightRows[i][1]);
+                            row.Cells.Add(rightRows[i][2]);
+                        }
+                        else
+                        {
+                            row.Cells.Add(CreateEmptyCell());
+                            row.Cells.Add(CreateEmptyCell());
+                            row.Cells.Add(CreateEmptyCell());
+                        }
+                    }
+                    else
+                    {
+                        // Пустые ячейки
+                        row.Cells.Add(CreateEmptyCell());
+                        row.Cells.Add(CreateEmptyCell());
+                        row.Cells.Add(CreateEmptyCell());
+                        row.Cells.Add(CreateSeparatorCell());
+                        row.Cells.Add(CreateEmptyCell());
+                        row.Cells.Add(CreateEmptyCell());
+                        row.Cells.Add(CreateEmptyCell());
+                    }
                 }
                 else
                 {
-                    row.Cells.Add(new TableCell());
+                    // Левая часть пустая
+                    row.Cells.Add(CreateEmptyCell());
+                    row.Cells.Add(CreateEmptyCell());
+                    row.Cells.Add(CreateEmptyCell());
+                    row.Cells.Add(CreateSeparatorCell());
+                    // Правая часть
+                    if (i < rightRows.Count)
+                    {
+                        var rightCells = rightRows[i];
+                        if (rightCells.Count == 1 && rightCells[0].ColumnSpan > 1)
+                        {
+                            // Заголовок типа продукта (занимает 3 колонки)
+                            row.Cells.Add(rightCells[0]);
+                        }
+                        else if (rightCells.Count >= 3)
+                        {
+                            row.Cells.Add(rightCells[0]);
+                            row.Cells.Add(rightCells[1]);
+                            row.Cells.Add(rightCells[2]);
+                        }
+                        else
+                        {
+                            row.Cells.Add(CreateEmptyCell());
+                            row.Cells.Add(CreateEmptyCell());
+                            row.Cells.Add(CreateEmptyCell());
+                        }
+                    }
+                    else
+                    {
+                        row.Cells.Add(CreateEmptyCell());
+                        row.Cells.Add(CreateEmptyCell());
+                        row.Cells.Add(CreateEmptyCell());
+                    }
                 }
 
-                outerGroup.Rows.Add(row);
+                mainGroup.Rows.Add(row);
             }
 
+            // Центрируем таблицу
             var figure = new Figure
             {
                 HorizontalAnchor = FigureHorizontalAnchor.PageCenter,
                 WrapDirection = WrapDirection.None,
                 Width = new FigureLength(1, FigureUnitType.Content)
             };
-            figure.Blocks.Add(outerTable);
+            figure.Blocks.Add(mainTable);
 
             var containerParagraph = new Paragraph();
             containerParagraph.Inlines.Add(figure);
@@ -127,54 +256,33 @@ public partial class ProductsReportPage : Page
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Ошибка при генерации отчета: {ex.Message}", 
+            MessageBox.Show($"Ошибка при генерации отчета: {ex.Message}",
                 "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
 
-    private TableCell CreateGroupCell(IGrouping<string, DelicatesCollForSvod> group, List<Measure> measures, TextAlignment alignment)
+    private List<List<TableCell>> CreateTypeSectionRows(IGrouping<string, DelicatesCollForSvod> group,
+        List<Measure> measures)
     {
-        var cell = new TableCell
+        var rows = new List<List<TableCell>>();
+
+        // Заголовок типа продукта (занимает 3 колонки)
+        var headerRow = new List<TableCell>
         {
-            BorderBrush = Brushes.Transparent,
-            BorderThickness = new Thickness(0),
-            Padding = alignment == TextAlignment.Right 
-                ? new Thickness(0, 0, 10, 0) 
-                : new Thickness(10, 0, 0, 0),
-            TextAlignment = alignment
+            CreateHeaderCell(group.Key, 3)
         };
+        rows.Add(headerRow);
 
-        var innerTable = new Table
+        // Заголовки колонок
+        var titlesRow = new List<TableCell>
         {
-            CellSpacing = 0
+            CreateTitleCell("Продукт"),
+            CreateTitleCell("Количество"),
+            CreateTitleCell("Ед.")
         };
-        var productColumn = new TableColumn { Width = new GridLength(280) };
-        var quantityColumn = new TableColumn { Width = new GridLength(70) };
-        var unitColumn = new TableColumn { Width = new GridLength(50) };
-        innerTable.Columns.Add(productColumn);
-        innerTable.Columns.Add(quantityColumn);
-        innerTable.Columns.Add(unitColumn);
+        rows.Add(titlesRow);
 
-        var innerGroup = new TableRowGroup();
-        innerTable.RowGroups.Add(innerGroup);
-
-        var headerRow = new TableRow();
-        var headerCell = new TableCell(new Paragraph(new Run(group.Key) { FontWeight = FontWeights.Bold }))
-        {
-            ColumnSpan = 3,
-            TextAlignment = TextAlignment.Center,
-            Background = Brushes.LightGray,
-            Padding = new Thickness(4)
-        };
-        headerRow.Cells.Add(headerCell);
-        innerGroup.Rows.Add(headerRow);
-
-        var titlesRow = new TableRow();
-        titlesRow.Cells.Add(CreateTitleCell("Продукт"));
-        titlesRow.Cells.Add(CreateTitleCell("Количество"));
-        titlesRow.Cells.Add(CreateTitleCell("Ед."));
-        innerGroup.Rows.Add(titlesRow);
-
+        // Строки с продуктами
         var groupedProducts = group
             .GroupBy(r => r.NameT ?? r.Name)
             .Select(g => new
@@ -189,11 +297,13 @@ public partial class ProductsReportPage : Page
 
         foreach (var product in groupedProducts)
         {
-            string measureUnit = product.Fass > 0 && !string.IsNullOrEmpty(product.FassIz) 
-                ? product.FassIz 
-                : (!string.IsNullOrEmpty(product.Mera) ? product.Mera : "шт");
+            var measureUnit = product.Fass > 0 && !string.IsNullOrEmpty(product.FassIz)
+                ? product.FassIz
+                : !string.IsNullOrEmpty(product.Mera)
+                    ? product.Mera
+                    : "шт";
 
-            double totalValue = (double)product.TotalWeight;
+            var totalValue = (double)product.TotalWeight;
 
             if (product.Fass > 0 &&
                 !string.IsNullOrEmpty(product.Mera) &&
@@ -205,12 +315,9 @@ public partial class ProductsReportPage : Page
                 measureUnit = "кг";
             }
 
-            int roundingPrecision = 2;
+            var roundingPrecision = 2;
             var measure = FindMeasure(measures, measureUnit);
-            if (measure != null)
-            {
-                roundingPrecision = measure.RoundingPrecision;
-            }
+            if (measure != null) roundingPrecision = measure.RoundingPrecision;
 
             double roundedValue;
             if (roundingPrecision == 0)
@@ -219,23 +326,77 @@ public partial class ProductsReportPage : Page
             }
             else
             {
-                double multiplier = Math.Pow(10, roundingPrecision);
+                var multiplier = Math.Pow(10, roundingPrecision);
                 roundedValue = Math.Ceiling(totalValue * multiplier) / multiplier;
             }
 
-            string amountText = roundingPrecision == 0
+            var amountText = roundingPrecision == 0
                 ? ((int)roundedValue).ToString()
                 : roundedValue.ToString($"F{roundingPrecision}");
 
-            var row = new TableRow();
-            row.Cells.Add(CreateValueCell(product.Name));
-            row.Cells.Add(CreateValueCell(amountText, TextAlignment.Right));
-            row.Cells.Add(CreateValueCell(measureUnit, TextAlignment.Center));
-            innerGroup.Rows.Add(row);
+            var productRow = new List<TableCell>
+            {
+                CreateValueCell(product.Name),
+                CreateValueCell(amountText, TextAlignment.Right),
+                CreateValueCell(measureUnit, TextAlignment.Center)
+            };
+            rows.Add(productRow);
         }
 
-        cell.Blocks.Add(innerTable);
+        return rows;
+    }
+
+    private List<TableCell> CreateSpacerRow()
+    {
+        return new List<TableCell>
+        {
+            CreateEmptyCell(),
+            CreateEmptyCell(),
+            CreateEmptyCell()
+        };
+    }
+
+    private TableCell CreateSeparatorCell()
+    {
+        return new TableCell(new Paragraph(new Run(" ")))
+        {
+            BorderBrush = Brushes.Black,
+            BorderThickness = new Thickness(1, 0, 1, 0), // Только левая и правая границы
+            Padding = new Thickness(10, 0, 10, 0),
+            Background = Brushes.White
+        };
+    }
+
+    private TableCell CreateEmptyCell()
+    {
+        return new TableCell(new Paragraph(new Run(" ")))
+        {
+            BorderBrush = Brushes.Black,
+            BorderThickness = new Thickness(1),
+            Padding = new Thickness(4),
+            Background = Brushes.White
+        };
+    }
+
+    private TableCell CreateHeaderCell(string text, int columnSpan)
+    {
+        var cell = new TableCell(new Paragraph(new Run(text) { FontWeight = FontWeights.Bold }))
+        {
+            ColumnSpan = columnSpan,
+            TextAlignment = TextAlignment.Center,
+            Background = new SolidColorBrush(Color.FromRgb(227, 234, 242)), // E3EAF2
+            BorderBrush = Brushes.Black,
+            BorderThickness = new Thickness(1),
+            Padding = new Thickness(4)
+        };
         return cell;
+    }
+
+    private string GetCellText(TableCell cell)
+    {
+        if (cell.Blocks.Count > 0 && cell.Blocks.ToArray()[0] is Paragraph para && para.Inlines.Count > 0 &&
+            para.Inlines.ToArray()[0] is Run run) return run.Text;
+        return string.Empty;
     }
 
     private TableCell CreateTitleCell(string text)
@@ -243,10 +404,10 @@ public partial class ProductsReportPage : Page
         return new TableCell(new Paragraph(new Run(text) { FontWeight = FontWeights.SemiBold }))
         {
             BorderBrush = Brushes.Black,
-            BorderThickness = new Thickness(1, 0, 1, 1),
+            BorderThickness = new Thickness(1),
             Padding = new Thickness(4),
             TextAlignment = TextAlignment.Center,
-            Background = Brushes.AliceBlue
+            Background = new SolidColorBrush(Color.FromRgb(221, 235, 247)) // DDEBF7
         };
     }
 
@@ -255,9 +416,10 @@ public partial class ProductsReportPage : Page
         return new TableCell(new Paragraph(new Run(text)))
         {
             BorderBrush = Brushes.Black,
-            BorderThickness = new Thickness(1, 0, 1, 1),
+            BorderThickness = new Thickness(1),
             Padding = new Thickness(4),
-            TextAlignment = alignment
+            TextAlignment = alignment,
+            Background = Brushes.White
         };
     }
 
@@ -285,12 +447,12 @@ public partial class ProductsReportPage : Page
         try
         {
             var summaryData = GenerateSummaryData();
-            _menuPrinter.PrintReport(summaryData, 
+            _menuPrinter.PrintReport(summaryData,
                 $"{_banquetInfo[0]}, {_banquetInfo[1]} человек, {_banquetInfo[2]}");
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Ошибка при создании документа: {ex.Message}", 
+            MessageBox.Show($"Ошибка при создании документа: {ex.Message}",
                 "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
@@ -304,15 +466,13 @@ public partial class ProductsReportPage : Page
         {
             var printDialog = new PrintDialog();
             if (printDialog.ShowDialog() == true)
-            {
                 printDialog.PrintDocument(
-                    ((IDocumentPaginatorSource)ReportDocument).DocumentPaginator, 
+                    ((IDocumentPaginatorSource)ReportDocument).DocumentPaginator,
                     "Отчет по продуктам");
-            }
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Ошибка при печати: {ex.Message}", 
+            MessageBox.Show($"Ошибка при печати: {ex.Message}",
                 "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
@@ -325,32 +485,29 @@ public partial class ProductsReportPage : Page
         var summaryData = new List<DelicatesCollForSvod>();
 
         foreach (var delicate in _menuDelicates.Where(d => d.Lcomp != null && d.Lcomp.Any()))
+        foreach (var component in delicate.Lcomp)
         {
-            foreach (var component in delicate.Lcomp)
+            var item = new DelicatesCollForSvod
             {
-                var item = new DelicatesCollForSvod
-                {
-                    Del = delicate.Del,
-                    Del_id = delicate.Del_id,
-                    Countpor = delicate.Countpor,
-                    Name = component.Name,
-                    Type = component.Type,
-                    Ves = component.Ves,
-                    Mera = component.Mera,
-                    Fass = component.Fass,
-                    FassIz = component.FassIz,
-                    NameT = component.NameT,
-                    Itog = component.Ves * delicate.Countpor,
-                    ItogFass = component.Fass == 0 
-                        ? component.Ves * delicate.Countpor 
-                        : Math.Round((component.Ves * delicate.Countpor) / component.Fass, 2)
-                };
-                
-                summaryData.Add(item);
-            }
+                Del = delicate.Del,
+                Del_id = delicate.Del_id,
+                Countpor = delicate.Countpor,
+                Name = component.Name,
+                Type = component.Type,
+                Ves = component.Ves,
+                Mera = component.Mera,
+                Fass = component.Fass,
+                FassIz = component.FassIz,
+                NameT = component.NameT,
+                Itog = component.Ves * delicate.Countpor,
+                ItogFass = component.Fass == 0
+                    ? component.Ves * delicate.Countpor
+                    : Math.Round(component.Ves * delicate.Countpor / component.Fass, 2)
+            };
+
+            summaryData.Add(item);
         }
 
         return summaryData;
     }
 }
-

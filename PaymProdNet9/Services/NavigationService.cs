@@ -63,10 +63,7 @@ public class NavigationService
     /// </summary>
     public void GoBack()
     {
-        if (_mainFrame?.CanGoBack == true)
-        {
-            _mainFrame.GoBack();
-        }
+        if (_mainFrame?.CanGoBack == true) _mainFrame.GoBack();
     }
 
     /// <summary>
@@ -81,10 +78,6 @@ public class NavigationService
     {
         if (_mainFrame == null) return;
 
-        while (_mainFrame.CanGoBack)
-        {
-            _mainFrame.RemoveBackEntry();
-        }
+        while (_mainFrame.CanGoBack) _mainFrame.RemoveBackEntry();
     }
 }
-

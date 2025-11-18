@@ -19,4 +19,3 @@ public class NullToBoolConverter : IValueConverter
         throw new NotImplementedException();
     }
 }
-

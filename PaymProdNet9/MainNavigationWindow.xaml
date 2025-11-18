@@ -2,7 +2,7 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
-        Title="PaymProd - Система управления меню" 
+        Title="PaymProd - Система управления меню"
         WindowState="Maximized"
         Background="#F5F5F5"
         Loaded="Window_Loaded">
@@ -10,31 +10,31 @@
     <Window.Resources>
         <!-- Стиль для кнопок меню -->
         <Style x:Key="NavButtonStyle" TargetType="Button">
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Foreground" Value="White"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Padding" Value="20,15"/>
-            <Setter Property="HorizontalContentAlignment" Value="Left"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="20,15" />
+            <Setter Property="HorizontalContentAlignment" Value="Left" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="FontSize" Value="14" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border Background="{TemplateBinding Background}" 
+                        <Border Background="{TemplateBinding Background}"
                                 Padding="{TemplateBinding Padding}"
                                 BorderThickness="{TemplateBinding BorderThickness}">
                             <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
-                                            VerticalAlignment="Center"/>
+                                              VerticalAlignment="Center" />
                         </Border>
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
             <Style.Triggers>
                 <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="#3A4A5F"/>
+                    <Setter Property="Background" Value="#3A4A5F" />
                 </Trigger>
                 <DataTrigger Binding="{Binding IsSelected, RelativeSource={RelativeSource Self}}" Value="True">
-                    <Setter Property="Background" Value="#2C3E50"/>
+                    <Setter Property="Background" Value="#2C3E50" />
                 </DataTrigger>
             </Style.Triggers>
         </Style>
@@ -43,88 +43,88 @@
     <Grid>
         <Grid.ColumnDefinitions>
             <!-- Боковое меню -->
-            <ColumnDefinition Width="250"/>
+            <ColumnDefinition Width="250" />
             <!-- Основной контент -->
-            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
 
         <!-- Боковая панель навигации -->
         <Border Grid.Column="0" Background="#2C3E50">
             <Grid>
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="*"/>
-                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
 
                 <!-- Заголовок приложения -->
                 <StackPanel Grid.Row="0" Background="#1A252F" Margin="0,0,0,10">
-                    <TextBlock Text="PaymProd" 
-                               FontSize="24" 
-                               FontWeight="Bold" 
+                    <TextBlock Text="PaymProd"
+                               FontSize="24"
+                               FontWeight="Bold"
                                Foreground="White"
-                               Margin="20,20,20,5"/>
-                    <TextBlock Text="Система управления меню" 
-                               FontSize="12" 
+                               Margin="20,20,20,5" />
+                    <TextBlock Text="Система управления меню"
+                               FontSize="12"
                                Foreground="#BDC3C7"
-                               Margin="20,0,20,20"/>
+                               Margin="20,0,20,20" />
                 </StackPanel>
 
                 <!-- Меню навигации -->
                 <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
                     <StackPanel>
                         <!-- МЕНЮ -->
-                        <TextBlock Text="МЕНЮ" 
-                                   Foreground="#7F8C8D" 
+                        <TextBlock Text="МЕНЮ"
+                                   Foreground="#7F8C8D"
                                    FontSize="11"
                                    FontWeight="Bold"
-                                   Margin="20,10,20,5"/>
+                                   Margin="20,10,20,5" />
 
-                        <Button x:Name="CurrentMenuButton" 
+                        <Button x:Name="CurrentMenuButton"
                                 Style="{StaticResource NavButtonStyle}"
                                 Click="NavigateToCurrentMenu_Click">
                             <StackPanel Orientation="Horizontal">
-                                <materialDesign:PackIcon Kind="FileEdit" 
-                                                        Width="24" 
-                                                        Height="24" 
-                                                        VerticalAlignment="Center"
-                                                        Margin="0,0,15,0"/>
-                                <TextBlock Text="Текущее меню" VerticalAlignment="Center"/>
+                                <materialDesign:PackIcon Kind="FileEdit"
+                                                         Width="24"
+                                                         Height="24"
+                                                         VerticalAlignment="Center"
+                                                         Margin="0,0,15,0" />
+                                <TextBlock Text="Текущее меню" VerticalAlignment="Center" />
                             </StackPanel>
                         </Button>
 
-                        <Button x:Name="SavedMenusButton" 
+                        <Button x:Name="SavedMenusButton"
                                 Style="{StaticResource NavButtonStyle}"
                                 Click="NavigateToSavedMenus_Click">
                             <StackPanel Orientation="Horizontal">
-                                <materialDesign:PackIcon Kind="ContentSaveAll" 
-                                                        Width="24" 
-                                                        Height="24" 
-                                                        VerticalAlignment="Center"
-                                                        Margin="0,0,15,0"/>
-                                <TextBlock Text="Сохраненные меню" VerticalAlignment="Center"/>
+                                <materialDesign:PackIcon Kind="ContentSaveAll"
+                                                         Width="24"
+                                                         Height="24"
+                                                         VerticalAlignment="Center"
+                                                         Margin="0,0,15,0" />
+                                <TextBlock Text="Сохраненные меню" VerticalAlignment="Center" />
                             </StackPanel>
                         </Button>
 
-                        <Separator Background="#34495E" Margin="10,5"/>
+                        <Separator Background="#34495E" Margin="10,5" />
 
                         <!-- Справочники -->
-                        <TextBlock Text="СПРАВОЧНИКИ" 
-                                   Foreground="#7F8C8D" 
+                        <TextBlock Text="СПРАВОЧНИКИ"
+                                   Foreground="#7F8C8D"
                                    FontSize="11"
                                    FontWeight="Bold"
-                                   Margin="20,10,20,5"/>
+                                   Margin="20,10,20,5" />
 
                         <Button x:Name="DelicatesButton"
                                 Style="{StaticResource NavButtonStyle}"
                                 Click="NavigateToDelicates_Click">
                             <StackPanel Orientation="Horizontal">
-                                <materialDesign:PackIcon Kind="Food" 
-                                                        Width="24" 
-                                                        Height="24" 
-                                                        VerticalAlignment="Center"
-                                                        Margin="0,0,15,0"/>
-                                <TextBlock Text="Блюда" VerticalAlignment="Center"/>
+                                <materialDesign:PackIcon Kind="Food"
+                                                         Width="24"
+                                                         Height="24"
+                                                         VerticalAlignment="Center"
+                                                         Margin="0,0,15,0" />
+                                <TextBlock Text="Блюда" VerticalAlignment="Center" />
                             </StackPanel>
                         </Button>
 
@@ -132,12 +132,12 @@
                                 Style="{StaticResource NavButtonStyle}"
                                 Click="NavigateToProducts_Click">
                             <StackPanel Orientation="Horizontal">
-                                <materialDesign:PackIcon Kind="ShoppingCart" 
-                                                        Width="24" 
-                                                        Height="24" 
-                                                        VerticalAlignment="Center"
-                                                        Margin="0,0,15,0"/>
-                                <TextBlock Text="Продукты" VerticalAlignment="Center"/>
+                                <materialDesign:PackIcon Kind="ShoppingCart"
+                                                         Width="24"
+                                                         Height="24"
+                                                         VerticalAlignment="Center"
+                                                         Margin="0,0,15,0" />
+                                <TextBlock Text="Продукты" VerticalAlignment="Center" />
                             </StackPanel>
                         </Button>
 
@@ -145,12 +145,12 @@
                                 Style="{StaticResource NavButtonStyle}"
                                 Click="NavigateToMeasures_Click">
                             <StackPanel Orientation="Horizontal">
-                                <materialDesign:PackIcon Kind="Ruler" 
-                                                        Width="24" 
-                                                        Height="24" 
-                                                        VerticalAlignment="Center"
-                                                        Margin="0,0,15,0"/>
-                                <TextBlock Text="Единицы измерения" VerticalAlignment="Center"/>
+                                <materialDesign:PackIcon Kind="Ruler"
+                                                         Width="24"
+                                                         Height="24"
+                                                         VerticalAlignment="Center"
+                                                         Margin="0,0,15,0" />
+                                <TextBlock Text="Единицы измерения" VerticalAlignment="Center" />
                             </StackPanel>
                         </Button>
 
@@ -158,12 +158,12 @@
                                 Style="{StaticResource NavButtonStyle}"
                                 Click="NavigateToProductTypes_Click">
                             <StackPanel Orientation="Horizontal">
-                                <materialDesign:PackIcon Kind="Tag" 
-                                                        Width="24" 
-                                                        Height="24" 
-                                                        VerticalAlignment="Center"
-                                                        Margin="0,0,15,0"/>
-                                <TextBlock Text="Типы продуктов" VerticalAlignment="Center"/>
+                                <materialDesign:PackIcon Kind="Tag"
+                                                         Width="24"
+                                                         Height="24"
+                                                         VerticalAlignment="Center"
+                                                         Margin="0,0,15,0" />
+                                <TextBlock Text="Типы продуктов" VerticalAlignment="Center" />
                             </StackPanel>
                         </Button>
 
@@ -171,34 +171,34 @@
                                 Style="{StaticResource NavButtonStyle}"
                                 Click="NavigateToDelicateTypes_Click">
                             <StackPanel Orientation="Horizontal">
-                                <materialDesign:PackIcon Kind="Label" 
-                                                        Width="24" 
-                                                        Height="24" 
-                                                        VerticalAlignment="Center"
-                                                        Margin="0,0,15,0"/>
-                                <TextBlock Text="Типы блюд" VerticalAlignment="Center"/>
+                                <materialDesign:PackIcon Kind="Label"
+                                                         Width="24"
+                                                         Height="24"
+                                                         VerticalAlignment="Center"
+                                                         Margin="0,0,15,0" />
+                                <TextBlock Text="Типы блюд" VerticalAlignment="Center" />
                             </StackPanel>
                         </Button>
 
-                        <Separator Background="#34495E" Margin="10,5"/>
+                        <Separator Background="#34495E" Margin="10,5" />
 
                         <!-- Отчеты -->
-                        <TextBlock Text="ОТЧЕТЫ" 
-                                   Foreground="#7F8C8D" 
+                        <TextBlock Text="ОТЧЕТЫ"
+                                   Foreground="#7F8C8D"
                                    FontSize="11"
                                    FontWeight="Bold"
-                                   Margin="20,10,20,5"/>
+                                   Margin="20,10,20,5" />
 
                         <Button x:Name="ProductsReportButton"
                                 Style="{StaticResource NavButtonStyle}"
                                 Click="NavigateToProductsReport_Click">
                             <StackPanel Orientation="Horizontal">
-                                <materialDesign:PackIcon Kind="FileDocument" 
-                                                        Width="24" 
-                                                        Height="24" 
-                                                        VerticalAlignment="Center"
-                                                        Margin="0,0,15,0"/>
-                                <TextBlock Text="Отчет по продуктам" VerticalAlignment="Center"/>
+                                <materialDesign:PackIcon Kind="FileDocument"
+                                                         Width="24"
+                                                         Height="24"
+                                                         VerticalAlignment="Center"
+                                                         Margin="0,0,15,0" />
+                                <TextBlock Text="Отчет по продуктам" VerticalAlignment="Center" />
                             </StackPanel>
                         </Button>
 
@@ -206,12 +206,12 @@
                                 Style="{StaticResource NavButtonStyle}"
                                 Click="NavigateToSummaryTable_Click">
                             <StackPanel Orientation="Horizontal">
-                                <materialDesign:PackIcon Kind="Table" 
-                                                        Width="24" 
-                                                        Height="24" 
-                                                        VerticalAlignment="Center"
-                                                        Margin="0,0,15,0"/>
-                                <TextBlock Text="Сводная таблица" VerticalAlignment="Center"/>
+                                <materialDesign:PackIcon Kind="Table"
+                                                         Width="24"
+                                                         Height="24"
+                                                         VerticalAlignment="Center"
+                                                         Margin="0,0,15,0" />
+                                <TextBlock Text="Сводная таблица" VerticalAlignment="Center" />
                             </StackPanel>
                         </Button>
 
@@ -219,34 +219,34 @@
                                 Style="{StaticResource NavButtonStyle}"
                                 Click="PrintMenu_Click">
                             <StackPanel Orientation="Horizontal">
-                                <materialDesign:PackIcon Kind="Printer" 
-                                                        Width="24" 
-                                                        Height="24" 
-                                                        VerticalAlignment="Center"
-                                                        Margin="0,0,15,0"/>
-                                <TextBlock Text="Печать меню" VerticalAlignment="Center"/>
+                                <materialDesign:PackIcon Kind="Printer"
+                                                         Width="24"
+                                                         Height="24"
+                                                         VerticalAlignment="Center"
+                                                         Margin="0,0,15,0" />
+                                <TextBlock Text="Печать меню" VerticalAlignment="Center" />
                             </StackPanel>
                         </Button>
 
-                        <Separator Background="#34495E" Margin="10,5"/>
+                        <Separator Background="#34495E" Margin="10,5" />
 
                         <!-- База данных -->
-                        <TextBlock Text="СИСТЕМА" 
-                                   Foreground="#7F8C8D" 
+                        <TextBlock Text="СИСТЕМА"
+                                   Foreground="#7F8C8D"
                                    FontSize="11"
                                    FontWeight="Bold"
-                                   Margin="20,10,20,5"/>
+                                   Margin="20,10,20,5" />
 
                         <Button x:Name="DatabaseButton"
                                 Style="{StaticResource NavButtonStyle}"
                                 Click="NavigateToDatabase_Click">
                             <StackPanel Orientation="Horizontal">
-                                <materialDesign:PackIcon Kind="Database" 
-                                                        Width="24" 
-                                                        Height="24" 
-                                                        VerticalAlignment="Center"
-                                                        Margin="0,0,15,0"/>
-                                <TextBlock Text="База данных" VerticalAlignment="Center"/>
+                                <materialDesign:PackIcon Kind="Database"
+                                                         Width="24"
+                                                         Height="24"
+                                                         VerticalAlignment="Center"
+                                                         Margin="0,0,15,0" />
+                                <TextBlock Text="База данных" VerticalAlignment="Center" />
                             </StackPanel>
                         </Button>
                     </StackPanel>
@@ -254,17 +254,17 @@
 
                 <!-- Нижняя панель -->
                 <StackPanel Grid.Row="2" Background="#1A252F">
-                    <Separator Background="#34495E"/>
-                    
+                    <Separator Background="#34495E" />
+
                     <Button Style="{StaticResource NavButtonStyle}"
                             Click="Exit_Click">
                         <StackPanel Orientation="Horizontal">
-                            <materialDesign:PackIcon Kind="ExitToApp" 
-                                                    Width="24" 
-                                                    Height="24" 
-                                                    VerticalAlignment="Center"
-                                                    Margin="0,0,15,0"/>
-                            <TextBlock Text="Выход" VerticalAlignment="Center"/>
+                            <materialDesign:PackIcon Kind="ExitToApp"
+                                                     Width="24"
+                                                     Height="24"
+                                                     VerticalAlignment="Center"
+                                                     Margin="0,0,15,0" />
+                            <TextBlock Text="Выход" VerticalAlignment="Center" />
                         </StackPanel>
                     </Button>
                 </StackPanel>
@@ -274,21 +274,21 @@
         <!-- Основная область контента -->
         <Grid Grid.Column="1">
             <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
             </Grid.RowDefinitions>
 
             <!-- Верхняя панель с навигацией -->
-            <Border Grid.Row="0" 
-                    Background="White" 
-                    BorderBrush="#E0E0E0" 
+            <Border Grid.Row="0"
+                    Background="White"
+                    BorderBrush="#E0E0E0"
                     BorderThickness="0,0,0,1"
                     Padding="20,15">
                 <Grid>
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
 
                     <!-- Кнопка "Назад" -->
@@ -298,7 +298,7 @@
                             Click="GoBack_Click"
                             Style="{StaticResource MaterialDesignFlatButton}"
                             Visibility="Collapsed"
-                            Margin="0,0,20,0"/>
+                            Margin="0,0,20,0" />
 
                     <!-- Заголовок текущей страницы -->
                     <TextBlock x:Name="PageTitle"
@@ -307,30 +307,29 @@
                                FontSize="20"
                                FontWeight="SemiBold"
                                VerticalAlignment="Center"
-                               Foreground="#2C3E50"/>
+                               Foreground="#2C3E50" />
 
                     <!-- Информация о пользователе -->
                     <StackPanel Grid.Column="2" Orientation="Horizontal">
-                        <materialDesign:PackIcon Kind="Account" 
-                                                Width="24" 
-                                                Height="24" 
-                                                VerticalAlignment="Center"
-                                                Margin="0,0,10,0"
-                                                Foreground="#7F8C8D"/>
+                        <materialDesign:PackIcon Kind="Account"
+                                                 Width="24"
+                                                 Height="24"
+                                                 VerticalAlignment="Center"
+                                                 Margin="0,0,10,0"
+                                                 Foreground="#7F8C8D" />
                         <TextBlock x:Name="UserNameText"
                                    Text="Пользователь"
                                    VerticalAlignment="Center"
-                                   Foreground="#7F8C8D"/>
+                                   Foreground="#7F8C8D" />
                     </StackPanel>
                 </Grid>
             </Border>
 
             <!-- Frame для отображения страниц -->
-            <Frame x:Name="MainFrame" 
+            <Frame x:Name="MainFrame"
                    Grid.Row="1"
                    NavigationUIVisibility="Hidden"
-                   Navigated="MainFrame_Navigated"/>
+                   Navigated="MainFrame_Navigated" />
         </Grid>
     </Grid>
 </Window>
-

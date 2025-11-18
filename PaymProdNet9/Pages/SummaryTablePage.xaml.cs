@@ -20,7 +20,7 @@ public partial class SummaryTablePage : Page
     public SummaryTablePage()
     {
         InitializeComponent();
-        
+
         _menuDelicates = new ObservableCollection<MenuDel_act>();
         _banquetInfo = new List<string>();
         _summaryData = new List<DelicatesCollForSvod>();
@@ -45,36 +45,34 @@ public partial class SummaryTablePage : Page
             _summaryData.Clear();
 
             foreach (var delicate in _menuDelicates.Where(d => d.Lcomp != null && d.Lcomp.Any()))
+            foreach (var component in delicate.Lcomp)
             {
-                foreach (var component in delicate.Lcomp)
+                var item = new DelicatesCollForSvod
                 {
-                    var item = new DelicatesCollForSvod
-                    {
-                        Del = delicate.Del,
-                        Del_id = delicate.Del_id,
-                        Countpor = delicate.Countpor,
-                        Name = component.Name,
-                        Type = component.Type,
-                        Ves = component.Ves,
-                        Mera = component.Mera,
-                        Fass = component.Fass,
-                        FassIz = component.FassIz,
-                        NameT = component.NameT,
-                        Itog = component.Ves * delicate.Countpor,
-                        ItogFass = component.Fass == 0 
-                            ? component.Ves * delicate.Countpor 
-                            : Math.Round((component.Ves * delicate.Countpor) / component.Fass, 2)
-                    };
-                    
-                    _summaryData.Add(item);
-                }
+                    Del = delicate.Del,
+                    Del_id = delicate.Del_id,
+                    Countpor = delicate.Countpor,
+                    Name = component.Name,
+                    Type = component.Type,
+                    Ves = component.Ves,
+                    Mera = component.Mera,
+                    Fass = component.Fass,
+                    FassIz = component.FassIz,
+                    NameT = component.NameT,
+                    Itog = component.Ves * delicate.Countpor,
+                    ItogFass = component.Fass == 0
+                        ? component.Ves * delicate.Countpor
+                        : Math.Round(component.Ves * delicate.Countpor / component.Fass, 2)
+                };
+
+                _summaryData.Add(item);
             }
 
             SummaryDataGrid.ItemsSource = _summaryData;
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Ошибка при генерации сводных данных: {ex.Message}", 
+            MessageBox.Show($"Ошибка при генерации сводных данных: {ex.Message}",
                 "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
@@ -105,17 +103,20 @@ public partial class SummaryTablePage : Page
                 worksheet.Cell(3, 1).Value = $"Дата: {_banquetInfo[2]}";
 
                 // Заголовки колонок
-                var headers = new[] { "Блюдо", "Количество", "Продукт", "Тип", "Вес", "Мера", 
-                    "Фасовка", "Мера фасовки", "Сумма продукта в нат ед", "Сумма продукта" };
-                
-                for (int i = 0; i < headers.Length; i++)
+                var headers = new[]
+                {
+                    "Блюдо", "Количество", "Продукт", "Тип", "Вес", "Мера",
+                    "Фасовка", "Мера фасовки", "Сумма продукта в нат ед", "Сумма продукта"
+                };
+
+                for (var i = 0; i < headers.Length; i++)
                 {
                     worksheet.Cell(5, i + 1).Value = headers[i];
                     worksheet.Cell(5, i + 1).Style.Font.Bold = true;
                 }
 
                 // Данные
-                int row = 6;
+                var row = 6;
                 foreach (var item in _summaryData)
                 {
                     worksheet.Cell(row, 1).Value = item.Del;
@@ -135,16 +136,15 @@ public partial class SummaryTablePage : Page
                 worksheet.Columns().AdjustToContents();
 
                 workbook.SaveAs(dialog.FileName);
-                
-                MessageBox.Show("Файл успешно сохранен!", 
+
+                MessageBox.Show("Файл успешно сохранен!",
                     "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
             }
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Ошибка при экспорте в Excel: {ex.Message}", 
+            MessageBox.Show($"Ошибка при экспорте в Excel: {ex.Message}",
                 "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
 }
-

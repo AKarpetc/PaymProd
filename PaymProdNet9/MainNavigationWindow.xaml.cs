@@ -20,10 +20,10 @@ public partial class MainNavigationWindow : Window
     public MainNavigationWindow()
     {
         InitializeComponent();
-        
+
         // Инициализируем сервис навигации
         NavigationService.Instance.Initialize(MainFrame);
-        
+
         // Устанавливаем имя пользователя
         UserNameText.Text = Environment.UserName;
     }
@@ -103,35 +103,27 @@ public partial class MainNavigationWindow : Window
             MessageBoxButton.YesNo,
             MessageBoxImage.Question);
 
-        if (result == MessageBoxResult.Yes)
-        {
-            Application.Current.Shutdown();
-        }
+        if (result == MessageBoxResult.Yes) Application.Current.Shutdown();
     }
 
     private void MainFrame_Navigated(object sender, System.Windows.Navigation.NavigationEventArgs e)
     {
         // Обновляем видимость кнопки "Назад"
-        BackButton.Visibility = NavigationService.Instance.CanGoBack 
-            ? Visibility.Visible 
+        BackButton.Visibility = NavigationService.Instance.CanGoBack
+            ? Visibility.Visible
             : Visibility.Collapsed;
     }
 
     private void SetActiveButton(Button? button)
     {
         // Сбрасываем предыдущую активную кнопку
-        if (_activeButton != null)
-        {
-            _activeButton.Background = System.Windows.Media.Brushes.Transparent;
-        }
+        if (_activeButton != null) _activeButton.Background = System.Windows.Media.Brushes.Transparent;
 
         // Устанавливаем новую активную кнопку
         _activeButton = button;
         if (_activeButton != null)
-        {
             _activeButton.Background = new System.Windows.Media.SolidColorBrush(
                 (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#2C3E50")!);
-        }
     }
 
     /// <summary>
@@ -143,10 +135,10 @@ public partial class MainNavigationWindow : Window
         {
             var menuRepository = new MenuRepository();
             var openMenu = menuRepository.GetOpenMenu();
-            
+
             if (openMenu == null)
             {
-                MessageBox.Show("Нет открытого меню!\n\nСоздайте или откройте меню для генерации отчета.", 
+                MessageBox.Show("Нет открытого меню!\n\nСоздайте или откройте меню для генерации отчета.",
                     "Внимание", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return null;
             }
@@ -154,7 +146,7 @@ public partial class MainNavigationWindow : Window
             var menuDelicates = menuRepository.GetMenuDelicates(openMenu.Id);
             if (menuDelicates.Count == 0)
             {
-                MessageBox.Show("В меню нет блюд!\n\nДобавьте блюда в меню для генерации отчета.", 
+                MessageBox.Show("В меню нет блюд!\n\nДобавьте блюда в меню для генерации отчета.",
                     "Внимание", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return null;
             }
@@ -171,7 +163,7 @@ public partial class MainNavigationWindow : Window
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Ошибка при получении данных меню: {ex.Message}", 
+            MessageBox.Show($"Ошибка при получении данных меню: {ex.Message}",
                 "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
             return null;
         }
@@ -187,7 +179,7 @@ public partial class MainNavigationWindow : Window
         {
             SetActiveButton(sender as Button);
             PageTitle.Text = "Отчет по продуктам";
-            
+
             var menuData = GetCurrentMenuData();
             if (menuData == null) return;
 
@@ -205,7 +197,7 @@ public partial class MainNavigationWindow : Window
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Ошибка при открытии отчета: {ex.Message}", 
+            MessageBox.Show($"Ошибка при открытии отчета: {ex.Message}",
                 "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
@@ -219,7 +211,7 @@ public partial class MainNavigationWindow : Window
         {
             SetActiveButton(sender as Button);
             PageTitle.Text = "Сводная таблица";
-            
+
             var menuData = GetCurrentMenuData();
             if (menuData == null) return;
 
@@ -237,7 +229,7 @@ public partial class MainNavigationWindow : Window
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Ошибка при открытии сводной таблицы: {ex.Message}", 
+            MessageBox.Show($"Ошибка при открытии сводной таблицы: {ex.Message}",
                 "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
@@ -257,9 +249,9 @@ public partial class MainNavigationWindow : Window
             var menuRepository = new MenuRepository();
             var delicateRepository = new DelicateRepository();
             var menuPrinter = new MenuPrinter();
-            
+
             var menuName = $"{banquetInfo[0]}, {banquetInfo[1]} человек, {banquetInfo[2]}";
-            
+
             var delicatesToPrint = new List<DelicatesColl>();
             foreach (var md in menuDelicates)
             {
@@ -279,9 +271,8 @@ public partial class MainNavigationWindow : Window
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Ошибка при печати меню: {ex.Message}", 
+            MessageBox.Show($"Ошибка при печати меню: {ex.Message}",
                 "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
 }
-

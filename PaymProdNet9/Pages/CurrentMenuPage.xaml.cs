@@ -15,13 +15,13 @@ public partial class CurrentMenuPage : Page
     private readonly MenuRepository _menuRepository;
     private readonly DelicateRepository _delicateRepository;
     private readonly ProductRepository _productRepository;
-    
+
     private int? _currentMenuId;
     private ObservableCollection<MenuDel_act> _currentMenuDelicates;
     private ObservableCollection<dynamic> _availableDelicates;
     private string _currentTypeFilter = "%";
     private bool _isDataChanged = false;
-    
+
     // Для редактирования блюда в меню
     private int? _editingDelicateId;
     private ObservableCollection<Components> _editingDelicateComponents;
@@ -30,16 +30,16 @@ public partial class CurrentMenuPage : Page
     public CurrentMenuPage()
     {
         InitializeComponent();
-        
+
         _menuRepository = new MenuRepository();
         _delicateRepository = new DelicateRepository();
         _productRepository = new ProductRepository();
-        
+
         _currentMenuDelicates = new ObservableCollection<MenuDel_act>();
         _availableDelicates = new ObservableCollection<dynamic>();
         _editingDelicateComponents = new ObservableCollection<Components>();
         _editingAvailableProducts = new ObservableCollection<ProductView>();
-        
+
         MenuDelicatesDataGrid.ItemsSource = _currentMenuDelicates;
         EditDelicateComponentsGrid.ItemsSource = _editingDelicateComponents;
         EditAvailableProductsList.ItemsSource = _editingAvailableProducts;
@@ -50,17 +50,14 @@ public partial class CurrentMenuPage : Page
         try
         {
             LoadDelicateTypes();
-            
+
             // Проверяем открытое меню
             var openMenu = _menuRepository.GetOpenMenu();
-            if (openMenu != null)
-            {
-                LoadMenu(openMenu.Id);
-            }
+            if (openMenu != null) LoadMenu(openMenu.Id);
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Ошибка при загрузке данных: {ex.Message}", 
+            MessageBox.Show($"Ошибка при загрузке данных: {ex.Message}",
                 "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
@@ -78,10 +75,7 @@ public partial class CurrentMenuPage : Page
             // Очищаем все кнопки кроме "Все"
             var buttonsToRemove = panel.Children.Cast<UIElement>()
                 .Where(c => c != AllTypesButton).ToList();
-            foreach (var button in buttonsToRemove)
-            {
-                panel.Children.Remove(button);
-            }
+            foreach (var button in buttonsToRemove) panel.Children.Remove(button);
 
             var types = _delicateRepository.GetDelicateTypes();
             foreach (var type in types)
@@ -99,7 +93,7 @@ public partial class CurrentMenuPage : Page
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Ошибка при загрузке типов блюд: {ex.Message}", 
+            MessageBox.Show($"Ошибка при загрузке типов блюд: {ex.Message}",
                 "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
@@ -112,7 +106,7 @@ public partial class CurrentMenuPage : Page
         try
         {
             ShowLoading(true);
-            
+
             _currentMenuId = menuId;
             var menu = _menuRepository.GetOpenMenu();
             if (menu == null) return;
@@ -121,31 +115,25 @@ public partial class CurrentMenuPage : Page
             BanquetNameTextBox.Text = menu.Name;
             PeopleCountTextBox.Text = menu.CountP.ToString();
             DescriptionTextBox.Text = menu.Detail;
-            
-            if (DateTime.TryParse(menu.DateBan, out var date))
-            {
-                BanquetDatePicker.SelectedDate = date;
-            }
+
+            if (DateTime.TryParse(menu.DateBan, out var date)) BanquetDatePicker.SelectedDate = date;
 
             // Загружаем блюда меню
             _currentMenuDelicates.Clear();
             var menuDelicates = _menuRepository.GetMenuDelicates(menuId);
-            foreach (var item in menuDelicates)
-            {
-                _currentMenuDelicates.Add(item);
-            }
+            foreach (var item in menuDelicates) _currentMenuDelicates.Add(item);
 
             CurrentMenuInfo.Text = $"Банкет: {menu.Name} - {menu.CountP} человек, дата - {menu.DateBan}";
-            
+
             // Включаем панель добавления блюд
             DelicatesPanel.IsEnabled = true;
-            
+
             // Загружаем доступные блюда
             LoadAvailableDelicates("%");
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Ошибка при загрузке меню: {ex.Message}", 
+            MessageBox.Show($"Ошибка при загрузке меню: {ex.Message}",
                 "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
         }
         finally
@@ -162,29 +150,23 @@ public partial class CurrentMenuPage : Page
         try
         {
             var delicates = _delicateRepository.GetAvailableDelicatesForMenu(typeFilter);
-            
+
             // Получаем список ID блюд, уже добавленных в текущее меню
             var addedDelicateIds = new HashSet<int>();
             if (_currentMenuId.HasValue)
             {
                 var menuDelicates = _menuRepository.GetMenuDelicates(_currentMenuId.Value);
-                foreach (var md in menuDelicates)
-                {
-                    addedDelicateIds.Add(md.Del_id);
-                }
+                foreach (var md in menuDelicates) addedDelicateIds.Add(md.Del_id);
             }
-            
+
             // Исключаем уже добавленные блюда
             var availableDelicates = delicates.Where(d => !addedDelicateIds.Contains(d.Id)).ToList();
-            
+
             // Получаем компоненты для каждого блюда
             foreach (var delicate in availableDelicates)
             {
                 var delicateWithComponents = _delicateRepository.GetDelicateById(delicate.Id);
-                if (delicateWithComponents != null)
-                {
-                    delicate.Lcomp = delicateWithComponents.Lcomp;
-                }
+                if (delicateWithComponents != null) delicate.Lcomp = delicateWithComponents.Lcomp;
             }
 
             // Конвертируем в формат для отображения
@@ -192,24 +174,21 @@ public partial class CurrentMenuPage : Page
             var displayDelicates = availableDelicates.Select(d => new
             {
                 Del = d.Name,
-                Sost = d.Lcomp.Any() 
-                    ? "Состав: " + string.Join(", ", d.Lcomp.Select(c => c.Name)) 
+                Sost = d.Lcomp.Any()
+                    ? "Состав: " + string.Join(", ", d.Lcomp.Select(c => c.Name))
                     : "Без состава",
                 WeightInfo = d.Ves > 0 ? $"{d.Ves}г" : d.Count > 0 ? "Порция" : "",
                 DelicateId = d.Id,
                 DefaultCount = PeopleCountTextBox.Text
             }).ToList();
 
-            foreach (var item in displayDelicates)
-            {
-                _availableDelicates.Add(item);
-            }
+            foreach (var item in displayDelicates) _availableDelicates.Add(item);
 
             AvailableDelicatesPanel.ItemsSource = _availableDelicates;
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Ошибка при загрузке блюд: {ex.Message}", 
+            MessageBox.Show($"Ошибка при загрузке блюд: {ex.Message}",
                 "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
@@ -233,17 +212,17 @@ public partial class CurrentMenuPage : Page
     {
         try
         {
-            if (string.IsNullOrWhiteSpace(BanquetNameTextBox.Text) || 
+            if (string.IsNullOrWhiteSpace(BanquetNameTextBox.Text) ||
                 string.IsNullOrWhiteSpace(PeopleCountTextBox.Text))
             {
-                MessageBox.Show("Заполните название банкета и количество человек!", 
+                MessageBox.Show("Заполните название банкета и количество человек!",
                     "Внимание", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
             if (_currentMenuId.HasValue)
             {
-                MessageBox.Show("Сначала закончите данное меню и нажмите 'Начать новое'!", 
+                MessageBox.Show("Сначала закончите данное меню и нажмите 'Начать новое'!",
                     "Внимание", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
@@ -260,7 +239,7 @@ public partial class CurrentMenuPage : Page
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Ошибка при создании меню: {ex.Message}", 
+            MessageBox.Show($"Ошибка при создании меню: {ex.Message}",
                 "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
@@ -272,17 +251,14 @@ public partial class CurrentMenuPage : Page
     {
         try
         {
-            if (_currentMenuId.HasValue)
-            {
-                _menuRepository.CloseMenu(_currentMenuId.Value);
-            }
+            if (_currentMenuId.HasValue) _menuRepository.CloseMenu(_currentMenuId.Value);
 
             // Очищаем форму
             BanquetNameTextBox.Clear();
             PeopleCountTextBox.Clear();
             DescriptionTextBox.Clear();
             BanquetDatePicker.SelectedDate = DateTime.Now;
-            
+
             _currentMenuId = null;
             _currentMenuDelicates.Clear();
             CurrentMenuInfo.Text = "Выберите или создайте новое меню";
@@ -290,7 +266,7 @@ public partial class CurrentMenuPage : Page
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Ошибка: {ex.Message}", 
+            MessageBox.Show($"Ошибка: {ex.Message}",
                 "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
@@ -306,7 +282,7 @@ public partial class CurrentMenuPage : Page
 
             var card = sender as FrameworkElement;
             if (card == null) return;
-            
+
             var data = card.DataContext as dynamic;
             if (data == null) return;
 
@@ -314,34 +290,31 @@ public partial class CurrentMenuPage : Page
             var textBox = FindVisualChild<TextBox>(card);
             if (textBox == null || string.IsNullOrWhiteSpace(textBox.Text)) return;
 
-            if (!int.TryParse(textBox.Text, out int count) || count <= 0)
+            if (!int.TryParse(textBox.Text, out var count) || count <= 0)
             {
-                MessageBox.Show("Некорректно введено количество!", 
+                MessageBox.Show("Некорректно введено количество!",
                     "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
 
             // Добавляем блюдо в меню
-            int delicateId = (int)data.DelicateId;
+            var delicateId = (int)data.DelicateId;
             _menuRepository.AddDelicateToMenu(_currentMenuId.Value, delicateId, count);
-            
+
             // Удаляем блюдо из списка доступных
             var itemToRemove = _availableDelicates.FirstOrDefault(d => (int)d.DelicateId == delicateId);
-            if (itemToRemove != null)
-            {
-                _availableDelicates.Remove(itemToRemove);
-            }
-            
+            if (itemToRemove != null) _availableDelicates.Remove(itemToRemove);
+
             // Очищаем поле количества
             textBox.Clear();
-            
+
             // Обновляем список меню
             LoadMenu(_currentMenuId.Value);
             _isDataChanged = true;
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Ошибка при добавлении блюда: {ex.Message}", 
+            MessageBox.Show($"Ошибка при добавлении блюда: {ex.Message}",
                 "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
@@ -363,8 +336,8 @@ public partial class CurrentMenuPage : Page
         if (addButton != null)
         {
             // Включаем кнопку только если введено число больше 0
-            bool hasValidValue = !string.IsNullOrWhiteSpace(textBox.Text) &&
-                                int.TryParse(textBox.Text, out int count) && count > 0;
+            var hasValidValue = !string.IsNullOrWhiteSpace(textBox.Text) &&
+                                int.TryParse(textBox.Text, out var count) && count > 0;
             addButton.IsEnabled = hasValidValue;
         }
     }
@@ -374,26 +347,21 @@ public partial class CurrentMenuPage : Page
     /// </summary>
     private Button? FindAddButton(DependencyObject parent)
     {
-        for (int i = 0; i < System.Windows.Media.VisualTreeHelper.GetChildrenCount(parent); i++)
+        for (var i = 0; i < System.Windows.Media.VisualTreeHelper.GetChildrenCount(parent); i++)
         {
             var child = System.Windows.Media.VisualTreeHelper.GetChild(parent, i);
-            
+
             if (child is Button button)
             {
                 // Проверяем, есть ли в кнопке PackIcon с Kind="Plus"
                 var packIcon = FindVisualChild<MaterialDesignThemes.Wpf.PackIcon>(button);
-                if (packIcon != null && packIcon.Kind == MaterialDesignThemes.Wpf.PackIconKind.Plus)
-                {
-                    return button;
-                }
+                if (packIcon != null && packIcon.Kind == MaterialDesignThemes.Wpf.PackIconKind.Plus) return button;
             }
-            
+
             var result = FindAddButton(child);
-            if (result != null)
-            {
-                return result;
-            }
+            if (result != null) return result;
         }
+
         return null;
     }
 
@@ -406,14 +374,14 @@ public partial class CurrentMenuPage : Page
         {
             if (!_currentMenuId.HasValue)
             {
-                MessageBox.Show("Сначала создайте или откройте меню!", 
+                MessageBox.Show("Сначала создайте или откройте меню!",
                     "Внимание", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
             var button = sender as Button;
             if (button == null) return;
-            
+
             var data = button.DataContext as dynamic;
             if (data == null) return;
 
@@ -425,40 +393,37 @@ public partial class CurrentMenuPage : Page
             var textBox = FindVisualChild<TextBox>(parent);
             if (textBox == null || string.IsNullOrWhiteSpace(textBox.Text))
             {
-                MessageBox.Show("Введите количество!", 
+                MessageBox.Show("Введите количество!",
                     "Внимание", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
-            if (!int.TryParse(textBox.Text, out int count) || count <= 0)
+            if (!int.TryParse(textBox.Text, out var count) || count <= 0)
             {
-                MessageBox.Show("Некорректно введено количество!", 
+                MessageBox.Show("Некорректно введено количество!",
                     "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
 
             // Добавляем блюдо в меню
-            int delicateId = (int)data.DelicateId;
+            var delicateId = (int)data.DelicateId;
             _menuRepository.AddDelicateToMenu(_currentMenuId.Value, delicateId, count);
-            
+
             // Удаляем блюдо из списка доступных
             var itemToRemove = _availableDelicates.FirstOrDefault(d => (int)d.DelicateId == delicateId);
-            if (itemToRemove != null)
-            {
-                _availableDelicates.Remove(itemToRemove);
-            }
-            
+            if (itemToRemove != null) _availableDelicates.Remove(itemToRemove);
+
             // Очищаем поле количества
             textBox.Clear();
             button.IsEnabled = false;
-            
+
             // Обновляем список меню
             LoadMenu(_currentMenuId.Value);
             _isDataChanged = true;
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Ошибка при добавлении блюда: {ex.Message}", 
+            MessageBox.Show($"Ошибка при добавлении блюда: {ex.Message}",
                 "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
@@ -474,29 +439,29 @@ public partial class CurrentMenuPage : Page
             var delicate = button?.DataContext as MenuDel_act;
             if (delicate == null) return;
 
-            var result = MessageBox.Show("Удалить блюдо из меню?", 
+            var result = MessageBox.Show("Удалить блюдо из меню?",
                 "Подтверждение", MessageBoxButton.YesNo, MessageBoxImage.Question);
-            
+
             if (result == MessageBoxResult.Yes)
             {
                 var delicateId = delicate.Del_id;
-                
+
                 _menuRepository.RemoveDelicateFromMenu(delicate.Idmen);
                 _currentMenuDelicates.Remove(delicate);
-                
+
                 // Возвращаем блюдо в список доступных
                 ReturnDelicateToAvailableList(delicateId);
-                
+
                 _isDataChanged = true;
             }
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Ошибка при удалении блюда: {ex.Message}", 
+            MessageBox.Show($"Ошибка при удалении блюда: {ex.Message}",
                 "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
-    
+
     /// <summary>
     /// Возвращает блюдо в список доступных после удаления из меню
     /// </summary>
@@ -507,14 +472,14 @@ public partial class CurrentMenuPage : Page
             // Проверяем, не добавлено ли уже это блюдо
             var exists = _availableDelicates.Any(d => (int)d.DelicateId == delicateId);
             if (exists) return;
-            
+
             // Получаем информацию о блюде
             var delicate = _delicateRepository.GetDelicateById(delicateId);
             if (delicate == null) return;
-            
+
             // Получаем текущий фильтр типа
             var currentFilter = GetCurrentTypeFilter();
-            
+
             // Проверяем, соответствует ли блюдо текущему фильтру
             if (!string.IsNullOrEmpty(currentFilter) && currentFilter != "%")
             {
@@ -522,29 +487,27 @@ public partial class CurrentMenuPage : Page
                 {
                     var delicateType = _delicateRepository.GetDelicateTypes()
                         .FirstOrDefault(t => t.Id == delicate.IDType.Value);
-                    if (delicateType == null || delicateType.Name != currentFilter)
-                    {
-                        return; // Блюдо не соответствует текущему фильтру
-                    }
+                    if (delicateType == null ||
+                        delicateType.Name != currentFilter) return; // Блюдо не соответствует текущему фильтру
                 }
                 else
                 {
                     return; // У блюда нет типа
                 }
             }
-            
+
             // Создаем объект для отображения
             var displayDelicate = new
             {
                 Del = delicate.Name,
-                Sost = delicate.Lcomp != null && delicate.Lcomp.Any() 
-                    ? "Состав: " + string.Join(", ", delicate.Lcomp.Select(c => c.Name)) 
+                Sost = delicate.Lcomp != null && delicate.Lcomp.Any()
+                    ? "Состав: " + string.Join(", ", delicate.Lcomp.Select(c => c.Name))
                     : "Без состава",
                 WeightInfo = delicate.Ves > 0 ? $"{delicate.Ves}г" : delicate.Count > 0 ? "Порция" : "",
                 DelicateId = delicate.Id,
                 DefaultCount = PeopleCountTextBox.Text
             };
-            
+
             _availableDelicates.Add(displayDelicate);
         }
         catch (Exception ex)
@@ -553,7 +516,7 @@ public partial class CurrentMenuPage : Page
             System.Diagnostics.Debug.WriteLine($"Ошибка при возврате блюда в список: {ex.Message}");
         }
     }
-    
+
     /// <summary>
     /// Получает текущий активный фильтр типа блюд
     /// </summary>
@@ -571,7 +534,7 @@ public partial class CurrentMenuPage : Page
         {
             if (!_currentMenuId.HasValue)
             {
-                MessageBox.Show("Сначала создайте или откройте меню!", 
+                MessageBox.Show("Сначала создайте или откройте меню!",
                     "Внимание", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
@@ -581,27 +544,27 @@ public partial class CurrentMenuPage : Page
             if (delicate == null) return;
 
             _editingDelicateId = delicate.Del_id;
-            
+
             // Загружаем название блюда
             EditDelicateNameText.Text = delicate.Del;
             EditDelicateTitle.Text = $"Редактирование блюда: {delicate.Del}";
-            
+
             // Загружаем компоненты блюда для этого меню
             LoadEditingDelicateComponents();
-            
+
             // Загружаем доступные продукты
             LoadEditingAvailableProducts();
-            
+
             // Показываем панель редактирования
             EditDelicateInMenuPanel.Visibility = Visibility.Visible;
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Ошибка при открытии редактирования: {ex.Message}", 
+            MessageBox.Show($"Ошибка при открытии редактирования: {ex.Message}",
                 "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
-    
+
     /// <summary>
     /// Загрузка компонентов редактируемого блюда
     /// </summary>
@@ -610,26 +573,23 @@ public partial class CurrentMenuPage : Page
         try
         {
             _editingDelicateComponents.Clear();
-            
+
             if (!_currentMenuId.HasValue || !_editingDelicateId.HasValue) return;
-            
+
             // Получаем компоненты для этого меню (из Components1 или Components)
             var components = _menuRepository.GetMenuDelicateComponents(
-                _currentMenuId.Value, 
+                _currentMenuId.Value,
                 _editingDelicateId.Value);
-            
-            foreach (var component in components)
-            {
-                _editingDelicateComponents.Add(component);
-            }
+
+            foreach (var component in components) _editingDelicateComponents.Add(component);
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Ошибка при загрузке компонентов: {ex.Message}", 
+            MessageBox.Show($"Ошибка при загрузке компонентов: {ex.Message}",
                 "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
-    
+
     /// <summary>
     /// Загрузка доступных продуктов для редактирования
     /// </summary>
@@ -639,18 +599,15 @@ public partial class CurrentMenuPage : Page
         {
             _editingAvailableProducts.Clear();
             var products = _productRepository.GetAllProducts();
-            foreach (var product in products)
-            {
-                _editingAvailableProducts.Add(product);
-            }
+            foreach (var product in products) _editingAvailableProducts.Add(product);
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Ошибка при загрузке продуктов: {ex.Message}", 
+            MessageBox.Show($"Ошибка при загрузке продуктов: {ex.Message}",
                 "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
-    
+
     /// <summary>
     /// Поиск продуктов при редактировании
     /// </summary>
@@ -662,28 +619,25 @@ public partial class CurrentMenuPage : Page
             LoadEditingAvailableProducts();
             return;
         }
-        
+
         try
         {
             _editingAvailableProducts.Clear();
             var allProducts = _productRepository.GetAllProducts();
-            var filtered = allProducts.Where(p => 
-                p.Name.ToLower().Contains(searchText) || 
+            var filtered = allProducts.Where(p =>
+                p.Name.ToLower().Contains(searchText) ||
                 (p.Type != null && p.Type.ToLower().Contains(searchText))
             );
-            
-            foreach (var product in filtered)
-            {
-                _editingAvailableProducts.Add(product);
-            }
+
+            foreach (var product in filtered) _editingAvailableProducts.Add(product);
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Ошибка при поиске продуктов: {ex.Message}", 
+            MessageBox.Show($"Ошибка при поиске продуктов: {ex.Message}",
                 "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
-    
+
     /// <summary>
     /// Добавление продукта в состав редактируемого блюда
     /// </summary>
@@ -693,7 +647,7 @@ public partial class CurrentMenuPage : Page
         {
             if (_editingDelicateComponents.Any(c => c.Prodid == selectedProduct.ID))
             {
-                MessageBox.Show("Этот продукт уже добавлен в состав", "Внимание", 
+                MessageBox.Show("Этот продукт уже добавлен в состав", "Внимание",
                     MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
@@ -710,27 +664,23 @@ public partial class CurrentMenuPage : Page
         }
         else
         {
-            MessageBox.Show("Выберите продукт из списка", "Внимание", 
+            MessageBox.Show("Выберите продукт из списка", "Внимание",
                 MessageBoxButton.OK, MessageBoxImage.Warning);
         }
     }
-    
+
     /// <summary>
     /// Удаление продукта из состава редактируемого блюда
     /// </summary>
     private void RemoveProductFromEditDelicate_Click(object sender, RoutedEventArgs e)
     {
         if (EditDelicateComponentsGrid.SelectedItem is Components selectedComponent)
-        {
             _editingDelicateComponents.Remove(selectedComponent);
-        }
         else
-        {
-            MessageBox.Show("Выберите продукт из состава", "Внимание", 
+            MessageBox.Show("Выберите продукт из состава", "Внимание",
                 MessageBoxButton.OK, MessageBoxImage.Warning);
-        }
     }
-    
+
     /// <summary>
     /// Сохранение изменений блюда в меню
     /// </summary>
@@ -740,7 +690,7 @@ public partial class CurrentMenuPage : Page
         {
             if (!_currentMenuId.HasValue || !_editingDelicateId.HasValue)
             {
-                MessageBox.Show("Ошибка: не выбрано меню или блюдо", 
+                MessageBox.Show("Ошибка: не выбрано меню или блюдо",
                     "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
@@ -753,21 +703,21 @@ public partial class CurrentMenuPage : Page
 
             // Закрываем панель редактирования
             EditDelicateInMenuPanel.Visibility = Visibility.Collapsed;
-            
+
             // Обновляем список меню
             LoadMenu(_currentMenuId.Value);
             _isDataChanged = true;
-            
-            MessageBox.Show("Изменения сохранены! Блюдо помечено как измененное в этом меню.", 
+
+            MessageBox.Show("Изменения сохранены! Блюдо помечено как измененное в этом меню.",
                 "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Ошибка при сохранении изменений: {ex.Message}", 
+            MessageBox.Show($"Ошибка при сохранении изменений: {ex.Message}",
                 "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
-    
+
     /// <summary>
     /// Отмена редактирования блюда в меню
     /// </summary>
@@ -796,9 +746,12 @@ public partial class CurrentMenuPage : Page
                 BanquetDatePicker.SelectedDate?.ToString() ?? DateTime.Now.ToString()
             );
 
-            CurrentMenuInfo.Text = $"Банкет: {BanquetNameTextBox.Text} - {PeopleCountTextBox.Text} человек, дата - {BanquetDatePicker.SelectedDate?.ToString() ?? DateTime.Now.ToString()}";
+            CurrentMenuInfo.Text =
+                $"Банкет: {BanquetNameTextBox.Text} - {PeopleCountTextBox.Text} человек, дата - {BanquetDatePicker.SelectedDate?.ToString() ?? DateTime.Now.ToString()}";
         }
-        catch { }
+        catch
+        {
+        }
     }
 
     private void BanquetInfo_Changed(object sender, SelectionChangedEventArgs e)
@@ -828,7 +781,7 @@ public partial class CurrentMenuPage : Page
         {
             if (!_currentMenuId.HasValue)
             {
-                MessageBox.Show("Нет открытого меню!", 
+                MessageBox.Show("Нет открытого меню!",
                     "Внимание", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
@@ -836,13 +789,13 @@ public partial class CurrentMenuPage : Page
             ShowLoading(true);
             _menuRepository.SaveMenuChanges(_currentMenuId.Value, _currentMenuDelicates);
             _isDataChanged = false;
-            
-            MessageBox.Show("Изменения сохранены!", 
+
+            MessageBox.Show("Изменения сохранены!",
                 "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Ошибка при сохранении: {ex.Message}", 
+            MessageBox.Show($"Ошибка при сохранении: {ex.Message}",
                 "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
         }
         finally
@@ -859,23 +812,15 @@ public partial class CurrentMenuPage : Page
         if (_isDataChanged)
         {
             var result = MessageBox.Show(
-                "Хотите ли вы сохранить изменения внесенные в меню? После обновления все не сохраненные изменения будут стерты.", 
+                "Хотите ли вы сохранить изменения внесенные в меню? После обновления все не сохраненные изменения будут стерты.",
                 "Внимание", MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
-            
+
             if (result == MessageBoxResult.Yes)
-            {
                 SaveMenuChanges_Click(sender, e);
-            }
-            else if (result == MessageBoxResult.Cancel)
-            {
-                return;
-            }
+            else if (result == MessageBoxResult.Cancel) return;
         }
 
-        if (_currentMenuId.HasValue)
-        {
-            LoadMenu(_currentMenuId.Value);
-        }
+        if (_currentMenuId.HasValue) LoadMenu(_currentMenuId.Value);
     }
 
 
@@ -892,21 +837,15 @@ public partial class CurrentMenuPage : Page
     /// </summary>
     private static T? FindVisualChild<T>(DependencyObject parent) where T : DependencyObject
     {
-        for (int i = 0; i < System.Windows.Media.VisualTreeHelper.GetChildrenCount(parent); i++)
+        for (var i = 0; i < System.Windows.Media.VisualTreeHelper.GetChildrenCount(parent); i++)
         {
             var child = System.Windows.Media.VisualTreeHelper.GetChild(parent, i);
-            if (child is T typedChild)
-            {
-                return typedChild;
-            }
+            if (child is T typedChild) return typedChild;
 
             var result = FindVisualChild<T>(child);
-            if (result != null)
-            {
-                return result;
-            }
+            if (result != null) return result;
         }
+
         return null;
     }
 }
-

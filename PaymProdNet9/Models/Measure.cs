@@ -11,4 +11,3 @@ public class Measure
     public string FassIzmer { get; set; } = string.Empty;
     public int RoundingPrecision { get; set; } = 2; // 0 = до целого, 2 = до сотых
 }
-
