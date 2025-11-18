@@ -1,4 +1,5 @@
 using System.Windows;
+using PaymProdNet9.Services;
 
 namespace PaymProdNet9;
 
@@ -7,7 +8,7 @@ namespace PaymProdNet9;
 /// </summary>
 public partial class App : Application
 {
-    protected override void OnStartup(StartupEventArgs e)
+    protected override async void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
 
@@ -28,5 +29,12 @@ public partial class App : Application
             System.IO.Directory.CreateDirectory(directory);
 
         Data.DatabaseHelper.InitializeDatabase(dbPath);
+
+        var mainWindow = new MainNavigationWindow();
+        MainWindow = mainWindow;
+
+
+        await UpdateService.CheckForUpdatesAsync(mainWindow);
+        mainWindow.Show();
     }
 }
