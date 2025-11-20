@@ -10,21 +10,29 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <!-- Меню -->
-        <Menu Grid.Row="0">
-            <MenuItem Header="Документ">
-                <MenuItem Header="Сохранить в Word" Click="SaveToWord_Click">
-                    <MenuItem.Icon>
-                        <materialDesign:PackIcon Kind="FileWord" />
-                    </MenuItem.Icon>
-                </MenuItem>
-                <MenuItem Header="Печать" Click="Print_Click">
-                    <MenuItem.Icon>
-                        <materialDesign:PackIcon Kind="Printer" />
-                    </MenuItem.Icon>
-                </MenuItem>
-            </MenuItem>
-        </Menu>
+        <!-- Кнопки действий -->
+        <StackPanel Grid.Row="0"
+                    Orientation="Horizontal"
+                    Margin="10"
+                    HorizontalAlignment="Left">
+            <Button Click="SaveToWord_Click"
+                    Style="{StaticResource MaterialDesignRaisedButton}"
+                    Padding="20,8"
+                    Margin="0,0,10,0">
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <materialDesign:PackIcon Kind="FileWord" Margin="0,0,8,0"/>
+                    <TextBlock Text="Сохранить в Word" VerticalAlignment="Center"/>
+                </StackPanel>
+            </Button>
+            <Button Click="Print_Click"
+                    Style="{StaticResource MaterialDesignOutlinedButton}"
+                    Padding="20,8">
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <materialDesign:PackIcon Kind="Printer" Margin="0,0,8,0"/>
+                    <TextBlock Text="Печать" VerticalAlignment="Center"/>
+                </StackPanel>
+            </Button>
+        </StackPanel>
 
         <!-- Отчет по продуктам -->
         <materialDesign:Card Grid.Row="1" Margin="10" Padding="20">
