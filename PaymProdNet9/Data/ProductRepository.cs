@@ -23,7 +23,8 @@ public class ProductRepository
             SELECT p.Prod_ID, p.Name, pt.Type_Opis, m.Name_Mera, 
                    pt.TypeProdId, p.Ves, COALESCE(p.Fass, 0), 
                    p.Izmer, mi.Name_Mera, p.Priz_menu, 
-                   COALESCE(p.Count, 0), p.Avtomat, p.Chel, p.Isdiap
+                   COALESCE(p.Count, 0), p.Avtomat, p.Chel, p.Isdiap,
+                   COALESCE(p.Price, 0)
             FROM Producrs p
             INNER JOIN Produkt_Type pt ON p.Type = pt.TypeProdId
             INNER JOIN Mera m ON m.Mera_ID = p.Ves
@@ -48,7 +49,8 @@ public class ProductRepository
                 Count = reader.GetDecimal(10),
                 AutoAdd = reader.GetInt32(11) == 1,
                 CountPeople = reader.GetInt32(12),
-                MainCount = reader.GetInt32(13) == 1
+                MainCount = reader.GetInt32(13) == 1,
+                Price = reader.IsDBNull(14) ? 0 : Convert.ToDecimal(reader.GetDouble(14))
             };
 
             products.Add(product);
@@ -61,15 +63,15 @@ public class ProductRepository
     /// Добавить продукт
     /// </summary>
     public int AddProduct(string name, int? vesId, int typeId, double fass, int izmerId, int prizMenu = 0, 
-        decimal count = 0, bool automat = false, int countPeople = 0, bool mainCount = false)
+        decimal count = 0, bool automat = false, int countPeople = 0, bool mainCount = false, double price = 0)
     {
         using var connection = DatabaseHelper.GetConnection();
         connection.Open();
 
         var command = connection.CreateCommand();
         command.CommandText = @"
-            INSERT INTO Producrs (Name, Type, Ves, Fass, Izmer, Priz_menu, Count, Avtomat, Chel, Isdiap) 
-            VALUES (@name, @type, @ves, @fass, @izmer, @prizMenu, @count, @avtomat, @chel, @isdiap);
+            INSERT INTO Producrs (Name, Type, Ves, Fass, Izmer, Priz_menu, Count, Avtomat, Chel, Isdiap, Price) 
+            VALUES (@name, @type, @ves, @fass, @izmer, @prizMenu, @count, @avtomat, @chel, @isdiap, @price);
             SELECT last_insert_rowid();";
 
         command.Parameters.AddWithValue("@name", name);
@@ -82,6 +84,7 @@ public class ProductRepository
         command.Parameters.AddWithValue("@avtomat", automat ? 1 : 0);
         command.Parameters.AddWithValue("@chel", countPeople);
         command.Parameters.AddWithValue("@isdiap", mainCount ? 1 : 0);
+        command.Parameters.AddWithValue("@price", price);
 
         return Convert.ToInt32(command.ExecuteScalar());
     }
@@ -90,15 +93,15 @@ public class ProductRepository
     /// Добавить продукт с автодобавлением
     /// </summary>
     public int AddProductWithAutoAdd(string name, int vesId, int typeId, double fass, int izmerId,
-        int prizMenu, decimal count, int avtomat, int chel, int isdiap)
+        int prizMenu, decimal count, int avtomat, int chel, int isdiap, double price = 0)
     {
         using var connection = DatabaseHelper.GetConnection();
         connection.Open();
 
         var command = connection.CreateCommand();
         command.CommandText = @"
-            INSERT INTO Producrs (Name, Type, Ves, Fass, Izmer, Priz_menu, Count, Avtomat, Chel, Isdiap) 
-            VALUES (@name, @type, @ves, @fass, @izmer, @prizMenu, @count, @avtomat, @chel, @isdiap);
+            INSERT INTO Producrs (Name, Type, Ves, Fass, Izmer, Priz_menu, Count, Avtomat, Chel, Isdiap, Price) 
+            VALUES (@name, @type, @ves, @fass, @izmer, @prizMenu, @count, @avtomat, @chel, @isdiap, @price);
             SELECT last_insert_rowid();";
 
         command.Parameters.AddWithValue("@name", name);
@@ -111,6 +114,7 @@ public class ProductRepository
         command.Parameters.AddWithValue("@avtomat", avtomat);
         command.Parameters.AddWithValue("@chel", chel);
         command.Parameters.AddWithValue("@isdiap", isdiap);
+        command.Parameters.AddWithValue("@price", price);
 
         return Convert.ToInt32(command.ExecuteScalar());
     }
@@ -119,7 +123,7 @@ public class ProductRepository
     /// Обновить продукт
     /// </summary>
     public void UpdateProduct(int id, string name, int? vesId, int typeId, decimal fass, int izmerId,
-        int prizMenu, decimal count, bool automat, int countPeople, bool mainCount)
+        int prizMenu, decimal count, bool automat, int countPeople, bool mainCount, double price = 0)
     {
         using var connection = DatabaseHelper.GetConnection();
         connection.Open();
@@ -128,7 +132,8 @@ public class ProductRepository
         command.CommandText = @"
             UPDATE Producrs 
             SET Name = @name, Type = @type, Ves = @ves, Fass = @fass, Izmer = @izmer, 
-                Priz_menu = @prizMenu, Count = @count, Avtomat = @avtomat, Chel = @chel, Isdiap = @isdiap
+                Priz_menu = @prizMenu, Count = @count, Avtomat = @avtomat, Chel = @chel, Isdiap = @isdiap,
+                Price = @price
             WHERE Prod_ID = @id";
 
         command.Parameters.AddWithValue("@id", id);
@@ -142,6 +147,7 @@ public class ProductRepository
         command.Parameters.AddWithValue("@avtomat", automat ? 1 : 0);
         command.Parameters.AddWithValue("@chel", countPeople);
         command.Parameters.AddWithValue("@isdiap", mainCount ? 1 : 0);
+        command.Parameters.AddWithValue("@price", price);
 
         command.ExecuteNonQuery();
     }

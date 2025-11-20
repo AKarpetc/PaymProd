@@ -115,6 +115,7 @@
                             <DataGridTextColumn Header="Фасовка" Binding="{Binding Fass}" Width="*" />
                             <DataGridTextColumn Header="Ед. (фасовка)" Binding="{Binding IzName}" Width="*" />
                             <DataGridTextColumn Header="Кол-во людей" Binding="{Binding CountPeople}" Width="*" />
+                            <DataGridTextColumn Header="Цена, тг" Binding="{Binding Price}" Width="*" />
 
                             <DataGridTemplateColumn Header="В блюда" Width="*">
                                 <DataGridTemplateColumn.CellTemplate>
@@ -180,6 +181,7 @@
 
                         <Grid>
                             <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
                                 <RowDefinition Height="Auto" />
                                 <RowDefinition Height="Auto" />
                                 <RowDefinition Height="Auto" />
@@ -254,7 +256,17 @@
                                           materialDesign:HintAssist.Hint="Выберите меру" />
                             </StackPanel>
 
-                            <StackPanel Grid.Row="2" Grid.Column="0" Margin="0,10,10,0">
+                            <StackPanel Grid.Row="2" Grid.Column="0" Margin="0,0,10,10">
+                                <TextBlock Text="Цена (тг за фасовку):"
+                                           Style="{StaticResource MaterialDesignBody2TextBlock}"
+                                           Margin="0,0,0,5" />
+                                <TextBox x:Name="ProductPriceTextBox"
+                                         materialDesign:HintAssist.Hint="Например: 1500"
+                                         PreviewTextInput="NumericOnly_PreviewTextInput"
+                                         Style="{StaticResource MaterialDesignOutlinedTextBox}" />
+                            </StackPanel>
+
+                            <StackPanel Grid.Row="3" Grid.Column="0" Margin="0,10,10,0">
                                 <TextBlock Text="Количество людей:"
                                            Style="{StaticResource MaterialDesignBody2TextBlock}"
                                            Margin="0,0,0,5" />
@@ -266,7 +278,7 @@
                                          HorizontalAlignment="Left" />
                             </StackPanel>
 
-                            <StackPanel Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="3" Margin="0,10,0,0">
+                            <StackPanel Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="3" Margin="0,10,0,0">
                                 <CheckBox x:Name="ProductAddToDishesCheckBox" Margin="0,5">
                                     <TextBlock Text="Добавить в блюда" TextWrapping="Wrap"/>
                                 </CheckBox>

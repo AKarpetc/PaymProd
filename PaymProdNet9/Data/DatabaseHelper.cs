@@ -114,6 +114,7 @@ public static class DatabaseHelper
                 Avtomat INTEGER DEFAULT 0,
                 Chel INTEGER DEFAULT 0,
                 Isdiap INTEGER DEFAULT 0,
+                Price REAL DEFAULT 0,
                 FOREIGN KEY (Type) REFERENCES Produkt_Type(TypeProdId),
                 FOREIGN KEY (Ves) REFERENCES Mera(Mera_ID),
                 FOREIGN KEY (Izmer) REFERENCES Mera(Mera_ID)
@@ -138,6 +139,17 @@ public static class DatabaseHelper
         catch
         {
             // Колонка уже существует, игнорируем ошибку
+        }
+
+        // Миграция: добавляем Price, если его нет
+        try
+        {
+            command.CommandText = "ALTER TABLE Producrs ADD COLUMN Price REAL DEFAULT 0";
+            command.ExecuteNonQuery();
+        }
+        catch
+        {
+            // Колонка уже существует, игнорируем
         }
 
         // Создание таблицы блюд

@@ -181,6 +181,9 @@ public partial class ProductsPage : Page
         ProductCountTextBox.Text = product.Count.ToString();
         ProductFassTextBox.Text = product.Fass.ToString();
         ProductCountPeopleTextBox.Text = product.CountPeople.ToString();
+        ProductPriceTextBox.Text = product.Price == 0
+            ? string.Empty
+            : product.Price.ToString(CultureInfo.CurrentCulture);
 
         // Устанавливаем тип
         var types = _productRepository.GetProductTypes();
@@ -221,6 +224,7 @@ public partial class ProductsPage : Page
         ProductCountTextBox.Clear();
         ProductFassTextBox.Clear();
         ProductCountPeopleTextBox.Clear();
+        ProductPriceTextBox.Clear();
         ProductAddToDishesCheckBox.IsChecked = false;
         ProductAutoAddCheckBox.IsChecked = false;
         ProductMainCountCheckBox.IsChecked = false;
@@ -318,6 +322,10 @@ public partial class ProductsPage : Page
             var automat = ProductAutoAddCheckBox.IsChecked == true;
             var mainCount = ProductMainCountCheckBox.IsChecked == true;
 
+        double price = 0;
+        if (!string.IsNullOrWhiteSpace(ProductPriceTextBox.Text))
+            double.TryParse(ProductPriceTextBox.Text, NumberStyles.Any, CultureInfo.CurrentCulture, out price);
+
             // Используем основную единицу измерения как Ves (если нужно)
             int? vesId = measureId > 0 ? measureId : null;
 
@@ -334,8 +342,9 @@ public partial class ProductsPage : Page
                     prizMenu,
                     count,
                     automat,
-                    countPeople,
-                    mainCount
+                countPeople,
+                mainCount,
+                price
                 );
 
                 MessageBox.Show("Продукт обновлен!",
@@ -354,7 +363,8 @@ public partial class ProductsPage : Page
                     count,
                     automat,
                     countPeople,
-                    mainCount
+                mainCount,
+                price
                 );
 
                 MessageBox.Show("Продукт создан!",

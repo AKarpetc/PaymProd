@@ -341,6 +341,7 @@ public class ProductView : INotifyPropertyChanged
     private bool _autoAdd;
     private int _countPeople;
     private bool _mainCount;
+    private decimal _price;
 
     public string Name
     {
@@ -489,6 +490,16 @@ public class ProductView : INotifyPropertyChanged
         {
             _mainCount = value;
             OnPropertyChanged(nameof(MainCount));
+        }
+    }
+
+    public decimal Price
+    {
+        get => _price;
+        set
+        {
+            _price = value;
+            OnPropertyChanged(nameof(Price));
         }
     }
 
