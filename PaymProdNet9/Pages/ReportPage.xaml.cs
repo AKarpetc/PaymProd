@@ -61,6 +61,8 @@ public partial class ReportPage : Page
             foreach (var delicate in _menuDelicates.Where(d => d.Lcomp != null && d.Lcomp.Any()))
             foreach (var component in delicate.Lcomp)
             {
+                var totalWeight = component.Ves * delicate.Countpor;
+
                 var item = new DelicatesCollForSvod
                 {
                     Del = delicate.Del,
@@ -73,10 +75,10 @@ public partial class ReportPage : Page
                     Fass = component.Fass,
                     FassIz = component.FassIz,
                     NameT = component.NameT,
-                    Itog = component.Ves * delicate.Countpor,
-                    ItogFass = component.Fass == 0
-                        ? component.Ves * delicate.Countpor
-                        : Math.Round(component.Ves * delicate.Countpor / component.Fass, 2)
+                    Itog = totalWeight,
+                    ItogFass = component.Fass > 0
+                        ? totalWeight / component.Fass
+                        : 0
                 };
                 summaryData.Add(item);
             }
@@ -217,6 +219,8 @@ public partial class ReportPage : Page
             foreach (var delicate in _menuDelicates.Where(d => d.Lcomp != null && d.Lcomp.Any()))
             foreach (var component in delicate.Lcomp)
             {
+                var totalWeight = component.Ves * delicate.Countpor;
+
                 var item = new DelicatesCollForSvod
                 {
                     Del = delicate.Del,
@@ -229,10 +233,10 @@ public partial class ReportPage : Page
                     Fass = component.Fass,
                     FassIz = component.FassIz,
                     NameT = component.NameT,
-                    Itog = component.Ves * delicate.Countpor,
-                    ItogFass = component.Fass == 0
-                        ? component.Ves * delicate.Countpor
-                        : Math.Round(component.Ves * delicate.Countpor / component.Fass, 2)
+                    Itog = totalWeight,
+                    ItogFass = component.Fass > 0
+                        ? totalWeight / component.Fass
+                        : 0
                 };
 
                 _summaryData.Add(item);

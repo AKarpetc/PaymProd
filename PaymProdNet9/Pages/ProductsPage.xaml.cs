@@ -1,8 +1,10 @@
 using PaymProdNet9.Data;
 using PaymProdNet9.Models;
 using System.Collections.ObjectModel;
+using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Navigation;
 
 namespace PaymProdNet9.Pages;
@@ -146,11 +148,24 @@ public partial class ProductsPage : Page
             ProductMeasureComboBox.ItemsSource = measures;
             ProductMeasureComboBox.DisplayMemberPath = "Name";
             ProductMeasureComboBox.SelectedValuePath = "Id";
+            
+            ProductFassMeasureComboBox.ItemsSource = measures;
+            ProductFassMeasureComboBox.DisplayMemberPath = "Name";
+            ProductFassMeasureComboBox.SelectedValuePath = "Id";
         }
         catch (Exception ex)
         {
             MessageBox.Show($"Ошибка при загрузке единиц измерения: {ex.Message}",
                 "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    private void ProductMeasureComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        // Автоматически устанавливаем ту же единицу измерения для фасовки
+        if (ProductMeasureComboBox.SelectedValue != null && ProductFassMeasureComboBox.Items.Count > 0)
+        {
+            ProductFassMeasureComboBox.SelectedValue = ProductMeasureComboBox.SelectedValue;
         }
     }
 
@@ -163,17 +178,34 @@ public partial class ProductsPage : Page
         _currentProductId = product.ID;
 
         ProductNameTextBox.Text = product.Name;
+        ProductCountTextBox.Text = product.Count.ToString();
+        ProductFassTextBox.Text = product.Fass.ToString();
+        ProductCountPeopleTextBox.Text = product.CountPeople.ToString();
 
         // Устанавливаем тип
         var types = _productRepository.GetProductTypes();
         var typeToSelect = types.FirstOrDefault(t => t.Name == product.Type);
         if (typeToSelect != null && typeToSelect.Id > 0) ProductTypeComboBox.SelectedValue = typeToSelect.Id;
 
-        // Устанавливаем единицу измерения
+        // Устанавливаем основную единицу измерения
         var measures = _productRepository.GetMeasures();
-        var measureToSelect = measures.FirstOrDefault(m => m.Name == product.IzName);
-        if (measureToSelect != null && measureToSelect.Id > 0)
-            ProductMeasureComboBox.SelectedValue = measureToSelect.Id;
+        if (product.VID > 0)
+        {
+            var measureToSelect = measures.FirstOrDefault(m => m.Id == product.VID);
+            if (measureToSelect != null) ProductMeasureComboBox.SelectedValue = measureToSelect.Id;
+        }
+
+        // Устанавливаем единицу измерения для фасовки
+        if (product.Iz > 0)
+        {
+            var fassMeasureToSelect = measures.FirstOrDefault(m => m.Id == product.Iz);
+            if (fassMeasureToSelect != null) ProductFassMeasureComboBox.SelectedValue = fassMeasureToSelect.Id;
+        }
+
+        // Устанавливаем чекбоксы
+        ProductAddToDishesCheckBox.IsChecked = product.PrizMen1;
+        ProductAutoAddCheckBox.IsChecked = product.AutoAdd;
+        ProductMainCountCheckBox.IsChecked = product.MainCount;
 
         ShowEditView(true);
     }
@@ -185,6 +217,13 @@ public partial class ProductsPage : Page
         ProductNameTextBox.Clear();
         ProductTypeComboBox.SelectedIndex = -1;
         ProductMeasureComboBox.SelectedIndex = -1;
+        ProductFassMeasureComboBox.SelectedIndex = -1;
+        ProductCountTextBox.Clear();
+        ProductFassTextBox.Clear();
+        ProductCountPeopleTextBox.Clear();
+        ProductAddToDishesCheckBox.IsChecked = false;
+        ProductAutoAddCheckBox.IsChecked = false;
+        ProductMainCountCheckBox.IsChecked = false;
 
         ShowEditView(false);
         ProductNameTextBox.Focus();
@@ -240,13 +279,47 @@ public partial class ProductsPage : Page
 
             if (ProductMeasureComboBox.SelectedValue == null)
             {
-                MessageBox.Show("Выберите единицу измерения!",
+                MessageBox.Show("Выберите основную единицу измерения!",
+                    "Внимание", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            if (ProductFassMeasureComboBox.SelectedValue == null)
+            {
+                MessageBox.Show("Выберите единицу измерения для фасовки!",
                     "Внимание", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
             var typeId = (int)ProductTypeComboBox.SelectedValue;
             var measureId = (int)ProductMeasureComboBox.SelectedValue;
+            var fassMeasureId = (int)ProductFassMeasureComboBox.SelectedValue;
+            
+            // Парсим числовые значения
+            decimal count = 0;
+            if (!string.IsNullOrWhiteSpace(ProductCountTextBox.Text))
+            {
+                decimal.TryParse(ProductCountTextBox.Text, out count);
+            }
+
+            double fass = 0;
+            if (!string.IsNullOrWhiteSpace(ProductFassTextBox.Text))
+            {
+                double.TryParse(ProductFassTextBox.Text, out fass);
+            }
+
+            int countPeople = 0;
+            if (!string.IsNullOrWhiteSpace(ProductCountPeopleTextBox.Text))
+            {
+                int.TryParse(ProductCountPeopleTextBox.Text, out countPeople);
+            }
+
+            var prizMenu = ProductAddToDishesCheckBox.IsChecked == true ? 1 : 0;
+            var automat = ProductAutoAddCheckBox.IsChecked == true;
+            var mainCount = ProductMainCountCheckBox.IsChecked == true;
+
+            // Используем основную единицу измерения как Ves (если нужно)
+            int? vesId = measureId > 0 ? measureId : null;
 
             if (_currentProductId.HasValue)
             {
@@ -254,15 +327,15 @@ public partial class ProductsPage : Page
                 _productRepository.UpdateProduct(
                     _currentProductId.Value,
                     ProductNameTextBox.Text,
-                    null, // vesId
+                    vesId,
                     typeId,
-                    0, // fass
-                    measureId,
-                    0, // prizMenu
-                    0, // count
-                    false, // automat
-                    0, // countPeople
-                    false // mainCount
+                    (decimal)fass,
+                    fassMeasureId,
+                    prizMenu,
+                    count,
+                    automat,
+                    countPeople,
+                    mainCount
                 );
 
                 MessageBox.Show("Продукт обновлен!",
@@ -273,10 +346,15 @@ public partial class ProductsPage : Page
                 // Создание нового продукта
                 _productRepository.AddProduct(
                     ProductNameTextBox.Text,
-                    null, // vesId
+                    vesId,
                     typeId,
-                    0, // fass
-                    measureId
+                    fass,
+                    fassMeasureId,
+                    prizMenu,
+                    count,
+                    automat,
+                    countPeople,
+                    mainCount
                 );
 
                 MessageBox.Show("Продукт создан!",
@@ -290,6 +368,29 @@ public partial class ProductsPage : Page
         {
             MessageBox.Show($"Ошибка при сохранении продукта: {ex.Message}",
                 "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    private void NumericOnly_PreviewTextInput(object sender, TextCompositionEventArgs e)
+    {
+        // Разрешаем только цифры и десятичный разделитель
+        var textBox = sender as TextBox;
+        if (textBox == null) return;
+
+        var decimalSeparator = CultureInfo.CurrentCulture.NumberFormat.NumberDecimalSeparator;
+        var allowedChars = "0123456789" + decimalSeparator;
+
+        // Проверяем, что вводимый символ разрешен
+        if (allowedChars.IndexOf(e.Text) < 0)
+        {
+            e.Handled = true;
+            return;
+        }
+
+        // Проверяем, что десятичный разделитель не дублируется
+        if (e.Text == decimalSeparator && textBox.Text.Contains(decimalSeparator))
+        {
+            e.Handled = true;
         }
     }
 }

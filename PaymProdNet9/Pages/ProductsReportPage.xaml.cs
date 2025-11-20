@@ -285,10 +285,11 @@ public partial class ProductsReportPage : Page
         // Строки с продуктами
         var groupedProducts = group
             .GroupBy(r => r.NameT ?? r.Name)
-            .Select(g => new
+            .Select(g => new GroupedProduct
             {
                 Name = g.Key,
-                TotalWeight = g.Sum(r => r.Fass > 0 ? r.ItogFass : r.Itog),
+                TotalWeight = g.Sum(r => r.Itog),
+                TotalPackages = g.Sum(r => r.Fass > 0 ? r.ItogFass : 0),
                 FassIz = g.First().FassIz ?? g.First().Mera ?? "",
                 Mera = g.First().Mera ?? "",
                 Fass = g.First().Fass
@@ -297,48 +298,13 @@ public partial class ProductsReportPage : Page
 
         foreach (var product in groupedProducts)
         {
-            var measureUnit = product.Fass > 0 && !string.IsNullOrEmpty(product.FassIz)
-                ? product.FassIz
-                : !string.IsNullOrEmpty(product.Mera)
-                    ? product.Mera
-                    : "шт";
-
-            var totalValue = (double)product.TotalWeight;
-
-            if (product.Fass > 0 &&
-                !string.IsNullOrEmpty(product.Mera) &&
-                !string.IsNullOrEmpty(product.FassIz) &&
-                (product.Mera.ToLower().Contains("г") || product.Mera.ToLower().Contains("грамм")) &&
-                (product.FassIz.ToLower().Contains("кг") || product.FassIz.ToLower().Contains("kg")))
-            {
-                totalValue /= 1000.0;
-                measureUnit = "кг";
-            }
-
-            var roundingPrecision = 2;
-            var measure = FindMeasure(measures, measureUnit);
-            if (measure != null) roundingPrecision = measure.RoundingPrecision;
-
-            double roundedValue;
-            if (roundingPrecision == 0)
-            {
-                roundedValue = Math.Ceiling(totalValue);
-            }
-            else
-            {
-                var multiplier = Math.Pow(10, roundingPrecision);
-                roundedValue = Math.Ceiling(totalValue * multiplier) / multiplier;
-            }
-
-            var amountText = roundingPrecision == 0
-                ? ((int)roundedValue).ToString()
-                : roundedValue.ToString($"F{roundingPrecision}");
+            var (amountText, unitText) = FormatAmount(product, measures);
 
             var productRow = new List<TableCell>
             {
                 CreateValueCell(product.Name),
                 CreateValueCell(amountText, TextAlignment.Right),
-                CreateValueCell(measureUnit, TextAlignment.Center)
+                CreateValueCell(unitText, TextAlignment.Center)
             };
             rows.Add(productRow);
         }
@@ -423,14 +389,15 @@ public partial class ProductsReportPage : Page
         };
     }
 
-    private Measure? FindMeasure(List<Measure> measures, string measureUnit)
+    private Measure? FindMeasure(List<Measure> measures, string? measureUnit)
     {
         if (string.IsNullOrWhiteSpace(measureUnit))
             return null;
 
         var lower = measureUnit.ToLower().Trim();
 
-        var exact = measures.FirstOrDefault(m => m.Name.ToLower().Trim() == lower);
+        var exact = measures.FirstOrDefault(m =>
+            m.Name.Equals(measureUnit, StringComparison.OrdinalIgnoreCase));
         if (exact != null)
             return exact;
 
@@ -487,6 +454,8 @@ public partial class ProductsReportPage : Page
         foreach (var delicate in _menuDelicates.Where(d => d.Lcomp != null && d.Lcomp.Any()))
         foreach (var component in delicate.Lcomp)
         {
+            var totalWeight = component.Ves * delicate.Countpor;
+
             var item = new DelicatesCollForSvod
             {
                 Del = delicate.Del,
@@ -499,10 +468,10 @@ public partial class ProductsReportPage : Page
                 Fass = component.Fass,
                 FassIz = component.FassIz,
                 NameT = component.NameT,
-                Itog = component.Ves * delicate.Countpor,
-                ItogFass = component.Fass == 0
-                    ? component.Ves * delicate.Countpor
-                    : Math.Round(component.Ves * delicate.Countpor / component.Fass, 2)
+                Itog = totalWeight,
+                ItogFass = component.Fass > 0
+                    ? totalWeight / component.Fass
+                    : 0
             };
 
             summaryData.Add(item);
@@ -510,4 +479,43 @@ public partial class ProductsReportPage : Page
 
         return summaryData;
     }
+
+    private (string amount, string unit) FormatAmount(GroupedProduct product, List<Measure> measures)
+    {
+        var defaultUnit = !string.IsNullOrEmpty(product.Mera) ? product.Mera : "шт";
+
+        if (product.Fass > 0)
+        {
+            var packages = product.TotalPackages > 0
+                ? product.TotalPackages
+                : (product.Fass == 0 ? 0 : product.TotalWeight / product.Fass);
+
+            var roundedPackages = Math.Ceiling((double)packages);
+            var unit = !string.IsNullOrEmpty(product.FassIz) ? product.FassIz : defaultUnit;
+            return (roundedPackages.ToString("0"), unit);
+        }
+
+        var totalValue = (double)product.TotalWeight;
+        var roundingPrecision = 2;
+        var measure = FindMeasure(measures, defaultUnit);
+        if (measure != null) roundingPrecision = measure.RoundingPrecision;
+
+        double roundedValue;
+        if (roundingPrecision == 0)
+        {
+            roundedValue = Math.Ceiling(totalValue);
+        }
+        else
+        {
+            var multiplier = Math.Pow(10, roundingPrecision);
+            roundedValue = Math.Ceiling(totalValue * multiplier) / multiplier;
+        }
+
+        var formattedNumber = roundingPrecision == 0
+            ? ((int)roundedValue).ToString()
+            : roundedValue.ToString($"F{roundingPrecision}");
+
+        return (formattedNumber, defaultUnit);
+    }
+
 }

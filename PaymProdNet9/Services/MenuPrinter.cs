@@ -302,7 +302,7 @@ public class MenuPrinter
 
                     foreach (var product in groupedProductsLeft)
                     {
-                        var (amountText, unitText) = FormatAmount(product);
+                    var (amountText, unitText) = FormatAmount(product);
                         rows.AddRange(CreateProductRow(product.Name, amountText, unitText));
                     }
 
@@ -346,44 +346,25 @@ public class MenuPrinter
                     return spacerRow;
                 }
 
-                (string amount, string unit) FormatAmount(dynamic product)
+                (string amount, string unit) FormatAmount(GroupedProduct product)
                 {
-                    string measureUnit = product.Fass > 0 && !string.IsNullOrEmpty(product.FassIz)
-                        ? product.FassIz
-                        : !string.IsNullOrEmpty(product.Mera)
-                            ? product.Mera
-                            : "шт";
+                    var defaultUnit = !string.IsNullOrEmpty(product.Mera) ? product.Mera : "шт";
 
-                    if (string.IsNullOrEmpty(measureUnit)) measureUnit = "шт";
+                    if (product.Fass > 0)
+                    {
+                        var packages = product.TotalPackages > 0
+                            ? product.TotalPackages
+                            : (product.Fass == 0 ? 0 : product.TotalWeight / product.Fass);
+
+                        var roundedPackages = Math.Ceiling((double)packages);
+                        var unit = !string.IsNullOrEmpty(product.FassIz) ? product.FassIz : defaultUnit;
+                        return (roundedPackages.ToString("0"), unit);
+                    }
 
                     var totalValue = (double)product.TotalWeight;
-                    var convertedToKg = false;
-                    string? mera = product.Mera;
-                    string? fassIz = product.FassIz;
-
-                    if (product.Fass > 0 &&
-                        !string.IsNullOrEmpty(mera) &&
-                        !string.IsNullOrEmpty(fassIz) &&
-                        (mera.ToLower().Contains("г") || mera.ToLower().Contains("грамм") || mera.ToLower() == "г") &&
-                        (fassIz.ToLower().Contains("кг") || fassIz.ToLower().Contains("kg") ||
-                         fassIz.ToLower() == "кг"))
-                    {
-                        totalValue /= 1000.0;
-                        measureUnit = "кг";
-                        convertedToKg = true;
-                    }
-
                     var roundingPrecision = 2;
-                    var measure = FindMeasure(measureUnit);
-                    if (measure != null)
-                    {
-                        roundingPrecision = measure.RoundingPrecision;
-                    }
-                    else if (!convertedToKg)
-                    {
-                        measure = FindMeasure(product.Mera);
-                        if (measure != null) roundingPrecision = measure.RoundingPrecision;
-                    }
+                    var measure = FindMeasure(defaultUnit);
+                    if (measure != null) roundingPrecision = measure.RoundingPrecision;
 
                     double roundedValue;
                     if (roundingPrecision == 0)
@@ -400,7 +381,7 @@ public class MenuPrinter
                         ? ((int)roundedValue).ToString()
                         : roundedValue.ToString($"F{roundingPrecision}");
 
-                    return (formattedNumber, measureUnit);
+                    return (formattedNumber, defaultUnit);
                 }
 
                 TableCell CreateSpaceCell()
@@ -493,7 +474,8 @@ public class MenuPrinter
             .Select(g => new GroupedProduct
             {
                 Name = g.Key,
-                TotalWeight = g.Sum(r => r.Fass > 0 ? r.ItogFass : r.Itog),
+                TotalWeight = g.Sum(r => r.Itog),
+                TotalPackages = g.Sum(r => r.Fass > 0 ? r.ItogFass : 0),
                 FassIz = g.First().FassIz,
                 Mera = g.First().Mera,
                 Fass = g.First().Fass
@@ -508,6 +490,7 @@ public record GroupedProduct
 {
     public string Name { get; init; }
     public decimal TotalWeight { get; init; }
+    public decimal TotalPackages { get; init; }
     public string FassIz { get; init; }
     public string Mera { get; init; }
     public decimal Fass { get; init; }

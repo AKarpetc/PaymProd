@@ -60,15 +60,16 @@ public class ProductRepository
     /// <summary>
     /// Добавить продукт
     /// </summary>
-    public int AddProduct(string name, int? vesId, int typeId, double fass, int izmerId, int prizMenu = 0)
+    public int AddProduct(string name, int? vesId, int typeId, double fass, int izmerId, int prizMenu = 0, 
+        decimal count = 0, bool automat = false, int countPeople = 0, bool mainCount = false)
     {
         using var connection = DatabaseHelper.GetConnection();
         connection.Open();
 
         var command = connection.CreateCommand();
         command.CommandText = @"
-            INSERT INTO Producrs (Name, Type, Ves, Fass, Izmer, Priz_menu) 
-            VALUES (@name, @type, @ves, @fass, @izmer, @prizMenu);
+            INSERT INTO Producrs (Name, Type, Ves, Fass, Izmer, Priz_menu, Count, Avtomat, Chel, Isdiap) 
+            VALUES (@name, @type, @ves, @fass, @izmer, @prizMenu, @count, @avtomat, @chel, @isdiap);
             SELECT last_insert_rowid();";
 
         command.Parameters.AddWithValue("@name", name);
@@ -77,6 +78,10 @@ public class ProductRepository
         command.Parameters.AddWithValue("@fass", fass);
         command.Parameters.AddWithValue("@izmer", izmerId);
         command.Parameters.AddWithValue("@prizMenu", prizMenu);
+        command.Parameters.AddWithValue("@count", (double)count);
+        command.Parameters.AddWithValue("@avtomat", automat ? 1 : 0);
+        command.Parameters.AddWithValue("@chel", countPeople);
+        command.Parameters.AddWithValue("@isdiap", mainCount ? 1 : 0);
 
         return Convert.ToInt32(command.ExecuteScalar());
     }
