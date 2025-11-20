@@ -87,6 +87,8 @@ public partial class ProductsReportPage : Page
                 .ToList();
 
             // Создаем таблицу с 7 колонками (3 для левой части, 1 разделитель, 3 для правой части)
+            var singleColumnMode = summaryData.Count < 20;
+
             var mainTable = new Table
             {
                 CellSpacing = 0,
@@ -94,14 +96,22 @@ public partial class ProductsReportPage : Page
                 BorderThickness = new Thickness(1)
             };
 
-            // Определяем ширины колонок
-            mainTable.Columns.Add(new TableColumn { Width = new GridLength(280) }); // Продукт (лево)
-            mainTable.Columns.Add(new TableColumn { Width = new GridLength(70) }); // Количество (лево)
-            mainTable.Columns.Add(new TableColumn { Width = new GridLength(50) }); // Ед. (лево)
-            mainTable.Columns.Add(new TableColumn { Width = new GridLength(50) }); // Разделитель
-            mainTable.Columns.Add(new TableColumn { Width = new GridLength(280) }); // Продукт (право)
-            mainTable.Columns.Add(new TableColumn { Width = new GridLength(70) }); // Количество (право)
-            mainTable.Columns.Add(new TableColumn { Width = new GridLength(50) }); // Ед. (право)
+            if (singleColumnMode)
+            {
+                mainTable.Columns.Add(new TableColumn { Width = new GridLength(280) });
+                mainTable.Columns.Add(new TableColumn { Width = new GridLength(70) });
+                mainTable.Columns.Add(new TableColumn { Width = new GridLength(50) });
+            }
+            else
+            {
+                mainTable.Columns.Add(new TableColumn { Width = new GridLength(280) });
+                mainTable.Columns.Add(new TableColumn { Width = new GridLength(70) });
+                mainTable.Columns.Add(new TableColumn { Width = new GridLength(50) });
+                mainTable.Columns.Add(new TableColumn { Width = new GridLength(50) });
+                mainTable.Columns.Add(new TableColumn { Width = new GridLength(280) });
+                mainTable.Columns.Add(new TableColumn { Width = new GridLength(70) });
+                mainTable.Columns.Add(new TableColumn { Width = new GridLength(50) });
+            }
 
             var mainGroup = new TableRowGroup();
             mainTable.RowGroups.Add(mainGroup);
@@ -121,9 +131,15 @@ public partial class ProductsReportPage : Page
                 rows.RemoveAt(rows.Count - 1);
 
             // Разделяем на левую и правую части
-            var middleIndex = rows.Count / 2;
-            var leftRows = rows.Take(middleIndex).ToList();
-            var rightRows = rows.Skip(middleIndex).ToList();
+            var leftRows = rows.ToList();
+            var rightRows = new List<List<TableCell>>();
+
+            if (!singleColumnMode)
+            {
+                var middleIndex = rows.Count % 2 == 0 ? rows.Count / 2 : rows.Count / 2 + 1;
+                leftRows = rows.Take(middleIndex).ToList();
+                rightRows = rows.Skip(middleIndex).ToList();
+            }
 
             // Создаем строки основной таблицы
             var maxRows = Math.Max(leftRows.Count, rightRows.Count);
@@ -131,111 +147,24 @@ public partial class ProductsReportPage : Page
             {
                 var row = new TableRow();
 
-                // Левая часть
-                if (i < leftRows.Count)
+                if (singleColumnMode)
                 {
-                    var leftCells = leftRows[i];
-                    if (leftCells.Count == 1 && leftCells[0].ColumnSpan > 1)
-                    {
-                        // Заголовок типа продукта (занимает 3 колонки)
-                        row.Cells.Add(leftCells[0]);
-                        row.Cells.Add(CreateSeparatorCell());
-                        // Правая часть - проверяем, есть ли правая часть
-                        if (i < rightRows.Count)
-                        {
-                            var rightCells = rightRows[i];
-                            if (rightCells.Count == 1 && rightCells[0].ColumnSpan > 1)
-                            {
-                                row.Cells.Add(rightCells[0]);
-                            }
-                            else if (rightCells.Count >= 3)
-                            {
-                                row.Cells.Add(rightCells[0]);
-                                row.Cells.Add(rightCells[1]);
-                                row.Cells.Add(rightCells[2]);
-                            }
-                            else
-                            {
-                                row.Cells.Add(CreateEmptyCell());
-                                row.Cells.Add(CreateEmptyCell());
-                                row.Cells.Add(CreateEmptyCell());
-                            }
-                        }
-                        else
-                        {
-                            row.Cells.Add(CreateEmptyCell());
-                            row.Cells.Add(CreateEmptyCell());
-                            row.Cells.Add(CreateEmptyCell());
-                        }
-                    }
-                    else if (leftCells.Count >= 3)
-                    {
-                        // Обычная строка с 3 ячейками
-                        row.Cells.Add(leftCells[0]);
-                        row.Cells.Add(leftCells[1]);
-                        row.Cells.Add(leftCells[2]);
-                        row.Cells.Add(CreateSeparatorCell());
-                        // Правая часть
-                        if (i < rightRows.Count && rightRows[i].Count >= 3)
-                        {
-                            row.Cells.Add(rightRows[i][0]);
-                            row.Cells.Add(rightRows[i][1]);
-                            row.Cells.Add(rightRows[i][2]);
-                        }
-                        else
-                        {
-                            row.Cells.Add(CreateEmptyCell());
-                            row.Cells.Add(CreateEmptyCell());
-                            row.Cells.Add(CreateEmptyCell());
-                        }
-                    }
-                    else
-                    {
-                        // Пустые ячейки
-                        row.Cells.Add(CreateEmptyCell());
-                        row.Cells.Add(CreateEmptyCell());
-                        row.Cells.Add(CreateEmptyCell());
-                        row.Cells.Add(CreateSeparatorCell());
-                        row.Cells.Add(CreateEmptyCell());
-                        row.Cells.Add(CreateEmptyCell());
-                        row.Cells.Add(CreateEmptyCell());
-                    }
+                    var leftCells = i < leftRows.Count ? leftRows[i] : CreateSpacerRow();
+                    foreach (var cell in leftCells)
+                        row.Cells.Add(cell);
                 }
                 else
                 {
-                    // Левая часть пустая
-                    row.Cells.Add(CreateEmptyCell());
-                    row.Cells.Add(CreateEmptyCell());
-                    row.Cells.Add(CreateEmptyCell());
+                    var leftCells = i < leftRows.Count ? leftRows[i] : CreateSpacerRow();
+                    var rightCells = i < rightRows.Count ? rightRows[i] : CreateSpacerRow();
+
+                    foreach (var cell in leftCells)
+                        row.Cells.Add(cell);
+
                     row.Cells.Add(CreateSeparatorCell());
-                    // Правая часть
-                    if (i < rightRows.Count)
-                    {
-                        var rightCells = rightRows[i];
-                        if (rightCells.Count == 1 && rightCells[0].ColumnSpan > 1)
-                        {
-                            // Заголовок типа продукта (занимает 3 колонки)
-                            row.Cells.Add(rightCells[0]);
-                        }
-                        else if (rightCells.Count >= 3)
-                        {
-                            row.Cells.Add(rightCells[0]);
-                            row.Cells.Add(rightCells[1]);
-                            row.Cells.Add(rightCells[2]);
-                        }
-                        else
-                        {
-                            row.Cells.Add(CreateEmptyCell());
-                            row.Cells.Add(CreateEmptyCell());
-                            row.Cells.Add(CreateEmptyCell());
-                        }
-                    }
-                    else
-                    {
-                        row.Cells.Add(CreateEmptyCell());
-                        row.Cells.Add(CreateEmptyCell());
-                        row.Cells.Add(CreateEmptyCell());
-                    }
+
+                    foreach (var cell in rightCells)
+                        row.Cells.Add(cell);
                 }
 
                 mainGroup.Rows.Add(row);
@@ -490,9 +419,27 @@ public partial class ProductsReportPage : Page
                 ? product.TotalPackages
                 : (product.Fass == 0 ? 0 : product.TotalWeight / product.Fass);
 
-            var roundedPackages = Math.Ceiling((double)packages);
-            var unit = !string.IsNullOrEmpty(product.FassIz) ? product.FassIz : defaultUnit;
-            return (roundedPackages.ToString("0"), unit);
+            var packageUnit = !string.IsNullOrEmpty(product.FassIz) ? product.FassIz : defaultUnit;
+            var packagePrecision = 0;
+            var packageMeasure = FindMeasure(measures, packageUnit);
+            if (packageMeasure != null) packagePrecision = packageMeasure.RoundingPrecision;
+
+            double roundedPackages;
+            if (packagePrecision == 0)
+            {
+                roundedPackages = Math.Ceiling((double)packages);
+            }
+            else
+            {
+                var multiplier = Math.Pow(10, packagePrecision);
+                roundedPackages = Math.Ceiling((double)packages * multiplier) / multiplier;
+            }
+
+            var formattedPackages = packagePrecision == 0
+                ? ((int)roundedPackages).ToString()
+                : roundedPackages.ToString($"F{packagePrecision}");
+
+            return (formattedPackages, packageUnit);
         }
 
         var totalValue = (double)product.TotalWeight;

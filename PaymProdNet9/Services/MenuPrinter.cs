@@ -356,9 +356,26 @@ public class MenuPrinter
                             ? product.TotalPackages
                             : (product.Fass == 0 ? 0 : product.TotalWeight / product.Fass);
 
-                        var roundedPackages = Math.Ceiling((double)packages);
-                        var unit = !string.IsNullOrEmpty(product.FassIz) ? product.FassIz : defaultUnit;
-                        return (roundedPackages.ToString("0"), unit);
+                    var packageUnit = !string.IsNullOrEmpty(product.FassIz) ? product.FassIz : defaultUnit;
+                    var packageMeasure = FindMeasure(packageUnit);
+                    var packagePrecision = packageMeasure?.RoundingPrecision ?? 0;
+
+                    double roundedPackages;
+                    if (packagePrecision == 0)
+                    {
+                        roundedPackages = Math.Ceiling((double)packages);
+                    }
+                    else
+                    {
+                        var multiplier = Math.Pow(10, packagePrecision);
+                        roundedPackages = Math.Ceiling((double)packages * multiplier) / multiplier;
+                    }
+
+                    var formattedPackages = packagePrecision == 0
+                        ? ((int)roundedPackages).ToString()
+                        : roundedPackages.ToString($"F{packagePrecision}");
+
+                    return (formattedPackages, packageUnit);
                     }
 
                     var totalValue = (double)product.TotalWeight;
