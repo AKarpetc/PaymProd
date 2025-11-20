@@ -2,8 +2,10 @@ using Microsoft.Win32;
 using PaymProdNet9.Data;
 using PaymProdNet9.Models;
 using PaymProdNet9.Services;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -26,6 +28,8 @@ public partial class CurrentMenuPage : Page
     private int? _editingDelicateId;
     private ObservableCollection<Components> _editingDelicateComponents;
     private ObservableCollection<ProductView> _editingAvailableProducts;
+    private Dictionary<int, ProductView> _productLookup;
+    private Dictionary<string, Measure> _measureLookup;
 
     public CurrentMenuPage()
     {
@@ -39,16 +43,64 @@ public partial class CurrentMenuPage : Page
         _availableDelicates = new ObservableCollection<dynamic>();
         _editingDelicateComponents = new ObservableCollection<Components>();
         _editingAvailableProducts = new ObservableCollection<ProductView>();
+        _productLookup = new Dictionary<int, ProductView>();
+        _measureLookup = new Dictionary<string, Measure>(StringComparer.OrdinalIgnoreCase);
 
         MenuDelicatesDataGrid.ItemsSource = _currentMenuDelicates;
         EditDelicateComponentsGrid.ItemsSource = _editingDelicateComponents;
         EditAvailableProductsList.ItemsSource = _editingAvailableProducts;
     }
 
+    private void RefreshLookups(bool force = false)
+    {
+        if (force || _measureLookup.Count == 0)
+        {
+            var measures = _productRepository.GetMeasures();
+            _measureLookup = measures.ToDictionary(m => m.Name.ToLower().Trim(), m => m);
+        }
+
+        if (force || _productLookup.Count == 0)
+        {
+            var products = _productRepository.GetAllProducts();
+            _productLookup = products.ToDictionary(p => p.ID, p => p);
+        }
+    }
+
+    private int GetMenuPrecision(string? measureName)
+    {
+        if (string.IsNullOrWhiteSpace(measureName)) return 2;
+
+        RefreshLookups();
+        var key = measureName.ToLower().Trim();
+        return _measureLookup.TryGetValue(key, out var measure)
+            ? measure.MenuRoundingPrecision
+            : 2;
+    }
+
+    private void ApplyMenuRoundingInfo(IEnumerable<Components> components)
+    {
+        RefreshLookups();
+
+        foreach (var component in components)
+        {
+            if (_productLookup.TryGetValue(component.Prodid, out var product))
+            {
+                if (!string.IsNullOrWhiteSpace(product.Ves))
+                    component.Mera = product.Ves;
+
+                if (string.IsNullOrWhiteSpace(component.FassIz) && !string.IsNullOrWhiteSpace(product.IzName))
+                    component.FassIz = product.IzName;
+            }
+
+            component.MenuRoundingPrecision = GetMenuPrecision(component.Mera);
+        }
+    }
+
     private void Page_Loaded(object sender, RoutedEventArgs e)
     {
         try
         {
+            RefreshLookups(true);
             LoadDelicateTypes();
 
             // Проверяем открытое меню
@@ -612,6 +664,8 @@ public partial class CurrentMenuPage : Page
                 _currentMenuId.Value,
                 _editingDelicateId.Value);
 
+            ApplyMenuRoundingInfo(components);
+
             foreach (var component in components) _editingDelicateComponents.Add(component);
         }
         catch (Exception ex)
@@ -628,9 +682,10 @@ public partial class CurrentMenuPage : Page
     {
         try
         {
+            RefreshLookups();
             _editingAvailableProducts.Clear();
-            var products = _productRepository.GetAllProducts();
-            foreach (var product in products) _editingAvailableProducts.Add(product);
+            foreach (var product in _productLookup.Values.OrderBy(p => p.Name))
+                _editingAvailableProducts.Add(product);
         }
         catch (Exception ex)
         {
@@ -654,8 +709,8 @@ public partial class CurrentMenuPage : Page
         try
         {
             _editingAvailableProducts.Clear();
-            var allProducts = _productRepository.GetAllProducts();
-            var filtered = allProducts.Where(p =>
+            RefreshLookups();
+            var filtered = _productLookup.Values.Where(p =>
                 p.Name.ToLower().Contains(searchText) ||
                 (p.Type != null && p.Type.ToLower().Contains(searchText))
             );
@@ -683,12 +738,17 @@ public partial class CurrentMenuPage : Page
                 return;
             }
 
+            RefreshLookups();
+
             var component = new Components
             {
                 Prodid = selectedProduct.ID,
                 NameT = selectedProduct.Name,
                 Ves = 0,
-                Mera = selectedProduct.IzName
+                Mera = string.IsNullOrWhiteSpace(selectedProduct.Ves) ? selectedProduct.IzName : selectedProduct.Ves,
+                FassIz = selectedProduct.IzName,
+                MenuRoundingPrecision = GetMenuPrecision(
+                    string.IsNullOrWhiteSpace(selectedProduct.Ves) ? selectedProduct.IzName : selectedProduct.Ves)
             };
 
             _editingDelicateComponents.Add(component);

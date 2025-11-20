@@ -109,8 +109,11 @@
                             <DataGridTextColumn Header="Название" Binding="{Binding Name}" Width="2*" />
                             <DataGridTextColumn Header="Фасовка (по умолчанию)" Binding="{Binding Fass}" Width="*" />
                             <DataGridTextColumn Header="Единица фасовки" Binding="{Binding FassIzmer}" Width="*" />
-                            <DataGridTextColumn Header="Округление"
+                            <DataGridTextColumn Header="Округление (отчет)"
                                                 Binding="{Binding RoundingPrecision, StringFormat='{}{0} знаков'}"
+                                                Width="*" />
+                            <DataGridTextColumn Header="Округление (меню)"
+                                                Binding="{Binding MenuRoundingPrecision, StringFormat='{}{0} знаков'}"
                                                 Width="*" />
                         </DataGrid.Columns>
                     </DataGrid>
@@ -140,6 +143,7 @@
 
                         <Grid>
                             <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
                                 <RowDefinition Height="Auto" />
                                 <RowDefinition Height="Auto" />
                                 <RowDefinition Height="Auto" />
@@ -177,13 +181,25 @@
                                          Style="{StaticResource MaterialDesignOutlinedTextBox}" />
                             </StackPanel>
 
-                            <StackPanel Grid.Row="3">
-                                <TextBlock Text="Точность округления:"
+                            <StackPanel Grid.Row="3" Margin="0,0,0,15">
+                                <TextBlock Text="Точность округления (отчет):"
                                            Style="{StaticResource MaterialDesignBody2TextBlock}"
                                            Margin="0,0,0,5" />
                                 <ComboBox x:Name="MeasureRoundingComboBox"
                                           Style="{StaticResource MaterialDesignOutlinedComboBox}">
                                     <ComboBoxItem Content="До целого (пачки, бутылки)" Tag="0" />
+                                    <ComboBoxItem Content="До десятых (0.1)" Tag="1" />
+                                    <ComboBoxItem Content="До сотых (кг, л, г)" Tag="2" IsSelected="True" />
+                                </ComboBox>
+                            </StackPanel>
+
+                            <StackPanel Grid.Row="4">
+                                <TextBlock Text="Точность округления (меню/блюда):"
+                                           Style="{StaticResource MaterialDesignBody2TextBlock}"
+                                           Margin="0,0,0,5" />
+                                <ComboBox x:Name="MeasureMenuRoundingComboBox"
+                                          Style="{StaticResource MaterialDesignOutlinedComboBox}">
+                                    <ComboBoxItem Content="До целого (порции, шт)" Tag="0" />
                                     <ComboBoxItem Content="До десятых (0.1)" Tag="1" />
                                     <ComboBoxItem Content="До сотых (кг, л, г)" Tag="2" IsSelected="True" />
                                 </ComboBox>

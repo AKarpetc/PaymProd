@@ -53,7 +53,8 @@ public static class DatabaseHelper
                 Name_Mera TEXT NOT NULL,
                 Fass_Def REAL DEFAULT 1,
                 Fass_Izmer TEXT,
-                RoundingPrecision INTEGER DEFAULT 2
+                RoundingPrecision INTEGER DEFAULT 2,
+                MenuRoundingPrecision INTEGER DEFAULT 2
             );";
         command.ExecuteNonQuery();
 
@@ -61,6 +62,17 @@ public static class DatabaseHelper
         try
         {
             command.CommandText = "ALTER TABLE Mera ADD COLUMN RoundingPrecision INTEGER DEFAULT 2";
+            command.ExecuteNonQuery();
+        }
+        catch
+        {
+            // Колонка уже существует, игнорируем ошибку
+        }
+
+        // Миграция: добавляем MenuRoundingPrecision, если его нет
+        try
+        {
+            command.CommandText = "ALTER TABLE Mera ADD COLUMN MenuRoundingPrecision INTEGER DEFAULT 2";
             command.ExecuteNonQuery();
         }
         catch

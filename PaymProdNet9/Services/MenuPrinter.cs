@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
@@ -28,6 +29,61 @@ public class MenuPrinter
         try
         {
             var fileName = Path.Combine(Path.GetTempPath(), $"Menu_{DateTime.Now:yyyyMMdd_HHmmss}.docx");
+
+            var measures = _productRepository.GetMeasures();
+            var measureLookup = measures.ToDictionary(m => m.Name.ToLower().Trim(), m => m);
+            var products = _productRepository.GetAllProducts();
+            var productLookup = products.ToDictionary(p => p.ID, p => p);
+
+            Measure? FindMeasure(string? measureName)
+            {
+                if (string.IsNullOrWhiteSpace(measureName)) return null;
+                var key = measureName.ToLower().Trim();
+                return measureLookup.TryGetValue(key, out var measure) ? measure : null;
+            }
+
+            int GetMenuPrecision(string? measureName)
+            {
+                var measure = FindMeasure(measureName);
+                return measure?.MenuRoundingPrecision ?? 2;
+            }
+
+            decimal RoundMenuValue(decimal value, int precision)
+            {
+                var doubleValue = (double)value;
+                if (precision <= 0) return (decimal)Math.Ceiling(doubleValue);
+                var multiplier = Math.Pow(10, precision);
+                return (decimal)(Math.Ceiling(doubleValue * multiplier) / multiplier);
+            }
+
+            string GetBaseMeasure(Components component)
+            {
+                if (productLookup.TryGetValue(component.Prodid, out var product) &&
+                    !string.IsNullOrWhiteSpace(product.Ves))
+                {
+                    return product.Ves;
+                }
+
+                return string.IsNullOrWhiteSpace(component.Mera) ? "г" : component.Mera;
+            }
+
+            string GetPackageMeasure(Components component, string baseMeasure)
+            {
+                if (!string.IsNullOrWhiteSpace(component.FassIz))
+                    return component.FassIz;
+
+                if (productLookup.TryGetValue(component.Prodid, out var product) &&
+                    !string.IsNullOrWhiteSpace(product.IzName))
+                {
+                    return product.IzName;
+                }
+
+                var baseMeasureInfo = FindMeasure(baseMeasure);
+                if (!string.IsNullOrWhiteSpace(baseMeasureInfo?.FassIzmer))
+                    return baseMeasureInfo.FassIzmer!;
+
+                return baseMeasure;
+            }
 
             // Группируем блюда по типам и сортируем по SortOrder
             var groupedDelicates = delicates
@@ -107,27 +163,31 @@ public class MenuPrinter
                         var composition = "Состав: ";
                         foreach (var component in delicate.Lcomp)
                         {
-                            var fass = component.Fass;
-                            var fassIzmer = component.FassIz;
-                            var ves = component.Ves * delicate.Count;
-
-                            // Используем NameT (название продукта) вместо Name
+                            var baseMeasure = GetBaseMeasure(component);
                             var productName = !string.IsNullOrEmpty(component.NameT) ? component.NameT : component.Name;
+                            var totalWeight = RoundMenuValue(component.Ves * delicate.Count, GetMenuPrecision(baseMeasure));
 
-                            if (fass > 0)
+                            if (component.Fass > 0)
                             {
-                                var fassSumm = Math.Round(ves / fass, 2);
-                                if (fassSumm < 1)
-                                {
-                                    fassSumm = ves;
-                                    fassIzmer = component.Mera;
-                                }
+                                var packageUnit = GetPackageMeasure(component, baseMeasure);
+                                var packagePrecision = GetMenuPrecision(packageUnit);
+                                var packageCount = component.Fass == 0
+                                    ? 0
+                                    : (component.Ves * delicate.Count) / component.Fass;
+                                var roundedPackages = RoundMenuValue(packageCount, packagePrecision);
 
-                                composition += $"{productName}({fassSumm}{fassIzmer}), ";
+                                if (roundedPackages < 1)
+                                {
+                                    composition += $"{productName}({totalWeight}{baseMeasure}), ";
+                                }
+                                else
+                                {
+                                    composition += $"{productName}({roundedPackages}{packageUnit}), ";
+                                }
                             }
                             else
                             {
-                                composition += $"{productName}({ves}{component.Mera}), ";
+                                composition += $"{productName}({totalWeight}{baseMeasure}), ";
                             }
                         }
 

@@ -1,6 +1,9 @@
+using System;
 using ClosedXML.Excel;
 using Microsoft.Win32;
+using PaymProdNet9.Data;
 using PaymProdNet9.Models;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows;
@@ -10,6 +13,7 @@ namespace PaymProdNet9.Pages;
 
 public partial class SummaryTablePage : Page
 {
+    private readonly ProductRepository _productRepository;
     private ObservableCollection<MenuDel_act> _menuDelicates;
     private List<string> _banquetInfo;
     private readonly List<DelicatesCollForSvod> _summaryData;
@@ -24,6 +28,7 @@ public partial class SummaryTablePage : Page
         _menuDelicates = new ObservableCollection<MenuDel_act>();
         _banquetInfo = new List<string>();
         _summaryData = new List<DelicatesCollForSvod>();
+        _productRepository = new ProductRepository();
     }
 
     private void Page_Loaded(object sender, RoutedEventArgs e)
@@ -69,6 +74,8 @@ public partial class SummaryTablePage : Page
 
                 _summaryData.Add(item);
             }
+
+            ApplyReportRounding();
 
             SummaryDataGrid.ItemsSource = _summaryData;
         }
@@ -148,5 +155,50 @@ public partial class SummaryTablePage : Page
             MessageBox.Show($"Ошибка при экспорте в Excel: {ex.Message}",
                 "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
         }
+    }
+
+    private void ApplyReportRounding()
+    {
+        var measures = _productRepository.GetMeasures();
+
+        foreach (var item in _summaryData)
+        {
+            var naturalMeasure = FindMeasureForUnit(measures, item.Mera);
+            var naturalPrecision = naturalMeasure?.RoundingPrecision ?? 2;
+            item.Itog = RoundValue(item.Itog, naturalPrecision);
+
+            if (item.Fass > 0)
+            {
+                var packageUnit = string.IsNullOrWhiteSpace(item.FassIz) ? item.Mera : item.FassIz;
+                var packageMeasure = FindMeasureForUnit(measures, packageUnit);
+                var packagePrecision = packageMeasure?.RoundingPrecision ?? 0;
+                item.ItogFass = RoundValue(item.ItogFass, packagePrecision);
+            }
+            else
+            {
+                item.ItogFass = 0;
+            }
+        }
+    }
+
+    private static decimal RoundValue(decimal value, int precision)
+    {
+        var doubleValue = (double)value;
+        if (precision == 0)
+            return (decimal)Math.Ceiling(doubleValue);
+
+        var multiplier = Math.Pow(10, precision);
+        return (decimal)(Math.Ceiling(doubleValue * multiplier) / multiplier);
+    }
+
+    private static Measure? FindMeasureForUnit(IEnumerable<Measure> measures, string? measureUnit)
+    {
+        if (string.IsNullOrWhiteSpace(measureUnit)) return null;
+
+        var lower = measureUnit.ToLower().Trim();
+        return measures.FirstOrDefault(m =>
+            m.Name.Equals(measureUnit, StringComparison.OrdinalIgnoreCase) ||
+            lower.Contains(m.Name.ToLower().Trim()) ||
+            m.Name.ToLower().Trim().Contains(lower));
     }
 }

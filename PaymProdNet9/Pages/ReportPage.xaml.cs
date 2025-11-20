@@ -3,6 +3,7 @@ using Microsoft.Win32;
 using PaymProdNet9.Data;
 using PaymProdNet9.Models;
 using PaymProdNet9.Services;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
@@ -85,6 +86,7 @@ public partial class ReportPage : Page
 
             // Получаем типы продуктов для сортировки
             var productRepository = new ProductRepository();
+            var measures = productRepository.GetMeasures();
             var productTypes = productRepository.GetProductTypes();
             var productTypesDict = productTypes.ToDictionary(pt => pt.Name, pt => pt.SortOrder);
 
@@ -158,14 +160,10 @@ public partial class ReportPage : Page
                         measureUnit = "кг";
                     }
 
-                    // Получаем точность округления
-                    var measures = productRepository.GetMeasures();
+                    // Получаем точность округления для меню
                     var roundingPrecision = 2;
-                    var measure = measures.FirstOrDefault(m =>
-                        m.Name.ToLower().Trim() == measureUnit.ToLower().Trim() ||
-                        measureUnit.ToLower().Contains(m.Name.ToLower()) ||
-                        m.Name.ToLower().Contains(measureUnit.ToLower()));
-                    if (measure != null) roundingPrecision = measure.RoundingPrecision;
+                    var measure = FindMeasureForUnit(measures, measureUnit);
+                    if (measure != null) roundingPrecision = measure.MenuRoundingPrecision;
 
                     // Округляем вверх
                     double roundedValue;
@@ -356,5 +354,16 @@ public partial class ReportPage : Page
             MessageBox.Show($"Ошибка при печати: {ex.Message}",
                 "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
         }
+    }
+
+    private static Measure? FindMeasureForUnit(IEnumerable<Measure> measures, string? measureUnit)
+    {
+        if (string.IsNullOrWhiteSpace(measureUnit)) return null;
+
+        var lower = measureUnit.ToLower().Trim();
+        return measures.FirstOrDefault(m =>
+            m.Name.Equals(measureUnit, StringComparison.OrdinalIgnoreCase) ||
+            lower.Contains(m.Name.ToLower().Trim()) ||
+            m.Name.ToLower().Trim().Contains(lower));
     }
 }

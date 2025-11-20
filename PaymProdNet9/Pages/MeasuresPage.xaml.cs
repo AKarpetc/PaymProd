@@ -121,17 +121,8 @@ public partial class MeasuresPage : Page
         MeasureFassTextBox.Text = measure.Fass.ToString();
         MeasureFassIzmerTextBox.Text = measure.FassIzmer;
 
-        // Устанавливаем точность округления
-        foreach (ComboBoxItem item in MeasureRoundingComboBox.Items)
-            if (item.Tag != null && int.TryParse(item.Tag.ToString(), out var tagValue) &&
-                tagValue == measure.RoundingPrecision)
-            {
-                MeasureRoundingComboBox.SelectedItem = item;
-                break;
-            }
-
-        if (MeasureRoundingComboBox.SelectedItem == null && MeasureRoundingComboBox.Items.Count > 1)
-            MeasureRoundingComboBox.SelectedIndex = 1; // По умолчанию до сотых
+        SelectRoundingComboItem(MeasureRoundingComboBox, measure.RoundingPrecision);
+        SelectRoundingComboItem(MeasureMenuRoundingComboBox, measure.MenuRoundingPrecision);
 
         ShowEditView(true);
     }
@@ -144,6 +135,7 @@ public partial class MeasuresPage : Page
         MeasureFassTextBox.Clear();
         MeasureFassIzmerTextBox.Clear();
         MeasureRoundingComboBox.SelectedIndex = 1; // По умолчанию до сотых
+        MeasureMenuRoundingComboBox.SelectedIndex = 1;
 
         ShowEditView(false);
         MeasureNameTextBox.Focus();
@@ -194,11 +186,8 @@ public partial class MeasuresPage : Page
             var fassIzmer = MeasureFassIzmerTextBox.Text ?? MeasureNameTextBox.Text;
 
             // Получаем точность округления из ComboBox
-            var roundingPrecision = 2; // По умолчанию до сотых
-            if (MeasureRoundingComboBox.SelectedItem is ComboBoxItem selectedItem &&
-                selectedItem.Tag != null &&
-                int.TryParse(selectedItem.Tag.ToString(), out var precision))
-                roundingPrecision = precision;
+            var roundingPrecision = GetSelectedPrecision(MeasureRoundingComboBox, 2);
+            var menuRoundingPrecision = GetSelectedPrecision(MeasureMenuRoundingComboBox, 2);
 
             if (_currentMeasureId.HasValue)
             {
@@ -207,7 +196,8 @@ public partial class MeasuresPage : Page
                     MeasureNameTextBox.Text,
                     fass,
                     fassIzmer,
-                    roundingPrecision);
+                    roundingPrecision,
+                    menuRoundingPrecision);
 
                 MessageBox.Show("Единица измерения обновлена!",
                     "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -218,7 +208,8 @@ public partial class MeasuresPage : Page
                     MeasureNameTextBox.Text,
                     fass,
                     fassIzmer,
-                    roundingPrecision);
+                    roundingPrecision,
+                    menuRoundingPrecision);
 
                 MessageBox.Show("Единица измерения создана!",
                     "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -242,5 +233,28 @@ public partial class MeasuresPage : Page
     private static bool IsTextNumeric(string text)
     {
         return text.All(c => char.IsDigit(c) || c == ',' || c == '.');
+    }
+
+    private static void SelectRoundingComboItem(ComboBox comboBox, int precision)
+    {
+        foreach (ComboBoxItem item in comboBox.Items)
+            if (item.Tag != null && int.TryParse(item.Tag.ToString(), out var tagValue) &&
+                tagValue == precision)
+            {
+                comboBox.SelectedItem = item;
+                return;
+            }
+
+        if (comboBox.Items.Count > 0)
+            comboBox.SelectedIndex = 1;
+    }
+
+    private static int GetSelectedPrecision(ComboBox comboBox, int defaultValue)
+    {
+        if (comboBox.SelectedItem is ComboBoxItem selectedItem &&
+            selectedItem.Tag != null &&
+            int.TryParse(selectedItem.Tag.ToString(), out var precision))
+            return precision;
+        return defaultValue;
     }
 }

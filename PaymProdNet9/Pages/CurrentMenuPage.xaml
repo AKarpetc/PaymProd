@@ -328,7 +328,9 @@
                                         <DataGrid.Columns>
                                             <DataGridTextColumn Header="Продукт" Binding="{Binding NameT}" Width="*"
                                                                 IsReadOnly="True" />
-                                            <DataGridTextColumn Header="Вес" Binding="{Binding Ves}" Width="80" />
+                                            <DataGridTextColumn Header="Вес"
+                                                                Binding="{Binding DisplayVes, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                                Width="80" />
                                             <DataGridTextColumn Header="Мера" Binding="{Binding Mera}" Width="60"
                                                                 IsReadOnly="True" />
                                         </DataGrid.Columns>

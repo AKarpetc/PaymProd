@@ -1,3 +1,4 @@
+using System;
 using System.ComponentModel;
 
 namespace PaymProdNet9.Models;
@@ -153,6 +154,7 @@ public class Components : INotifyPropertyChanged
     private decimal _count;
     private int _flag;
     private string _nameT = string.Empty;
+    private int _menuRoundingPrecision = 2;
 
     public decimal Fass1
     {
@@ -221,6 +223,7 @@ public class Components : INotifyPropertyChanged
         {
             _ves = value;
             OnPropertyChanged(nameof(Ves));
+            OnPropertyChanged(nameof(DisplayVes));
         }
     }
 
@@ -282,6 +285,32 @@ public class Components : INotifyPropertyChanged
             _nameT = value;
             OnPropertyChanged(nameof(NameT));
         }
+    }
+
+    public int MenuRoundingPrecision
+    {
+        get => _menuRoundingPrecision;
+        set
+        {
+            _menuRoundingPrecision = value;
+            OnPropertyChanged(nameof(MenuRoundingPrecision));
+            OnPropertyChanged(nameof(DisplayVes));
+        }
+    }
+
+    public decimal DisplayVes
+    {
+        get => RoundForMenu(_ves, _menuRoundingPrecision);
+        set => Ves = value;
+    }
+
+    private static decimal RoundForMenu(decimal value, int precision)
+    {
+        var doubleValue = (double)value;
+        if (precision <= 0) return (decimal)Math.Ceiling(doubleValue);
+
+        var multiplier = Math.Pow(10, precision);
+        return (decimal)(Math.Ceiling(doubleValue * multiplier) / multiplier);
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;

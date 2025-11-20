@@ -391,16 +391,21 @@ public class MenuRepository
         command.CommandText = @"
             SELECT c1.Comp_Id, c1.Delic_id, c1.ProductID, c1.Ves, 
                    p.Name as ProdName, 
-                   COALESCE(m.Name_Mera, '') as MeraName,
-                   CASE WHEN p.Fass = 0 THEN COALESCE(m.Fass_Def, 1) 
-                        ELSE COALESCE(COALESCE(p.Fass, m.Fass_Def), 1) END as Fass,
-                   COALESCE(CASE WHEN p.Izmer = p.Ves THEN m.Fass_Izmer 
-                            ELSE (SELECT m2.Name_Mera FROM Mera m2 WHERE m2.Mera_ID = p.Izmer) END, 
-                           (SELECT m2.Name_Mera FROM Mera m2 WHERE m2.Mera_ID = p.Izmer)) as FassIzmer,
+                   COALESCE(mBase.Name_Mera, '') as MeraName,
+                   COALESCE(mBase.MenuRoundingPrecision, 2) as MenuPrecision,
+                   CASE WHEN p.Fass = 0 THEN COALESCE(mPack.Fass_Def, COALESCE(mBase.Fass_Def, 1), 1) 
+                        ELSE COALESCE(p.Fass, mPack.Fass_Def, COALESCE(mBase.Fass_Def, 1), 1) END as Fass,
+                   COALESCE(
+                       CASE WHEN p.Izmer = p.Ves THEN mBase.Fass_Izmer 
+                            ELSE COALESCE(mPack.Name_Mera, mBase.Fass_Izmer) END,
+                       mBase.Fass_Izmer,
+                       ''
+                   ) as FassIzmer,
                    pt.Type_Opis
             FROM Components1 c1
             INNER JOIN Producrs p ON p.Prod_ID = c1.ProductID
-            LEFT JOIN Mera m ON m.Mera_ID = p.Izmer
+            LEFT JOIN Mera mBase ON mBase.Mera_ID = p.Ves
+            LEFT JOIN Mera mPack ON mPack.Mera_ID = p.Izmer
             INNER JOIN Produkt_Type pt ON p.Type = pt.TypeProdId
             WHERE c1.Idmen = @menuId AND c1.Delic_id = @delicateId";
 

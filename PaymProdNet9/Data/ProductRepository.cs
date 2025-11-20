@@ -227,7 +227,8 @@ public class ProductRepository
 
         var command = connection.CreateCommand();
         command.CommandText =
-            "SELECT Mera_ID, Name_Mera, COALESCE(Fass_Def, 1), COALESCE(Fass_Izmer, Name_Mera), COALESCE(RoundingPrecision, 2) FROM Mera ORDER BY Name_Mera";
+            "SELECT Mera_ID, Name_Mera, COALESCE(Fass_Def, 1), COALESCE(Fass_Izmer, Name_Mera), " +
+            "COALESCE(RoundingPrecision, 2), COALESCE(MenuRoundingPrecision, 2) FROM Mera ORDER BY Name_Mera";
 
         using var reader = command.ExecuteReader();
         while (reader.Read())
@@ -237,7 +238,8 @@ public class ProductRepository
                 Name = reader.GetString(1),
                 Fass = reader.GetDouble(2),
                 FassIzmer = reader.GetString(3),
-                RoundingPrecision = reader.GetInt32(4)
+                RoundingPrecision = reader.GetInt32(4),
+                MenuRoundingPrecision = reader.GetInt32(5)
             });
 
         return measures;
@@ -264,20 +266,22 @@ public class ProductRepository
     /// <summary>
     /// Добавить меру
     /// </summary>
-    public int AddMeasure(string name, double fassDef, string fassIzmer, int roundingPrecision = 2)
+    public int AddMeasure(string name, double fassDef, string fassIzmer, int roundingPrecision = 2,
+        int menuRoundingPrecision = 2)
     {
         using var connection = DatabaseHelper.GetConnection();
         connection.Open();
 
         var command = connection.CreateCommand();
         command.CommandText = @"
-            INSERT INTO Mera (Name_Mera, Fass_Def, Fass_Izmer, RoundingPrecision) 
-            VALUES (@name, @fassDef, @fassIzmer, @roundingPrecision);
+            INSERT INTO Mera (Name_Mera, Fass_Def, Fass_Izmer, RoundingPrecision, MenuRoundingPrecision) 
+            VALUES (@name, @fassDef, @fassIzmer, @roundingPrecision, @menuRoundingPrecision);
             SELECT last_insert_rowid();";
         command.Parameters.AddWithValue("@name", name);
         command.Parameters.AddWithValue("@fassDef", fassDef);
         command.Parameters.AddWithValue("@fassIzmer", fassIzmer);
         command.Parameters.AddWithValue("@roundingPrecision", roundingPrecision);
+        command.Parameters.AddWithValue("@menuRoundingPrecision", menuRoundingPrecision);
 
         return Convert.ToInt32(command.ExecuteScalar());
     }
@@ -285,7 +289,8 @@ public class ProductRepository
     /// <summary>
     /// Обновить единицу измерения
     /// </summary>
-    public void UpdateMeasure(int id, string name, double fassDef, string fassIzmer, int roundingPrecision = 2)
+    public void UpdateMeasure(int id, string name, double fassDef, string fassIzmer, int roundingPrecision = 2,
+        int menuRoundingPrecision = 2)
     {
         using var connection = DatabaseHelper.GetConnection();
         connection.Open();
@@ -293,13 +298,15 @@ public class ProductRepository
         var command = connection.CreateCommand();
         command.CommandText = @"
             UPDATE Mera 
-            SET Name_Mera = @name, Fass_Def = @fassDef, Fass_Izmer = @fassIzmer, RoundingPrecision = @roundingPrecision
+            SET Name_Mera = @name, Fass_Def = @fassDef, Fass_Izmer = @fassIzmer, 
+                RoundingPrecision = @roundingPrecision, MenuRoundingPrecision = @menuRoundingPrecision
             WHERE Mera_ID = @id";
         command.Parameters.AddWithValue("@id", id);
         command.Parameters.AddWithValue("@name", name);
         command.Parameters.AddWithValue("@fassDef", fassDef);
         command.Parameters.AddWithValue("@fassIzmer", fassIzmer);
         command.Parameters.AddWithValue("@roundingPrecision", roundingPrecision);
+        command.Parameters.AddWithValue("@menuRoundingPrecision", menuRoundingPrecision);
 
         command.ExecuteNonQuery();
     }
