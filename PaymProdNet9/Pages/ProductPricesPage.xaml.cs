@@ -29,6 +29,18 @@ public partial class ProductPricesPage : Page
     {
         try
         {
+            // Скрываем колонки "Старая цена" и "Сохранить в цену" для общей цены продуктов
+            if (!_menuId.HasValue)
+            {
+                BasePriceColumn.Visibility = Visibility.Collapsed;
+                SaveToBasePriceColumn.Visibility = Visibility.Collapsed;
+            }
+            else
+            {
+                BasePriceColumn.Visibility = Visibility.Visible;
+                SaveToBasePriceColumn.Visibility = Visibility.Visible;
+            }
+            
             // Сначала загружаем продукты (для меню это нужно для определения типов)
             LoadProducts();
             // Затем загружаем типы (они будут отфильтрованы по продуктам меню)
@@ -129,6 +141,13 @@ public partial class ProductPricesPage : Page
                 productsToShow = _productRepository.GetAllProducts();
             }
             
+            // Сохраняем базовые цены для всех продуктов
+            foreach (var product in productsToShow)
+            {
+                product.BasePrice = product.Price; // Сохраняем цену из справочника как базовую
+                product.SaveToBasePrice = true; // По умолчанию галочка включена
+            }
+            
             // Фильтруем по типу
             var filtered = productsToShow;
             if (_currentTypeFilter != "%")
@@ -159,9 +178,16 @@ public partial class ProductPricesPage : Page
             
             foreach (var product in _allProducts)
             {
+                // BasePrice уже установлена при загрузке продуктов (цена из справочника)
+                // Теперь загружаем цену из меню, если она есть
                 if (pricesDict.TryGetValue(product.ID, out var price))
                 {
                     product.Price = (decimal)price;
+                }
+                else
+                {
+                    // Если цены в меню нет, используем базовую цену
+                    product.Price = product.BasePrice;
                 }
             }
         }
@@ -191,11 +217,19 @@ public partial class ProductPricesPage : Page
                     {
                         // Сохраняем цену для меню
                         _productRepository.SaveMenuProductPrice(_menuId.Value, product.ID, (double)price);
+                        
+                        // Если галочка включена, обновляем базовую цену в справочнике
+                        if (product.SaveToBasePrice)
+                        {
+                            _productRepository.UpdateProductPrice(product.ID, (double)price);
+                            product.BasePrice = price; // Обновляем отображаемую базовую цену
+                        }
                     }
                     else
                     {
                         // Сохраняем общую цену
                         _productRepository.UpdateProductPrice(product.ID, (double)price);
+                        product.BasePrice = price; // Обновляем базовую цену
                     }
                 }
                 else
@@ -239,6 +273,50 @@ public partial class ProductPricesPage : Page
         if (e.Text == decimalSeparator && textBox.Text.Contains(decimalSeparator))
         {
             e.Handled = true;
+        }
+    }
+
+    private void ProductsPricesDataGrid_PreviewKeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Enter || e.Key == Key.Tab)
+        {
+            var dataGrid = sender as DataGrid;
+            if (dataGrid == null) return;
+
+            // Завершаем редактирование текущей ячейки
+            dataGrid.CommitEdit(DataGridEditingUnit.Row, true);
+
+            // Получаем текущую позицию
+            var currentRow = dataGrid.Items.IndexOf(dataGrid.CurrentItem);
+            var currentColumn = dataGrid.CurrentColumn;
+
+            if (currentRow >= 0 && currentColumn != null)
+            {
+                // Переходим на следующую строку
+                var nextRow = currentRow + 1;
+                if (nextRow < dataGrid.Items.Count)
+                {
+                    // Находим редактируемую колонку (Цена, тг)
+                    var priceColumn = dataGrid.Columns
+                        .OfType<DataGridTextColumn>()
+                        .FirstOrDefault(c => c.Header?.ToString() == "Цена, тг");
+
+                    if (priceColumn != null)
+                    {
+                        // Используем Dispatcher для выполнения после завершения редактирования
+                        Dispatcher.BeginInvoke(new Action(() =>
+                        {
+                            dataGrid.SelectedIndex = nextRow;
+                            dataGrid.CurrentCell = new DataGridCellInfo(dataGrid.Items[nextRow], priceColumn);
+                            
+                            // Начинаем редактирование
+                            dataGrid.BeginEdit();
+                        }), System.Windows.Threading.DispatcherPriority.Input);
+                        
+                        e.Handled = true;
+                    }
+                }
+            }
         }
     }
 }

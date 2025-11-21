@@ -342,6 +342,8 @@ public class ProductView : INotifyPropertyChanged
     private int _countPeople;
     private bool _mainCount;
     private decimal _price;
+    private decimal _basePrice;
+    private bool _saveToBasePrice = true;
 
     public string Name
     {
@@ -500,6 +502,26 @@ public class ProductView : INotifyPropertyChanged
         {
             _price = value;
             OnPropertyChanged(nameof(Price));
+        }
+    }
+
+    public decimal BasePrice
+    {
+        get => _basePrice;
+        set
+        {
+            _basePrice = value;
+            OnPropertyChanged(nameof(BasePrice));
+        }
+    }
+
+    public bool SaveToBasePrice
+    {
+        get => _saveToBasePrice;
+        set
+        {
+            _saveToBasePrice = value;
+            OnPropertyChanged(nameof(SaveToBasePrice));
         }
     }
 
