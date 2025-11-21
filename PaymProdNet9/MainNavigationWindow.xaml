@@ -141,6 +141,19 @@
                             </StackPanel>
                         </Button>
 
+                        <Button x:Name="ProductPricesButton"
+                                Style="{StaticResource NavButtonStyle}"
+                                Click="NavigateToProductPrices_Click">
+                            <StackPanel Orientation="Horizontal">
+                                <materialDesign:PackIcon Kind="CurrencyUsd"
+                                                         Width="24"
+                                                         Height="24"
+                                                         VerticalAlignment="Center"
+                                                         Margin="0,0,15,0" />
+                                <TextBlock Text="Общая цена" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+
                         <Button x:Name="MeasuresButton"
                                 Style="{StaticResource NavButtonStyle}"
                                 Click="NavigateToMeasures_Click">

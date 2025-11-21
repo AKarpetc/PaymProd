@@ -62,6 +62,13 @@ public partial class MainNavigationWindow : Window
         NavigationService.Instance.NavigateTo<ProductsPage>();
     }
 
+    private void NavigateToProductPrices_Click(object sender, RoutedEventArgs e)
+    {
+        SetActiveButton(sender as Button);
+        PageTitle.Text = "Общая цена продуктов";
+        NavigationService.Instance.NavigateTo(new ProductPricesPage());
+    }
+
     private void NavigateToMeasures_Click(object sender, RoutedEventArgs e)
     {
         SetActiveButton(sender as Button);

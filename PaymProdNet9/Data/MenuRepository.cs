@@ -298,6 +298,40 @@ public class MenuRepository
         command.Parameters.AddWithValue("@count", count);
 
         command.ExecuteNonQuery();
+        
+        // Копируем цены продуктов из справочника в меню
+        var productRepository = new ProductRepository();
+        var components = GetDelicateComponents(connection, delicateId);
+        foreach (var component in components)
+        {
+            productRepository.CopyProductPriceToMenu(menuId, component.Prodid);
+        }
+    }
+    
+    /// <summary>
+    /// Получить компоненты блюда из справочника
+    /// </summary>
+    private List<Components> GetDelicateComponents(SqliteConnection connection, int delicateId)
+    {
+        var components = new List<Components>();
+        
+        var command = connection.CreateCommand();
+        command.CommandText = @"
+            SELECT ProductID 
+            FROM Components 
+            WHERE Delic_id = @delicateId";
+        command.Parameters.AddWithValue("@delicateId", delicateId);
+        
+        using var reader = command.ExecuteReader();
+        while (reader.Read())
+        {
+            components.Add(new Components
+            {
+                Prodid = reader.GetInt32(0)
+            });
+        }
+        
+        return components;
     }
 
     /// <summary>

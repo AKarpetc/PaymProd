@@ -924,6 +924,30 @@ public partial class CurrentMenuPage : Page
     }
 
     /// <summary>
+    /// Открыть окно редактирования цен для меню
+    /// </summary>
+    private void EnterMenuPrices_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            if (!_currentMenuId.HasValue)
+            {
+                MessageBox.Show("Сначала создайте или откройте меню!",
+                    "Внимание", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            var pricesPage = new ProductPricesPage(_currentMenuId.Value);
+            Services.NavigationService.Instance.NavigateTo(pricesPage);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Ошибка при открытии окна цен: {ex.Message}",
+                "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    /// <summary>
     /// Поиск визуального потомка определенного типа
     /// </summary>
     private static T? FindVisualChild<T>(DependencyObject parent) where T : DependencyObject

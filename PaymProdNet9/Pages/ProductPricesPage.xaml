@@ -1,0 +1,73 @@
+<Page x:Class="PaymProdNet9.Pages.ProductPricesPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+      xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+      mc:Ignorable="d"
+      Title="Общая цена"
+      Loaded="Page_Loaded">
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Фильтры типов продуктов -->
+        <materialDesign:Card Grid.Row="0" Margin="0,0,0,10" Padding="10">
+            <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+                <StackPanel x:Name="FilterPanel" Orientation="Horizontal">
+                    <Button x:Name="AllTypesButton"
+                            Content="Все"
+                            Tag="%"
+                            Click="FilterByType_Click"
+                            Style="{StaticResource MaterialDesignRaisedButton}"
+                            Margin="0,0,5,0"/>
+                </StackPanel>
+            </ScrollViewer>
+        </materialDesign:Card>
+
+        <!-- Таблица продуктов -->
+        <materialDesign:Card Grid.Row="1" Padding="10">
+            <DataGrid x:Name="ProductsPricesDataGrid"
+                      AutoGenerateColumns="False"
+                      CanUserAddRows="False"
+                      SelectionMode="Single"
+                      IsReadOnly="False"
+                      materialDesign:DataGridAssist.CellPadding="8"
+                      materialDesign:DataGridAssist.ColumnHeaderPadding="8"
+                      FontSize="13"
+                      CellEditEnding="ProductsPricesDataGrid_CellEditEnding"
+                      PreparingCellForEdit="ProductsPricesDataGrid_PreparingCellForEdit">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="Название продукта" 
+                                        Binding="{Binding Name}" 
+                                        Width="3*" 
+                                        IsReadOnly="True"/>
+                    <DataGridTextColumn Header="Ед (основная)" 
+                                        Binding="{Binding Ves}" 
+                                        Width="*" 
+                                        IsReadOnly="True"/>
+                    <DataGridTextColumn Header="Ед фасовки" 
+                                        Binding="{Binding IzName}" 
+                                        Width="*" 
+                                        IsReadOnly="True"/>
+                    <DataGridTextColumn Header="Фасовка" 
+                                        Binding="{Binding Fass}" 
+                                        Width="*" 
+                                        IsReadOnly="True"/>
+                    <DataGridTextColumn Header="Цена, тг" 
+                                        Binding="{Binding Price, UpdateSourceTrigger=PropertyChanged}" 
+                                        Width="*">
+                        <DataGridTextColumn.ElementStyle>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Text" Value="{Binding Price, StringFormat='{}{0:F2}'}"/>
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
+                </DataGrid.Columns>
+            </DataGrid>
+        </materialDesign:Card>
+    </Grid>
+</Page>
+

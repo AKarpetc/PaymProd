@@ -366,4 +366,197 @@ public class ProductRepository
 
         return command.ExecuteNonQuery() > 0;
     }
+
+    /// <summary>
+    /// Обновить цену продукта (общая цена)
+    /// </summary>
+    public void UpdateProductPrice(int productId, double price)
+    {
+        using var connection = DatabaseHelper.GetConnection();
+        connection.Open();
+
+        var command = connection.CreateCommand();
+        command.CommandText = "UPDATE Producrs SET Price = @price WHERE Prod_ID = @id";
+        command.Parameters.AddWithValue("@price", price);
+        command.Parameters.AddWithValue("@id", productId);
+
+        command.ExecuteNonQuery();
+    }
+
+    /// <summary>
+    /// Получить продукты, добавленные в меню (через Components1 и Components)
+    /// </summary>
+    public List<ProductView> GetMenuProducts(int menuId)
+    {
+        var products = new List<ProductView>();
+        var productIds = new HashSet<int>();
+
+        using var connection = DatabaseHelper.GetConnection();
+        connection.Open();
+
+        // Получаем уникальные ID продуктов из Components1 для данного меню (измененные компоненты)
+        var command = connection.CreateCommand();
+        command.CommandText = @"
+            SELECT DISTINCT ProductID 
+            FROM Components1 
+            WHERE Idmen = @menuId";
+        command.Parameters.AddWithValue("@menuId", menuId);
+
+        using (var reader = command.ExecuteReader())
+        {
+            while (reader.Read())
+            {
+                productIds.Add(reader.GetInt32(0));
+            }
+        }
+
+        // Также получаем продукты из стандартных компонентов блюд, которые есть в меню
+        command = connection.CreateCommand();
+        command.CommandText = @"
+            SELECT DISTINCT c.ProductID
+            FROM Components c
+            INNER JOIN Menu_Delicates md ON md.Id_delic = c.Delic_id
+            WHERE md.Id_men = @menuId";
+        command.Parameters.AddWithValue("@menuId", menuId);
+
+        using (var reader = command.ExecuteReader())
+        {
+            while (reader.Read())
+            {
+                productIds.Add(reader.GetInt32(0));
+            }
+        }
+
+        // Получаем полную информацию о продуктах
+        if (productIds.Count > 0)
+        {
+            var idsString = string.Join(",", productIds);
+            command = connection.CreateCommand();
+            command.CommandText = $@"
+                SELECT p.Prod_ID, p.Name, pt.Type_Opis, m.Name_Mera, 
+                       pt.TypeProdId, p.Ves, COALESCE(p.Fass, 0), 
+                       p.Izmer, mi.Name_Mera, p.Priz_menu, 
+                       COALESCE(p.Count, 0), p.Avtomat, p.Chel, p.Isdiap,
+                       COALESCE(p.Price, 0)
+                FROM Producrs p
+                INNER JOIN Produkt_Type pt ON p.Type = pt.TypeProdId
+                LEFT JOIN Mera m ON m.Mera_ID = p.Ves
+                LEFT JOIN Mera mi ON mi.Mera_ID = p.Izmer
+                WHERE p.Prod_ID IN ({idsString})";
+
+            using var reader = command.ExecuteReader();
+            while (reader.Read())
+            {
+                var product = new ProductView
+                {
+                    ID = reader.GetInt32(0),
+                    Name = reader.GetString(1),
+                    Type = reader.GetString(2),
+                    Ves = reader.IsDBNull(3) ? string.Empty : reader.GetString(3),
+                    TID = reader.GetInt32(4),
+                    VID = reader.IsDBNull(5) ? 0 : reader.GetInt32(5),
+                    Fass = reader.GetDecimal(6),
+                    Iz = reader.IsDBNull(7) ? 0 : reader.GetInt32(7),
+                    IzName = reader.IsDBNull(8) ? string.Empty : reader.GetString(8),
+                    PrizMen = reader.GetInt32(9),
+                    PrizMen1 = reader.GetInt32(9) == 1,
+                    Count = reader.GetDecimal(10),
+                    AutoAdd = reader.GetInt32(11) == 1,
+                    CountPeople = reader.GetInt32(12),
+                    MainCount = reader.GetInt32(13) == 1,
+                    Price = reader.IsDBNull(14) ? 0 : Convert.ToDecimal(reader.GetDouble(14))
+                };
+
+                products.Add(product);
+            }
+        }
+
+        return products;
+    }
+
+    /// <summary>
+    /// Получить цены продуктов для меню
+    /// </summary>
+    public List<MenuProductPrice> GetMenuProductPrices(int menuId)
+    {
+        var prices = new List<MenuProductPrice>();
+
+        using var connection = DatabaseHelper.GetConnection();
+        connection.Open();
+
+        var command = connection.CreateCommand();
+        command.CommandText = @"
+            SELECT ProductID, Price 
+            FROM Menu_Product_Prices 
+            WHERE Id_men = @menuId";
+        command.Parameters.AddWithValue("@menuId", menuId);
+
+        using var reader = command.ExecuteReader();
+        while (reader.Read())
+        {
+            prices.Add(new MenuProductPrice
+            {
+                ProductID = reader.GetInt32(0),
+                Price = reader.GetDouble(1)
+            });
+        }
+
+        return prices;
+    }
+
+    /// <summary>
+    /// Сохранить цену продукта для меню
+    /// </summary>
+    public void SaveMenuProductPrice(int menuId, int productId, double price)
+    {
+        using var connection = DatabaseHelper.GetConnection();
+        connection.Open();
+
+        var command = connection.CreateCommand();
+        command.CommandText = @"
+            INSERT INTO Menu_Product_Prices (Id_men, ProductID, Price)
+            VALUES (@menuId, @productId, @price)
+            ON CONFLICT(Id_men, ProductID) DO UPDATE SET Price = @price";
+        command.Parameters.AddWithValue("@menuId", menuId);
+        command.Parameters.AddWithValue("@productId", productId);
+        command.Parameters.AddWithValue("@price", price);
+
+        command.ExecuteNonQuery();
+    }
+
+    /// <summary>
+    /// Копировать цену продукта в меню при добавлении продукта
+    /// </summary>
+    public void CopyProductPriceToMenu(int menuId, int productId)
+    {
+        using var connection = DatabaseHelper.GetConnection();
+        connection.Open();
+
+        // Получаем цену продукта из справочника
+        var selectCommand = connection.CreateCommand();
+        selectCommand.CommandText = "SELECT COALESCE(Price, 0) FROM Producrs WHERE Prod_ID = @id";
+        selectCommand.Parameters.AddWithValue("@id", productId);
+
+        var price = Convert.ToDouble(selectCommand.ExecuteScalar());
+
+        // Сохраняем цену в меню, если её ещё нет
+        var insertCommand = connection.CreateCommand();
+        insertCommand.CommandText = @"
+            INSERT OR IGNORE INTO Menu_Product_Prices (Id_men, ProductID, Price)
+            VALUES (@menuId, @productId, @price)";
+        insertCommand.Parameters.AddWithValue("@menuId", menuId);
+        insertCommand.Parameters.AddWithValue("@productId", productId);
+        insertCommand.Parameters.AddWithValue("@price", price);
+
+        insertCommand.ExecuteNonQuery();
+    }
+}
+
+/// <summary>
+/// Модель для цены продукта в меню
+/// </summary>
+public class MenuProductPrice
+{
+    public int ProductID { get; set; }
+    public double Price { get; set; }
 }

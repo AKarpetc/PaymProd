@@ -220,6 +220,39 @@ public static class DatabaseHelper
             );";
         command.ExecuteNonQuery();
 
+        // Создание таблицы для цен продуктов в меню
+        command.CommandText = @"
+            CREATE TABLE IF NOT EXISTS Menu_Product_Prices (
+                Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                Id_men INTEGER,
+                ProductID INTEGER,
+                Price REAL DEFAULT 0,
+                FOREIGN KEY (Id_men) REFERENCES Menus(Id),
+                FOREIGN KEY (ProductID) REFERENCES Producrs(Prod_ID),
+                UNIQUE(Id_men, ProductID)
+            );";
+        command.ExecuteNonQuery();
+
+        // Миграция: добавляем Menu_Product_Prices, если её нет
+        try
+        {
+            command.CommandText = @"
+                CREATE TABLE IF NOT EXISTS Menu_Product_Prices (
+                    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    Id_men INTEGER,
+                    ProductID INTEGER,
+                    Price REAL DEFAULT 0,
+                    FOREIGN KEY (Id_men) REFERENCES Menus(Id),
+                    FOREIGN KEY (ProductID) REFERENCES Producrs(Prod_ID),
+                    UNIQUE(Id_men, ProductID)
+                );";
+            command.ExecuteNonQuery();
+        }
+        catch
+        {
+            // Таблица уже существует, игнорируем ошибку
+        }
+
         // Инициализация базовых данных
         InitializeDefaultData(connection);
     }
