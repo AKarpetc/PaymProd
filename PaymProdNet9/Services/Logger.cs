@@ -1,0 +1,227 @@
+using System;
+using System.IO;
+using System.Text;
+using System.Threading;
+
+namespace PaymProdNet9.Services;
+
+/// <summary>
+/// Сервис логирования для записи логов в консоль и файл
+/// </summary>
+public static class Logger
+{
+    private static readonly object _lockObject = new object();
+    private static string? _logDirectory;
+    private static string? _logFileName;
+    private static bool _isInitialized = false;
+
+    /// <summary>
+    /// Инициализация логгера
+    /// </summary>
+    /// <param name="logDirectory">Директория для хранения логов (если null, используется AppData)</param>
+    public static void Initialize(string? logDirectory = null)
+    {
+        if (_isInitialized) return;
+
+        lock (_lockObject)
+        {
+            if (_isInitialized) return;
+
+            // Определяем директорию для логов
+            if (string.IsNullOrEmpty(logDirectory))
+            {
+                var appDataPath = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                    "PaymProdNet9", "Logs");
+                _logDirectory = appDataPath;
+            }
+            else
+            {
+                _logDirectory = logDirectory;
+            }
+
+            // Создаем директорию, если её нет
+            if (!Directory.Exists(_logDirectory))
+            {
+                Directory.CreateDirectory(_logDirectory);
+            }
+
+            // Формируем имя файла с текущей датой
+            _logFileName = Path.Combine(_logDirectory, $"PaymProd_{DateTime.Now:yyyyMMdd}.log");
+
+            // Очищаем старые логи (старше 7 дней)
+            CleanOldLogs();
+
+            _isInitialized = true;
+            Info("Logger initialized");
+        }
+    }
+
+    /// <summary>
+    /// Очистка лог-файлов старше 7 дней
+    /// </summary>
+    private static void CleanOldLogs()
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(_logDirectory) || !Directory.Exists(_logDirectory))
+                return;
+
+            var cutoffDate = DateTime.Now.AddDays(-7);
+            var logFiles = Directory.GetFiles(_logDirectory, "PaymProd_*.log");
+
+            foreach (var logFile in logFiles)
+            {
+                try
+                {
+                    var fileInfo = new FileInfo(logFile);
+                    if (fileInfo.CreationTime < cutoffDate)
+                    {
+                        File.Delete(logFile);
+                        Console.WriteLine($"[Logger] Удален старый лог-файл: {fileInfo.Name}");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[Logger] Ошибка при удалении лог-файла {logFile}: {ex.Message}");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[Logger] Ошибка при очистке старых логов: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Запись информационного сообщения
+    /// </summary>
+    public static void Info(string message)
+    {
+        WriteLog(LogLevel.Info, message);
+    }
+
+    /// <summary>
+    /// Запись предупреждения
+    /// </summary>
+    public static void Warning(string message)
+    {
+        WriteLog(LogLevel.Warning, message);
+    }
+
+    /// <summary>
+    /// Запись ошибки
+    /// </summary>
+    public static void Error(string message, Exception? exception = null)
+    {
+        var fullMessage = message;
+        if (exception != null)
+        {
+            fullMessage += $"\nИсключение: {exception.GetType().Name}\nСообщение: {exception.Message}\nСтек вызовов: {exception.StackTrace}";
+            if (exception.InnerException != null)
+            {
+                fullMessage += $"\nВнутреннее исключение: {exception.InnerException.Message}";
+            }
+        }
+        WriteLog(LogLevel.Error, fullMessage);
+    }
+
+    /// <summary>
+    /// Запись отладочного сообщения (только в Debug сборке)
+    /// </summary>
+    [System.Diagnostics.Conditional("DEBUG")]
+    public static void Debug(string message)
+    {
+        WriteLog(LogLevel.Debug, message);
+    }
+
+    /// <summary>
+    /// Запись лога
+    /// </summary>
+    private static void WriteLog(LogLevel level, string message)
+    {
+        // В Release сборке пропускаем Debug логи
+#if !DEBUG
+        if (level == LogLevel.Debug)
+        {
+            return;
+        }
+#endif
+
+        if (!_isInitialized)
+        {
+            // Если логгер не инициализирован, инициализируем с настройками по умолчанию
+            Initialize();
+        }
+
+        var timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
+        var logMessage = $"[{timestamp}] [{level}] {message}";
+
+        // Запись в консоль
+        var originalColor = Console.ForegroundColor;
+        try
+        {
+            Console.ForegroundColor = level switch
+            {
+                LogLevel.Error => ConsoleColor.Red,
+                LogLevel.Warning => ConsoleColor.Yellow,
+                LogLevel.Info => ConsoleColor.Green,
+                LogLevel.Debug => ConsoleColor.Gray,
+                _ => ConsoleColor.White
+            };
+            Console.WriteLine(logMessage);
+        }
+        finally
+        {
+            Console.ForegroundColor = originalColor;
+        }
+
+        // Запись в файл
+        lock (_lockObject)
+        {
+            try
+            {
+                // Проверяем, нужно ли создать новый файл (если дата изменилась)
+                var currentLogFileName = Path.Combine(_logDirectory!, $"PaymProd_{DateTime.Now:yyyyMMdd}.log");
+                if (currentLogFileName != _logFileName)
+                {
+                    _logFileName = currentLogFileName;
+                }
+
+                // Записываем в файл с UTF-8 кодировкой
+                // Если файл новый, добавляем BOM для правильного отображения в Windows
+                var fileExists = File.Exists(_logFileName!);
+                if (!fileExists)
+                {
+                    // Создаем файл с UTF-8 BOM
+                    using (var writer = new StreamWriter(_logFileName!, false, new UTF8Encoding(true)))
+                    {
+                        writer.Write(logMessage + Environment.NewLine);
+                    }
+                }
+                else
+                {
+                    // Добавляем в существующий файл
+                    File.AppendAllText(_logFileName!, logMessage + Environment.NewLine, Encoding.UTF8);
+                }
+            }
+            catch (Exception ex)
+            {
+                // Если не удалось записать в файл, выводим только в консоль
+                Console.WriteLine($"[Logger] Ошибка при записи в файл: {ex.Message}");
+            }
+        }
+    }
+
+    /// <summary>
+    /// Уровни логирования
+    /// </summary>
+    private enum LogLevel
+    {
+        Debug,
+        Info,
+        Warning,
+        Error
+    }
+}
+

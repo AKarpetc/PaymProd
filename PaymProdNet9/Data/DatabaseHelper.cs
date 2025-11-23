@@ -39,10 +39,13 @@ public static class DatabaseHelper
     /// </summary>
     public static void InitializeDatabase(string dbPath)
     {
-        _connectionString = $"Data Source={dbPath}";
+        try
+        {
+            Services.Logger.Info($"Инициализация базы данных: {dbPath}");
+            _connectionString = $"Data Source={dbPath}";
 
-        using var connection = new SqliteConnection(_connectionString);
-        connection.Open();
+            using var connection = new SqliteConnection(_connectionString);
+            connection.Open();
 
         var command = connection.CreateCommand();
 
@@ -255,6 +258,14 @@ public static class DatabaseHelper
 
         // Инициализация базовых данных
         InitializeDefaultData(connection);
+
+        Services.Logger.Debug("База данных успешно инициализирована");
+        }
+        catch (Exception ex)
+        {
+            Services.Logger.Error("Критическая ошибка при инициализации базы данных", ex);
+            throw;
+        }
     }
 
     /// <summary>

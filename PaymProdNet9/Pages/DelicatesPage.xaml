@@ -253,11 +253,12 @@
                                 <DataGrid x:Name="DelicateComponentsGrid"
                                           AutoGenerateColumns="False"
                                           CanUserAddRows="False"
+                                          IsReadOnly="False"
                                           materialDesign:DataGridAssist.CellPadding="5">
                                     <DataGrid.Columns>
                                         <DataGridTextColumn Header="Продукт" Binding="{Binding NameT}"
                                                             Width="*" IsReadOnly="True" />
-                                        <DataGridTextColumn Header="Вес" Binding="{Binding Ves}"
+                                        <DataGridTextColumn Header="Вес" Binding="{Binding Ves, UpdateSourceTrigger=PropertyChanged}"
                                                             Width="80" />
                                         <DataGridTextColumn Header="Мера" Binding="{Binding Mera}"
                                                             Width="60" IsReadOnly="True" />

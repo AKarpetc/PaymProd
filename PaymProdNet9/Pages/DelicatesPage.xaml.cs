@@ -1,5 +1,6 @@
 using PaymProdNet9.Data;
 using PaymProdNet9.Models;
+using PaymProdNet9.Services;
 using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
@@ -295,11 +296,13 @@ public partial class DelicatesPage : Page
             else
             {
                 // Создание нового блюда
+                Logger.Debug($"Создание нового блюда: {DelicateNameTextBox.Text}, компонентов в списке: {_currentDelicateComponents.Count}");
                 var newId = _delicateRepository.AddDelicate(typeId, DelicateNameTextBox.Text, ves, count);
                 _currentDelicateId = newId;
+                Logger.Debug($"Блюдо создано с ID: {newId}");
 
-                // Сохранение компонентов
-                if (_currentDelicateComponents.Count > 0) SaveDelicateComponents(newId);
+                // Сохранение компонентов (всегда вызываем, даже если список пуст)
+                SaveDelicateComponents(newId);
 
                 MessageBox.Show("Блюдо успешно создано!",
                     "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -322,19 +325,39 @@ public partial class DelicatesPage : Page
     {
         try
         {
+            Logger.Debug($"Сохранение компонентов для блюда ID={delicateId}, количество компонентов: {_currentDelicateComponents.Count}");
+
             // Удаляем старые компоненты
             var existing = _delicateRepository.GetDelicateById(delicateId);
             if (existing?.Lcomp != null)
+            {
+                Logger.Debug($"Удаление {existing.Lcomp.Count} старых компонентов");
                 foreach (var component in existing.Lcomp)
                     _delicateRepository.DeleteComponentByProductAndDelicate(component.Prodid, delicateId);
+            }
 
             // Добавляем новые компоненты
+            int savedCount = 0;
             foreach (var component in _currentDelicateComponents)
-                if (component.Ves > 0) // Только если указан вес
-                    _delicateRepository.AddComponent(delicateId, component.Prodid, component.Ves);
+            {
+                Logger.Debug($"Компонент: {component.NameT}, ProdID={component.Prodid}, Ves={component.Ves}");
+                
+                // Сохраняем компонент даже если вес = 0 (может быть указан позже)
+                // Но предупреждаем пользователя
+                if (component.Ves <= 0)
+                {
+                    Logger.Warning($"Компонент '{component.NameT}' имеет вес 0, но будет сохранен");
+                }
+                
+                _delicateRepository.AddComponent(delicateId, component.Prodid, component.Ves);
+                savedCount++;
+            }
+
+            Logger.Debug($"Сохранено компонентов: {savedCount} из {_currentDelicateComponents.Count}");
         }
         catch (Exception ex)
         {
+            Logger.Error("Ошибка при сохранении состава блюда", ex);
             MessageBox.Show($"Ошибка при сохранении состава блюда: {ex.Message}",
                 "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
         }

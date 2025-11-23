@@ -12,6 +12,32 @@ public partial class App : Application
     {
         base.OnStartup(e);
 
+        // Настраиваем консоль для правильного отображения UTF-8
+        try
+        {
+            Console.OutputEncoding = System.Text.Encoding.UTF8;
+        }
+        catch
+        {
+            // Игнорируем ошибки настройки консоли
+        }
+
+        // Инициализируем логгер в самом начале
+        Logger.Initialize();
+        Logger.Info("Приложение запущено");
+
+        // Обработка необработанных исключений
+        AppDomain.CurrentDomain.UnhandledException += (sender, args) =>
+        {
+            Logger.Error("Необработанное исключение в AppDomain", args.ExceptionObject as Exception);
+        };
+
+        DispatcherUnhandledException += (sender, args) =>
+        {
+            Logger.Error("Необработанное исключение в UI потоке", args.Exception);
+            args.Handled = true; // Предотвращаем краш приложения
+        };
+
         // Проверяем наличие базы данных в AppData (созданной инструментом миграции)
         var appDataPath = System.IO.Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
@@ -28,12 +54,36 @@ public partial class App : Application
         if (!string.IsNullOrEmpty(directory) && !System.IO.Directory.Exists(directory))
             System.IO.Directory.CreateDirectory(directory);
 
-        Data.DatabaseHelper.InitializeDatabase(dbPath);
+        try
+        {
+            Logger.Debug($"Инициализация базы данных: {dbPath}");
+            Data.DatabaseHelper.InitializeDatabase(dbPath);
+            Logger.Info("База данных успешно инициализирована");
+        }
+        catch (Exception ex)
+        {
+            Logger.Error("Ошибка при инициализации базы данных", ex);
+            MessageBox.Show($"Критическая ошибка при инициализации базы данных:\n{ex.Message}", 
+                "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+            Shutdown();
+            return;
+        }
 
-        var mainWindow = new MainNavigationWindow();
-        MainWindow = mainWindow;
-        mainWindow.Show();
+        try
+        {
+            var mainWindow = new MainNavigationWindow();
+            MainWindow = mainWindow;
+            mainWindow.Show();
+            Logger.Debug("Главное окно отображено");
 
-        await UpdateService.CheckForUpdatesAsync(mainWindow);
+            await UpdateService.CheckForUpdatesAsync(mainWindow);
+        }
+        catch (Exception ex)
+        {
+            Logger.Error("Ошибка при запуске приложения", ex);
+            MessageBox.Show($"Ошибка при запуске приложения:\n{ex.Message}", 
+                "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+            Shutdown();
+        }
     }
 }

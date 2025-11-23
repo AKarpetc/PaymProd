@@ -31,7 +31,10 @@ public class MenuPrinter
             var fileName = Path.Combine(Path.GetTempPath(), $"Menu_{DateTime.Now:yyyyMMdd_HHmmss}.docx");
 
             var measures = _productRepository.GetMeasures();
-            var measureLookup = measures.ToDictionary(m => m.Name.ToLower().Trim(), m => m);
+            // Обрабатываем дубликаты - берем первую меру с таким названием
+            var measureLookup = measures
+                .GroupBy(m => m.Name.ToLower().Trim())
+                .ToDictionary(g => g.Key, g => g.First());
             var products = _productRepository.GetAllProducts();
             var productLookup = products.ToDictionary(p => p.ID, p => p);
 
@@ -211,6 +214,7 @@ public class MenuPrinter
         }
         catch (Exception ex)
         {
+            Logger.Error("Ошибка при создании документа меню", ex);
             throw new Exception($"Ошибка при создании документа: {ex.Message}", ex);
         }
     }
@@ -226,7 +230,10 @@ public class MenuPrinter
 
             // Получаем все меры для определения округления
             var measures = _productRepository.GetMeasures();
-            var measuresDict = measures.ToDictionary(m => m.Name.ToLower().Trim(), m => m);
+            // Обрабатываем дубликаты - берем первую меру с таким названием
+            var measuresDict = measures
+                .GroupBy(m => m.Name.ToLower().Trim())
+                .ToDictionary(g => g.Key, g => g.First());
 
             // Функция для поиска меры по имени (с учетом вариаций)
             Measure? FindMeasure(string? measureName)
@@ -539,6 +546,7 @@ public class MenuPrinter
         }
         catch (Exception ex)
         {
+            Logger.Error("Ошибка при создании отчета по продуктам", ex);
             throw new Exception($"Ошибка при создании отчета: {ex.Message}", ex);
         }
     }

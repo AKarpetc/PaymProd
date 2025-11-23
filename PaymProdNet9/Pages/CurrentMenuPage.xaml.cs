@@ -56,7 +56,10 @@ public partial class CurrentMenuPage : Page
         if (force || _measureLookup.Count == 0)
         {
             var measures = _productRepository.GetMeasures();
-            _measureLookup = measures.ToDictionary(m => m.Name.ToLower().Trim(), m => m);
+            // Обрабатываем дубликаты - берем первую меру с таким названием
+            _measureLookup = measures
+                .GroupBy(m => m.Name.ToLower().Trim())
+                .ToDictionary(g => g.Key, g => g.First());
         }
 
         if (force || _productLookup.Count == 0)
@@ -109,6 +112,7 @@ public partial class CurrentMenuPage : Page
         }
         catch (Exception ex)
         {
+            Logger.Error("Ошибка при загрузке данных", ex);
             MessageBox.Show($"Ошибка при загрузке данных: {ex.Message}",
                 "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
         }
