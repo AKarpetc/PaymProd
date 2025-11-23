@@ -1,11 +1,13 @@
 using PaymProdNet9.Data;
 using PaymProdNet9.Models;
+using PaymProdNet9.Services;
 using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Navigation;
 
 namespace PaymProdNet9.Pages;
 
@@ -23,6 +25,13 @@ public partial class ProductPricesPage : Page
         _allProducts = new ObservableCollection<ProductView>();
         _menuId = menuId;
         ProductsPricesDataGrid.ItemsSource = _allProducts;
+        
+        // Подписываемся на событие навигации
+        if (NavigationService != null)
+        {
+            NavigationService.Navigating -= ProductPricesPage_Navigating;
+            NavigationService.Navigating += ProductPricesPage_Navigating;
+        }
     }
 
     private void Page_Loaded(object sender, RoutedEventArgs e)
@@ -145,7 +154,9 @@ public partial class ProductPricesPage : Page
             foreach (var product in productsToShow)
             {
                 product.BasePrice = product.Price; // Сохраняем цену из справочника как базовую
+                product.OriginalPrice = product.Price; // Сохраняем оригинальную цену для отслеживания изменений
                 product.SaveToBasePrice = true; // По умолчанию галочка включена
+                product.IsModified = false; // Сбрасываем флаг изменений
             }
             
             // Фильтруем по типу
@@ -189,6 +200,9 @@ public partial class ProductPricesPage : Page
                     // Если цены в меню нет, используем базовую цену
                     product.Price = product.BasePrice;
                 }
+                // Сохраняем оригинальную цену для отслеживания изменений
+                product.OriginalPrice = product.Price;
+                product.IsModified = false;
             }
         }
         catch (Exception ex)
@@ -212,25 +226,8 @@ public partial class ProductPricesPage : Page
                 if (decimal.TryParse(textBox.Text, NumberStyles.Any, CultureInfo.CurrentCulture, out var price))
                 {
                     product.Price = price;
-                    
-                    if (_menuId.HasValue)
-                    {
-                        // Сохраняем цену для меню
-                        _productRepository.SaveMenuProductPrice(_menuId.Value, product.ID, (double)price);
-                        
-                        // Если галочка включена, обновляем базовую цену в справочнике
-                        if (product.SaveToBasePrice)
-                        {
-                            _productRepository.UpdateProductPrice(product.ID, (double)price);
-                            product.BasePrice = price; // Обновляем отображаемую базовую цену
-                        }
-                    }
-                    else
-                    {
-                        // Сохраняем общую цену
-                        _productRepository.UpdateProductPrice(product.ID, (double)price);
-                        product.BasePrice = price; // Обновляем базовую цену
-                    }
+                    // Помечаем как измененную, если цена отличается от оригинальной
+                    product.IsModified = product.Price != product.OriginalPrice;
                 }
                 else
                 {
@@ -241,7 +238,7 @@ public partial class ProductPricesPage : Page
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Ошибка при сохранении цены: {ex.Message}",
+                MessageBox.Show($"Ошибка при изменении цены: {ex.Message}",
                     "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
                 e.Cancel = true;
             }
@@ -278,44 +275,201 @@ public partial class ProductPricesPage : Page
 
     private void ProductsPricesDataGrid_PreviewKeyDown(object sender, KeyEventArgs e)
     {
+        var dataGrid = sender as DataGrid;
+        if (dataGrid == null) return;
+
+        // Находим редактируемую колонку (Цена, тг)
+        var priceColumn = dataGrid.Columns
+            .OfType<DataGridTextColumn>()
+            .FirstOrDefault(c => c.Header?.ToString() == "Цена, тг");
+
+        if (priceColumn == null) return;
+
+        // Получаем текущую позицию
+        var currentRow = dataGrid.Items.IndexOf(dataGrid.CurrentItem);
+        var currentColumn = dataGrid.CurrentColumn;
+
+        if (currentRow < 0 || currentColumn == null) return;
+
         if (e.Key == Key.Enter || e.Key == Key.Tab)
         {
-            var dataGrid = sender as DataGrid;
-            if (dataGrid == null) return;
-
             // Завершаем редактирование текущей ячейки
             dataGrid.CommitEdit(DataGridEditingUnit.Row, true);
 
-            // Получаем текущую позицию
-            var currentRow = dataGrid.Items.IndexOf(dataGrid.CurrentItem);
-            var currentColumn = dataGrid.CurrentColumn;
-
-            if (currentRow >= 0 && currentColumn != null)
+            // Переходим на следующую строку
+            var nextRow = currentRow + 1;
+            if (nextRow < dataGrid.Items.Count)
             {
-                // Переходим на следующую строку
-                var nextRow = currentRow + 1;
-                if (nextRow < dataGrid.Items.Count)
+                // Используем Dispatcher для выполнения после завершения редактирования
+                Dispatcher.BeginInvoke(new Action(() =>
                 {
-                    // Находим редактируемую колонку (Цена, тг)
-                    var priceColumn = dataGrid.Columns
-                        .OfType<DataGridTextColumn>()
-                        .FirstOrDefault(c => c.Header?.ToString() == "Цена, тг");
+                    dataGrid.SelectedIndex = nextRow;
+                    dataGrid.CurrentCell = new DataGridCellInfo(dataGrid.Items[nextRow], priceColumn);
+                    
+                    // Начинаем редактирование
+                    dataGrid.BeginEdit();
+                }), System.Windows.Threading.DispatcherPriority.Input);
+                
+                e.Handled = true;
+            }
+        }
+        else if (e.Key == Key.Down)
+        {
+            // Завершаем редактирование текущей ячейки
+            dataGrid.CommitEdit(DataGridEditingUnit.Row, true);
 
-                    if (priceColumn != null)
+            // Переходим на следующую строку
+            var nextRow = currentRow + 1;
+            if (nextRow < dataGrid.Items.Count)
+            {
+                // Используем Dispatcher для выполнения после завершения редактирования
+                Dispatcher.BeginInvoke(new Action(() =>
+                {
+                    dataGrid.SelectedIndex = nextRow;
+                    dataGrid.CurrentCell = new DataGridCellInfo(dataGrid.Items[nextRow], currentColumn);
+                    
+                    // Если это колонка "Цена, тг", начинаем редактирование
+                    if (currentColumn == priceColumn)
                     {
-                        // Используем Dispatcher для выполнения после завершения редактирования
-                        Dispatcher.BeginInvoke(new Action(() =>
-                        {
-                            dataGrid.SelectedIndex = nextRow;
-                            dataGrid.CurrentCell = new DataGridCellInfo(dataGrid.Items[nextRow], priceColumn);
-                            
-                            // Начинаем редактирование
-                            dataGrid.BeginEdit();
-                        }), System.Windows.Threading.DispatcherPriority.Input);
-                        
-                        e.Handled = true;
+                        dataGrid.BeginEdit();
+                    }
+                }), System.Windows.Threading.DispatcherPriority.Input);
+                
+                e.Handled = true;
+            }
+        }
+        else if (e.Key == Key.Up)
+        {
+            // Завершаем редактирование текущей ячейки
+            dataGrid.CommitEdit(DataGridEditingUnit.Row, true);
+
+            // Переходим на предыдущую строку
+            var prevRow = currentRow - 1;
+            if (prevRow >= 0)
+            {
+                // Используем Dispatcher для выполнения после завершения редактирования
+                Dispatcher.BeginInvoke(new Action(() =>
+                {
+                    dataGrid.SelectedIndex = prevRow;
+                    dataGrid.CurrentCell = new DataGridCellInfo(dataGrid.Items[prevRow], currentColumn);
+                    
+                    // Если это колонка "Цена, тг", начинаем редактирование
+                    if (currentColumn == priceColumn)
+                    {
+                        dataGrid.BeginEdit();
+                    }
+                }), System.Windows.Threading.DispatcherPriority.Input);
+                
+                e.Handled = true;
+            }
+        }
+    }
+
+    private bool HasUnsavedChanges()
+    {
+        return _allProducts.Any(p => p.IsModified);
+    }
+
+    private void SaveChanges_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var modifiedProducts = _allProducts.Where(p => p.IsModified).ToList();
+            
+            if (modifiedProducts.Count == 0)
+            {
+                MessageBox.Show("Нет изменений для сохранения.", 
+                    "Информация", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            foreach (var product in modifiedProducts)
+            {
+                if (_menuId.HasValue)
+                {
+                    // Сохраняем цену для меню
+                    _productRepository.SaveMenuProductPrice(_menuId.Value, product.ID, (double)product.Price);
+                    
+                    // Если галочка включена, обновляем базовую цену в справочнике
+                    if (product.SaveToBasePrice)
+                    {
+                        _productRepository.UpdateProductPrice(product.ID, (double)product.Price);
+                        product.BasePrice = product.Price; // Обновляем отображаемую базовую цену
                     }
                 }
+                else
+                {
+                    // Сохраняем общую цену
+                    _productRepository.UpdateProductPrice(product.ID, (double)product.Price);
+                    product.BasePrice = product.Price; // Обновляем базовую цену
+                }
+                
+                // Обновляем оригинальную цену и сбрасываем флаг изменений
+                product.OriginalPrice = product.Price;
+                product.IsModified = false;
+            }
+
+            MessageBox.Show($"Сохранено изменений: {modifiedProducts.Count}", 
+                "Успешно", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Ошибка при сохранении изменений: {ex.Message}",
+                "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    private void CancelChanges_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var modifiedProducts = _allProducts.Where(p => p.IsModified).ToList();
+            
+            if (modifiedProducts.Count == 0)
+            {
+                MessageBox.Show("Нет изменений для отмены.", 
+                    "Информация", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            var result = MessageBox.Show(
+                $"Отменить все изменения ({modifiedProducts.Count} продуктов)?",
+                "Подтверждение", MessageBoxButton.YesNo, MessageBoxImage.Question);
+
+            if (result == MessageBoxResult.Yes)
+            {
+                foreach (var product in modifiedProducts)
+                {
+                    product.Price = product.OriginalPrice;
+                    product.IsModified = false;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Ошибка при отмене изменений: {ex.Message}",
+                "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    private void ProductPricesPage_Navigating(object sender, NavigatingCancelEventArgs e)
+    {
+        if (HasUnsavedChanges())
+        {
+            var result = MessageBox.Show(
+                "У вас есть несохраненные изменения. Сохранить их перед выходом?",
+                "Несохраненные изменения",
+                MessageBoxButton.YesNoCancel,
+                MessageBoxImage.Question);
+
+            if (result == MessageBoxResult.Yes)
+            {
+                SaveChanges_Click(SaveButton, new RoutedEventArgs());
+            }
+            else if (result == MessageBoxResult.Cancel)
+            {
+                e.Cancel = true;
+                return;
             }
         }
     }

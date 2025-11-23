@@ -344,6 +344,8 @@ public class ProductView : INotifyPropertyChanged
     private decimal _price;
     private decimal _basePrice;
     private bool _saveToBasePrice = true;
+    private bool _isModified;
+    private decimal _originalPrice;
 
     public string Name
     {
@@ -523,6 +525,22 @@ public class ProductView : INotifyPropertyChanged
             _saveToBasePrice = value;
             OnPropertyChanged(nameof(SaveToBasePrice));
         }
+    }
+
+    public bool IsModified
+    {
+        get => _isModified;
+        set
+        {
+            _isModified = value;
+            OnPropertyChanged(nameof(IsModified));
+        }
+    }
+
+    public decimal OriginalPrice
+    {
+        get => _originalPrice;
+        set => _originalPrice = value;
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;

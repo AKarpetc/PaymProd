@@ -13,18 +13,46 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <!-- Фильтры типов продуктов -->
+        <!-- Фильтры типов продуктов и кнопки действий -->
         <materialDesign:Card Grid.Row="0" Margin="0,0,0,10" Padding="10">
-            <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
-                <StackPanel x:Name="FilterPanel" Orientation="Horizontal">
-                    <Button x:Name="AllTypesButton"
-                            Content="Все"
-                            Tag="%"
-                            Click="FilterByType_Click"
-                            Style="{StaticResource MaterialDesignRaisedButton}"
-                            Margin="0,0,5,0"/>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="3*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                
+                <ScrollViewer Grid.Column="0" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+                    <StackPanel x:Name="FilterPanel" Orientation="Horizontal">
+                        <Button x:Name="AllTypesButton"
+                                Content="Все"
+                                Tag="%"
+                                Click="FilterByType_Click"
+                                Style="{StaticResource MaterialDesignRaisedButton}"
+                                Margin="0,0,5,0"/>
+                    </StackPanel>
+                </ScrollViewer>
+                
+                <!-- Кнопки действий -->
+                <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
+                    <Button x:Name="SaveButton"
+                            Style="{StaticResource MaterialDesignFloatingActionMiniButton}"
+                            Background="#4CAF50"
+                            Foreground="White"
+                            Click="SaveChanges_Click"
+                            Margin="0,0,10,0"
+                            ToolTip="Сохранить изменения">
+                        <materialDesign:PackIcon Kind="ContentSave" Width="24" Height="24"/>
+                    </Button>
+                    <Button x:Name="CancelButton"
+                            Style="{StaticResource MaterialDesignFloatingActionMiniButton}"
+                            Background="#F44336"
+                            Foreground="White"
+                            Click="CancelChanges_Click"
+                            ToolTip="Отменить правки">
+                        <materialDesign:PackIcon Kind="Close" Width="24" Height="24"/>
+                    </Button>
                 </StackPanel>
-            </ScrollViewer>
+            </Grid>
         </materialDesign:Card>
 
         <!-- Таблица продуктов -->
@@ -40,6 +68,15 @@
                       CellEditEnding="ProductsPricesDataGrid_CellEditEnding"
                       PreparingCellForEdit="ProductsPricesDataGrid_PreparingCellForEdit"
                       PreviewKeyDown="ProductsPricesDataGrid_PreviewKeyDown">
+                <DataGrid.RowStyle>
+                    <Style TargetType="DataGridRow">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsModified}" Value="True">
+                                <Setter Property="Background" Value="#FFF9C4"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </DataGrid.RowStyle>
                 <DataGrid.Resources>
                     <Style TargetType="DataGridCell">
                         <Style.Triggers>
