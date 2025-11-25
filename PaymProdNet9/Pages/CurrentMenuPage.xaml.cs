@@ -207,7 +207,7 @@ public partial class CurrentMenuPage : Page
         {
             var delicates = _delicateRepository.GetAvailableDelicatesForMenu(typeFilter);
 
-            // Получаем список ID блюд, уже добавленных в текущее меню
+            // Получаем список ID блюд и продуктов, уже добавленных в текущее меню
             var addedDelicateIds = new HashSet<int>();
             if (_currentMenuId.HasValue)
             {
@@ -215,15 +215,8 @@ public partial class CurrentMenuPage : Page
                 foreach (var md in menuDelicates) addedDelicateIds.Add(md.Del_id);
             }
 
-            // Исключаем уже добавленные блюда
+            // Исключаем уже добавленные блюда и продукты
             var availableDelicates = delicates.Where(d => !addedDelicateIds.Contains(d.Id)).ToList();
-
-            // Получаем компоненты для каждого блюда
-            foreach (var delicate in availableDelicates)
-            {
-                var delicateWithComponents = _delicateRepository.GetDelicateById(delicate.Id);
-                if (delicateWithComponents != null) delicate.Lcomp = delicateWithComponents.Lcomp;
-            }
 
             // Конвертируем в формат для отображения
             _availableDelicates.Clear();
@@ -355,7 +348,9 @@ public partial class CurrentMenuPage : Page
 
             // Добавляем блюдо в меню
             var delicateId = (int)data.DelicateId;
+            Services.Logger.Debug($"Попытка добавить блюдо в меню: MenuId={_currentMenuId.Value}, DelicateId={delicateId}, Count={count}");
             _menuRepository.AddDelicateToMenu(_currentMenuId.Value, delicateId, count);
+            Services.Logger.Debug($"Блюдо успешно добавлено в меню: DelicateId={delicateId}");
 
             // Удаляем блюдо из списка доступных
             var itemToRemove = _availableDelicates.FirstOrDefault(d => (int)d.DelicateId == delicateId);
@@ -370,6 +365,7 @@ public partial class CurrentMenuPage : Page
         }
         catch (Exception ex)
         {
+            Services.Logger.Error("Ошибка при добавлении блюда в меню", ex);
             MessageBox.Show($"Ошибка при добавлении блюда: {ex.Message}",
                 "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
         }
@@ -629,6 +625,14 @@ public partial class CurrentMenuPage : Page
             var button = sender as Button;
             var delicate = button?.DataContext as MenuDel_act;
             if (delicate == null) return;
+
+            // Продукты (ID < 0) нельзя редактировать
+            if (delicate.Del_id < 0)
+            {
+                MessageBox.Show("Этот продукт доступен только для чтения. Для редактирования используйте справочник продуктов.",
+                    "Информация", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
 
             _editingDelicateId = delicate.Del_id;
 

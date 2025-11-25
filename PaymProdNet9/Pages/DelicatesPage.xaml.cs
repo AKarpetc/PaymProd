@@ -2,6 +2,7 @@ using PaymProdNet9.Data;
 using PaymProdNet9.Models;
 using PaymProdNet9.Services;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -198,8 +199,50 @@ public partial class DelicatesPage : Page
         DelicateTypeComboBox.SelectedIndex = -1;
         _currentDelicateComponents.Clear();
 
+        // Автоматически добавляем продукты с флагом "автоматически добавлять"
+        LoadAutoAddProducts();
+
         ShowEditView(false);
         DelicateNameTextBox.Focus();
+    }
+
+    /// <summary>
+    /// Загрузка продуктов с флагом "автоматически добавлять" (Avtomat = 1 и Priz_menu = 1)
+    /// </summary>
+    private void LoadAutoAddProducts()
+    {
+        try
+        {
+            var allProducts = _productRepository.GetAllProducts();
+            var autoAddProducts = allProducts.Where(p => p.AutoAdd && p.PrizMen1).ToList();
+
+            Logger.Debug($"Найдено продуктов для автоматического добавления: {autoAddProducts.Count}");
+
+            foreach (var product in autoAddProducts)
+            {
+                // Проверяем, не добавлен ли уже этот продукт
+                if (_currentDelicateComponents.Any(c => c.Prodid == product.ID))
+                {
+                    Logger.Debug($"Продукт '{product.Name}' уже добавлен, пропускаем");
+                    continue;
+                }
+
+                var component = new Components
+                {
+                    Prodid = product.ID,
+                    NameT = product.Name,
+                    Ves = product.Count > 0 ? product.Count : 0, // Используем Count из продукта, если указан
+                    Mera = product.IzName
+                };
+
+                _currentDelicateComponents.Add(component);
+                Logger.Debug($"Автоматически добавлен продукт: {product.Name}, вес: {component.Ves}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.Error("Ошибка при загрузке продуктов для автоматического добавления", ex);
+        }
     }
 
     /// <summary>
@@ -212,6 +255,14 @@ public partial class DelicatesPage : Page
             var button = sender as Button;
             var delicate = button?.DataContext as DelicatesColl;
             if (delicate == null) return;
+
+            // Продукты с отрицательным ID нельзя редактировать (только для чтения)
+            if (delicate.Id < 0)
+            {
+                MessageBox.Show("Этот продукт доступен только для чтения. Для редактирования используйте справочник продуктов.",
+                    "Информация", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
 
             _currentDelicateId = delicate.Id;
 
@@ -226,6 +277,9 @@ public partial class DelicatesPage : Page
 
             // Загружаем компоненты
             LoadDelicateComponents(delicate.Id);
+
+            // Добавляем продукты с флагом "автоматически добавлять", если их еще нет
+            LoadAutoAddProducts();
 
             ShowEditView(true);
         }
@@ -384,6 +438,14 @@ public partial class DelicatesPage : Page
             var button = sender as Button;
             var delicate = button?.DataContext as DelicatesColl;
             if (delicate == null) return;
+
+            // Продукты с отрицательным ID нельзя удалять (только для чтения)
+            if (delicate.Id < 0)
+            {
+                MessageBox.Show("Этот продукт доступен только для чтения. Для удаления используйте справочник продуктов.",
+                    "Информация", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
 
             var result = MessageBox.Show($"Удалить блюдо \"{delicate.Name}\"?",
                 "Подтверждение", MessageBoxButton.YesNo, MessageBoxImage.Question);

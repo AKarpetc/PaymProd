@@ -119,6 +119,7 @@ public class DelicatesColl
     public string Opis { get; set; } = string.Empty;
     public int? IDType { get; set; }
     public int TypeSortOrder { get; set; }
+    public int? LinkedProductId { get; set; }
     public List<Components> Lcomp { get; set; } = new();
 }
 

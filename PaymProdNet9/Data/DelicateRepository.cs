@@ -10,7 +10,7 @@ namespace PaymProdNet9.Data;
 public class DelicateRepository
 {
     /// <summary>
-    /// Получить все блюда
+    /// Получить все блюда (включая продукты с Priz_menu = 1)
     /// </summary>
     public ObservableCollection<DelicatesColl> GetAllDelicates()
     {
@@ -27,10 +27,10 @@ public class DelicateRepository
         command.CommandText = @"
             SELECT d.Del_id, d.Del_Name, COALESCE(d.Del_opis, ''), 
                    COALESCE(d.Del_count, 0), COALESCE(d.Del_Ves, 0), 
-                   td.Type_del_opis, td.Type_Del_ID, COALESCE(td.SortOrder, 0)
+                   COALESCE(td.Type_del_opis, ''), td.Type_Del_ID, COALESCE(td.SortOrder, 0),
+                   d.LinkedProductId
             FROM Delicates d
-            INNER JOIN Type_Del td ON td.Type_Del_ID = d.Del_Type
-            WHERE d.Del_Type != -1
+            LEFT JOIN Type_Del td ON td.Type_Del_ID = d.Del_Type
             ORDER BY COALESCE(td.SortOrder, 0), td.Type_del_opis, d.Del_Name";
 
         using var reader = command.ExecuteReader();
@@ -46,8 +46,9 @@ public class DelicateRepository
                 Count = reader.GetDecimal(3),
                 Ves = reader.GetDecimal(4),
                 Type = reader.GetString(5),
-                IDType = reader.GetInt32(6),
+                IDType = reader.IsDBNull(6) ? null : reader.GetInt32(6),
                 TypeSortOrder = reader.GetInt32(7),
+                LinkedProductId = reader.IsDBNull(8) ? null : reader.GetInt32(8),
                 Lcomp = allComponents.Where(c => c.Delid == delId).ToList()
             };
 
@@ -93,7 +94,7 @@ public class DelicateRepository
     }
 
     /// <summary>
-    /// Получить блюдо по ID
+    /// Получить блюдо по ID (включая продукты с отрицательным ID)
     /// </summary>
     public DelicatesColl? GetDelicateById(int id)
     {
@@ -107,9 +108,10 @@ public class DelicateRepository
         command.CommandText = @"
             SELECT d.Del_id, d.Del_Name, COALESCE(d.Del_opis, ''), 
                    COALESCE(d.Del_count, 0), COALESCE(d.Del_Ves, 0), 
-                   td.Type_del_opis, td.Type_Del_ID, COALESCE(td.SortOrder, 0)
+                   COALESCE(td.Type_del_opis, ''), td.Type_Del_ID, COALESCE(td.SortOrder, 0),
+                   d.LinkedProductId
             FROM Delicates d
-            INNER JOIN Type_Del td ON td.Type_Del_ID = d.Del_Type
+            LEFT JOIN Type_Del td ON td.Type_Del_ID = d.Del_Type
             WHERE d.Del_id = @id";
 
         command.Parameters.AddWithValue("@id", id);
@@ -125,7 +127,8 @@ public class DelicateRepository
                 Ves = reader.GetDecimal(4),
                 Type = reader.GetString(5),
                 TypeSortOrder = reader.GetInt32(7),
-                IDType = reader.GetInt32(6),
+                IDType = reader.IsDBNull(6) ? null : reader.GetInt32(6),
+                LinkedProductId = reader.IsDBNull(8) ? null : reader.GetInt32(8),
                 Lcomp = components
             };
 
@@ -327,9 +330,10 @@ public class DelicateRepository
         using var connection = DatabaseHelper.GetConnection();
         connection.Open();
 
+        // Получаем типы блюд
         var command = connection.CreateCommand();
         command.CommandText =
-            "SELECT Type_Del_ID, Type_del_opis, COALESCE(SortOrder, 0) FROM Type_Del ORDER BY COALESCE(SortOrder, 0), Type_del_opis";
+            "SELECT Type_Del_ID, Type_del_opis, COALESCE(SortOrder, 0), LinkedProductTypeId FROM Type_Del ORDER BY COALESCE(SortOrder, 0), Type_del_opis";
 
         using var reader = command.ExecuteReader();
         while (reader.Read())
@@ -337,10 +341,11 @@ public class DelicateRepository
             {
                 Id = reader.GetInt32(0),
                 Name = reader.GetString(1),
-                SortOrder = reader.GetInt32(2)
+                SortOrder = reader.GetInt32(2),
+                LinkedProductTypeId = reader.IsDBNull(3) ? null : reader.GetInt32(3)
             });
 
-        return types;
+        return types.OrderBy(t => t.SortOrder).ThenBy(t => t.Name).ToList();
     }
 
     /// <summary>
@@ -397,7 +402,7 @@ public class DelicateRepository
     }
 
     /// <summary>
-    /// Получить список блюд для меню (доступные для добавления)
+    /// Получить список блюд для меню (доступные для добавления, включая продукты с Priz_menu = 1)
     /// </summary>
     public List<DelicatesColl> GetAvailableDelicatesForMenu(string? typeFilter = null)
     {
@@ -406,9 +411,11 @@ public class DelicateRepository
         using var connection = DatabaseHelper.GetConnection();
         connection.Open();
 
+        // Получаем обычные блюда
         var sql = @"
             SELECT d.Del_id, d.Del_Name, COALESCE(d.Del_Ves, 0), 
-                   COALESCE(d.Del_count, 0), td.Type_del_opis, td.Type_Del_ID, COALESCE(td.SortOrder, 0)
+                   COALESCE(d.Del_count, 0), td.Type_del_opis, td.Type_Del_ID, COALESCE(td.SortOrder, 0),
+                   d.LinkedProductId
             FROM Delicates d
             INNER JOIN Type_Del td ON td.Type_Del_ID = d.Del_Type
             WHERE d.Del_Type != -1";
@@ -423,19 +430,103 @@ public class DelicateRepository
         if (!string.IsNullOrEmpty(typeFilter) && typeFilter != "%")
             command.Parameters.AddWithValue("@type", typeFilter);
 
-        using var reader = command.ExecuteReader();
-        while (reader.Read())
-            delicates.Add(new DelicatesColl
-            {
-                Id = reader.GetInt32(0),
-                Name = reader.GetString(1),
-                Ves = reader.GetDecimal(2),
-                Count = reader.GetDecimal(3),
-                Type = reader.GetString(4),
-                IDType = reader.GetInt32(5),
-                TypeSortOrder = reader.GetInt32(6)
-            });
+        using (var reader = command.ExecuteReader())
+        {
+            while (reader.Read())
+                delicates.Add(new DelicatesColl
+                {
+                    Id = reader.GetInt32(0),
+                    Name = reader.GetString(1),
+                    Ves = reader.GetDecimal(2),
+                    Count = reader.GetDecimal(3),
+                    Type = reader.GetString(4),
+                    IDType = reader.GetInt32(5),
+                    TypeSortOrder = reader.GetInt32(6),
+                    LinkedProductId = reader.IsDBNull(7) ? null : reader.GetInt32(7)
+                });
+        }
+
+        // Подтягиваем состав всех блюд одним запросом
+        var delicateIds = delicates.Select(d => d.Id).ToList();
+        if (delicateIds.Count > 0)
+        {
+            var componentsByDelicate = GetComponentsForDelicates(connection, delicateIds);
+            foreach (var delicate in delicates)
+                if (componentsByDelicate.TryGetValue(delicate.Id, out var components))
+                    delicate.Lcomp = components;
+        }
 
         return delicates;
+    }
+
+    /// <summary>
+    /// Получить компоненты для набора блюд одним запросом
+    /// </summary>
+    private Dictionary<int, List<Components>> GetComponentsForDelicates(SqliteConnection connection,
+        IReadOnlyCollection<int> delicateIds)
+    {
+        var result = new Dictionary<int, List<Components>>();
+        if (delicateIds == null || delicateIds.Count == 0) return result;
+
+        var distinctIds = delicateIds.Distinct().ToList();
+        foreach (var id in distinctIds) result[id] = new List<Components>();
+
+        var parameterNames = distinctIds.Select((_, index) => $"@id{index}").ToList();
+        var command = connection.CreateCommand();
+        command.CommandText = $@"
+            SELECT c.Delic_id,
+                   c.Comp_Id,
+                   c.ProductID,
+                   CASE WHEN COALESCE(TRIM(c.Detail), '') = '' THEN p.Name 
+                        ELSE p.Name || '(' || c.Detail || ')' END AS Name,
+                   c.Ves,
+                   m.Name_Mera,
+                   pt.Type_Opis,
+                   CASE WHEN p.Fass = 0 THEN COALESCE(m.Fass_Def, 1) 
+                        ELSE COALESCE(COALESCE(p.Fass, m.Fass_Def), 1) END as Fass,
+                   COALESCE(
+                       CASE WHEN p.Izmer = p.Ves THEN m.Fass_Izmer 
+                            ELSE (SELECT m2.Name_Mera FROM Mera m2 WHERE m2.Mera_ID = p.Izmer) END, 
+                       (SELECT m2.Name_Mera FROM Mera m2 WHERE m2.Mera_ID = p.Izmer)
+                   ) as FassIzmer,
+                   CASE WHEN p.Izmer != p.Ves AND p.Izmer IS NOT NULL THEN 1 ELSE 0 END as Flag,
+                   p.Name as ProdName
+            FROM Components c
+            INNER JOIN Producrs p ON p.Prod_ID = c.ProductID
+            INNER JOIN Produkt_Type pt ON p.Type = pt.TypeProdId
+            INNER JOIN Mera m ON m.Mera_ID = p.Ves
+            WHERE c.Delic_id IN ({string.Join(",", parameterNames)})
+            ORDER BY c.Delic_id, c.Comp_Id";
+
+        for (var i = 0; i < distinctIds.Count; i++)
+            command.Parameters.AddWithValue(parameterNames[i], distinctIds[i]);
+
+        using var reader = command.ExecuteReader();
+        while (reader.Read())
+        {
+            var delicateId = reader.GetInt32(0);
+            if (!result.TryGetValue(delicateId, out var components))
+            {
+                components = new List<Components>();
+                result[delicateId] = components;
+            }
+
+            components.Add(new Components
+            {
+                Id = reader.GetInt32(1),
+                Delid = delicateId,
+                Prodid = reader.GetInt32(2),
+                NameT = reader.GetString(3),
+                Ves = reader.GetDecimal(4),
+                Mera = reader.IsDBNull(5) ? string.Empty : reader.GetString(5),
+                Type = reader.GetString(6),
+                Fass = reader.GetDecimal(7),
+                FassIz = reader.IsDBNull(8) ? string.Empty : reader.GetString(8),
+                Flag = reader.GetInt32(9),
+                Name = reader.GetString(10)
+            });
+        }
+
+        return result;
     }
 }

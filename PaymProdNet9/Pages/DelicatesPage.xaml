@@ -79,7 +79,8 @@
                                                 Click="DeleteDelicate_Click"
                                                 Width="24"
                                                 Height="24"
-                                                ToolTip="Удалить блюдо">
+                                                ToolTip="Удалить блюдо"
+                                                Visibility="{Binding Id, Converter={StaticResource ProductVisibilityConverter}}">
                                             <materialDesign:PackIcon Kind="Delete"
                                                                      Width="14"
                                                                      Height="14" />
@@ -95,7 +96,8 @@
                                                 Click="EditDelicate_Click"
                                                 Width="24"
                                                 Height="24"
-                                                ToolTip="Редактировать блюдо">
+                                                ToolTip="Редактировать блюдо"
+                                                Visibility="{Binding Id, Converter={StaticResource ProductVisibilityConverter}}">
                                             <materialDesign:PackIcon Kind="Pencil"
                                                                      Width="14"
                                                                      Height="14" />

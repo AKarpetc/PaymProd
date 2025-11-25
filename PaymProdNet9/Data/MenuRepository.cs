@@ -1,7 +1,10 @@
 using Microsoft.Data.Sqlite;
 using PaymProdNet9.Models;
+using PaymProdNet9.Services;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using static PaymProdNet9.Data.DatabaseCommandExtensions;
 
 namespace PaymProdNet9.Data;
 
@@ -81,7 +84,100 @@ public class MenuRepository
         command.Parameters.AddWithValue("@details", details);
         command.Parameters.AddWithValue("@dateban", dateBan);
 
-        return Convert.ToInt32(command.ExecuteScalar());
+        var menuId = Convert.ToInt32(command.ExecuteScalar());
+
+        // Автоматически добавляем продукты с Avtomat = 1 и Priz_menu = 1
+        command = connection.CreateCommand();
+        command.CommandText = @"
+            SELECT Prod_ID, COALESCE(Count, 0)
+            FROM Producrs
+            WHERE Avtomat = 1 AND Priz_menu = 1";
+
+        using var reader = command.ExecuteReader();
+        var productRepository = new ProductRepository();
+        
+        // Отключаем проверку внешних ключей для продуктов с отрицательным ID (один раз для всех продуктов)
+        var pragmaOffCommand = connection.CreateCommand();
+        pragmaOffCommand.CommandText = "PRAGMA foreign_keys = OFF";
+        pragmaOffCommand.ExecuteNonQueryWithLog();
+        
+        try
+        {
+            while (reader.Read())
+            {
+                var productId = reader.GetInt32(0);
+                var productCount = reader.GetDecimal(1);
+                
+                // Добавляем продукт в меню как блюдо (используем отрицательный ID)
+                // Для продуктов с Isdiap = 1 используем общее количество на банкет
+                command = connection.CreateCommand();
+                command.CommandText = @"
+                    SELECT Isdiap, COALESCE(Count, 0)
+                    FROM Producrs
+                    WHERE Prod_ID = @productId";
+                command.Parameters.AddWithValue("@productId", productId);
+                
+                bool isdiap = false;
+                decimal totalCount = productCount;
+                
+                using (var productReader = command.ExecuteReader())
+                {
+                    if (productReader.Read())
+                    {
+                        isdiap = productReader.GetInt32(0) == 1;
+                        if (isdiap)
+                        {
+                            // Если Isdiap = 1, используем Count из продукта или умножаем на количество людей
+                            var productCountValue = productReader.GetDecimal(1);
+                            totalCount = productCountValue > 0 ? productCountValue : productCount * countPeople;
+                        }
+                        else
+                        {
+                            // Если Isdiap = 0, используем Count из продукта или количество людей
+                            totalCount = productCount > 0 ? productCount : countPeople;
+                        }
+                    }
+                }
+                
+                // Добавляем продукт в Menu_Delicates с отрицательным ID
+                command = connection.CreateCommand();
+                command.CommandText = @"
+                    INSERT INTO Menu_Delicates (Id_men, Id_delic, Delcount) 
+                    VALUES (@menuId, @delicateId, @count)";
+                command.Parameters.AddWithValue("@menuId", menuId);
+                command.Parameters.AddWithValue("@delicateId", -productId); // Отрицательный ID для продукта
+                command.Parameters.AddWithValue("@count", (int)totalCount);
+                command.ExecuteNonQueryWithLog();
+                
+                // Копируем цену продукта в меню (используя существующее соединение)
+                CopyProductPriceToMenuInternal(connection, (SqliteTransaction?)null, menuId, productId);
+                
+                // Если Isdiap = 1, добавляем в Components1 с общим количеством
+                if (isdiap)
+                {
+                    command = connection.CreateCommand();
+                    command.CommandText = @"
+                        INSERT INTO Components1 (Idmen, Delic_id, ProductID, Ves, Detail)
+                        VALUES (@menuId, @delicateId, @productId, @ves, NULL)";
+                    command.Parameters.AddWithValue("@menuId", menuId);
+                    command.Parameters.AddWithValue("@delicateId", -productId);
+                    command.Parameters.AddWithValue("@productId", productId);
+                    command.Parameters.AddWithValue("@ves", (double)totalCount);
+                    command.ExecuteNonQueryWithLog();
+                }
+                
+                Logger.Debug($"Автоматически добавлен продукт в меню: ProductID={productId}, Count={totalCount}, Isdiap={isdiap}");
+            }
+        }
+        finally
+        {
+            // Включаем обратно проверку внешних ключей
+            var pragmaOnCommand = connection.CreateCommand();
+            pragmaOnCommand.CommandText = "PRAGMA foreign_keys = ON";
+            pragmaOnCommand.ExecuteNonQueryWithLog();
+        }
+
+        return menuId;
     }
 
     /// <summary>
@@ -169,15 +265,17 @@ public class MenuRepository
         using var connection = DatabaseHelper.GetConnection();
         connection.Open();
 
-        // Получаем блюда меню
+        // Получаем блюда меню (включая продукты с отрицательным ID)
         var command = connection.CreateCommand();
         command.CommandText = @"
-            SELECT md.Id, md.Id_men, md.Id_delic, md.Delcount, d.Del_Name, 
-                   COALESCE((SELECT 1 FROM Produkt_Type pt 
-                            JOIN Producrs p ON p.Type = pt.TypeProdId 
-                            WHERE p.Prod_ID = d.Del_id AND pt.TypeProdId = -1), 0) as ff
+            SELECT md.Id, md.Id_men, md.Id_delic, md.Delcount,
+                   CASE 
+                       WHEN md.Id_delic < 0 THEN p.Name
+                       ELSE d.Del_Name
+                   END as Del_Name
             FROM Menu_Delicates md
-            INNER JOIN Delicates d ON d.Del_id = md.Id_delic
+            LEFT JOIN Delicates d ON d.Del_id = md.Id_delic AND md.Id_delic > 0
+            LEFT JOIN Producrs p ON p.Prod_ID = -md.Id_delic AND md.Id_delic < 0
             WHERE md.Id_men = @menuId";
 
         command.Parameters.AddWithValue("@menuId", menuId);
@@ -186,48 +284,62 @@ public class MenuRepository
         while (reader.Read())
         {
             var delId = reader.GetInt32(2);
-            var ff = reader.GetInt32(5);
+            var delName = reader.GetString(4);
+            bool isProduct = delId < 0;
 
-            // Получаем компоненты из Components1 (измененные) и Components (справочник)
-            var customComponents = GetCustomComponents(connection, menuId, delId);
-            var standardComponents = GetStandardComponents(connection, delId);
+            List<Components> components;
+            bool isModified = false;
 
-            // Определяем, изменено ли блюдо
-            var isModified = false;
-            if (customComponents.Count > 0)
+            if (isProduct)
             {
-                // Если есть измененные компоненты, сравниваем со справочником
-                isModified = !AreComponentsEqual(customComponents, standardComponents);
-
-                // Если компоненты совпадают со справочником, удаляем записи из Components1
-                if (!isModified)
-                {
-                    var deleteCommand = connection.CreateCommand();
-                    deleteCommand.CommandText = @"
-                        DELETE FROM Components1 
-                        WHERE Idmen = @menuId AND Delic_id = @delicateId";
-                    deleteCommand.Parameters.AddWithValue("@menuId", menuId);
-                    deleteCommand.Parameters.AddWithValue("@delicateId", delId);
-                    deleteCommand.ExecuteNonQuery();
-                }
+                // Это продукт (отрицательный ID) - получаем из Components1 если есть
+                components = GetProductComponents(connection, menuId, -delId);
+                isModified = components.Count > 0; // Если есть в Components1, значит изменен
             }
-            // Если customComponents пустой, значит блюдо не изменено (isModified = false)
+            else
+            {
+                // Это обычное блюдо
+                var customComponents = GetCustomComponents(connection, menuId, delId);
+                var standardComponents = GetStandardComponents(connection, delId);
 
-            // Используем измененные компоненты, если они есть, иначе стандартные
-            var components = customComponents.Count > 0 ? customComponents : standardComponents;
+                // Определяем, изменено ли блюдо
+                if (customComponents.Count > 0)
+                {
+                    // Если есть измененные компоненты, сравниваем со справочником
+                    isModified = !AreComponentsEqual(customComponents, standardComponents);
+
+                    // Если компоненты совпадают со справочником, удаляем записи из Components1
+                    if (!isModified)
+                    {
+                        var deleteCommand = connection.CreateCommand();
+                        deleteCommand.CommandText = @"
+                            DELETE FROM Components1 
+                            WHERE Idmen = @menuId AND Delic_id = @delicateId";
+                        deleteCommand.Parameters.AddWithValue("@menuId", menuId);
+                        deleteCommand.Parameters.AddWithValue("@delicateId", delId);
+                        deleteCommand.ExecuteNonQuery();
+                    }
+                }
+
+                // Используем измененные компоненты, если они есть, иначе стандартные
+                components = customComponents.Count > 0 ? customComponents : standardComponents;
+            }
 
             var menuDel = new MenuDel_act
             {
                 Idmen = reader.GetInt32(0),
                 Del_id = delId,
                 Countpor = reader.GetInt32(3),
-                Del = reader.GetString(4),
+                Del = delName,
                 Lcomp = components,
                 IsModified = isModified
             };
 
             // Формируем состав
-            menuDel.Sost = string.Join(", ", menuDel.Lcomp.Select(c => c.NameT));
+            if (components.Count > 0)
+                menuDel.Sost = string.Join(", ", components.Select(c => c.NameT));
+            else if (isProduct)
+                menuDel.Sost = "Продукт"; // Для продуктов без компонентов
 
             menuDelicates.Add(menuDel);
         }
@@ -287,25 +399,254 @@ public class MenuRepository
     {
         using var connection = DatabaseHelper.GetConnection();
         connection.Open();
-
-        var command = connection.CreateCommand();
-        command.CommandText = @"
-            INSERT INTO Menu_Delicates (Id_men, Id_delic, Delcount) 
-            VALUES (@menuId, @delicateId, @count)";
-
-        command.Parameters.AddWithValue("@menuId", menuId);
-        command.Parameters.AddWithValue("@delicateId", delicateId);
-        command.Parameters.AddWithValue("@count", count);
-
-        command.ExecuteNonQuery();
         
-        // Копируем цены продуктов из справочника в меню
-        var productRepository = new ProductRepository();
-        var components = GetDelicateComponents(connection, delicateId);
-        foreach (var component in components)
+        // Если delicateId отрицательный, это продукт (Priz_menu = 1)
+        bool isProduct = delicateId < 0;
+        int actualId = isProduct ? -delicateId : delicateId;
+
+        // Для продуктов с отрицательным ID нужно временно отключить проверку внешних ключей
+        // так как отрицательные ID не существуют в таблице Delicates
+        // PRAGMA foreign_keys работает на уровне соединения, поэтому отключаем ДО транзакции
+        if (isProduct)
         {
-            productRepository.CopyProductPriceToMenu(menuId, component.Prodid);
+            Logger.Debug($"Отключение проверки внешних ключей для продукта с ID={actualId}");
+            var pragmaCommand = connection.CreateCommand();
+            pragmaCommand.CommandText = "PRAGMA foreign_keys = OFF";
+            pragmaCommand.ExecuteNonQueryWithLog();
+            
+            // Проверяем, что foreign_keys действительно отключены
+            var checkCommand = connection.CreateCommand();
+            checkCommand.CommandText = "PRAGMA foreign_keys";
+            var fkStatus = checkCommand.ExecuteScalarWithLog();
+            Logger.Debug($"Статус foreign_keys после отключения: {fkStatus}");
         }
+        else
+        {
+            // Для обычных блюд проверяем, что блюдо существует
+            var checkCommand = connection.CreateCommand();
+            checkCommand.CommandText = "SELECT COUNT(*) FROM Delicates WHERE Del_id = @delicateId";
+            checkCommand.Parameters.AddWithValue("@delicateId", delicateId);
+            var exists = Convert.ToInt32(checkCommand.ExecuteScalarWithLog()) > 0;
+            
+            if (!exists)
+            {
+                Logger.Error($"Попытка добавить несуществующее блюдо: DelicateId={delicateId}");
+                throw new InvalidOperationException($"Блюдо с ID {delicateId} не найдено в базе данных");
+            }
+        }
+
+        try
+        {
+            using var transaction = connection.BeginTransaction();
+
+            try
+            {
+                var command = connection.CreateCommand();
+                command.Transaction = transaction;
+                command.CommandText = @"
+                    INSERT INTO Menu_Delicates (Id_men, Id_delic, Delcount) 
+                    VALUES (@menuId, @delicateId, @count)";
+
+                command.Parameters.AddWithValue("@menuId", menuId);
+                command.Parameters.AddWithValue("@delicateId", delicateId); // Сохраняем отрицательный ID для продуктов
+                command.Parameters.AddWithValue("@count", count);
+
+                command.ExecuteNonQueryWithLog();
+            
+                // Получаем количество людей в меню
+                command = connection.CreateCommand();
+                command.Transaction = transaction;
+                command.CommandText = "SELECT Count_people FROM Menus WHERE Id = @menuId";
+                command.Parameters.AddWithValue("@menuId", menuId);
+                var countPeople = Convert.ToInt32(command.ExecuteScalarWithLog());
+            
+            var productRepository = new ProductRepository();
+            
+            if (isProduct)
+            {
+                // Это продукт с Priz_menu = 1
+                // Копируем цену продукта в меню (используя существующее соединение)
+                CopyProductPriceToMenuInternal(connection, transaction, menuId, actualId);
+                
+                // Проверяем Isdiap для продукта
+                command = connection.CreateCommand();
+                command.Transaction = transaction;
+                command.CommandText = @"
+                    SELECT Isdiap, COALESCE(Count, 0) 
+                    FROM Producrs 
+                    WHERE Prod_ID = @productId";
+                command.Parameters.AddWithValue("@productId", actualId);
+                
+                bool isdiap = false;
+                decimal productCount = 0;
+                
+                using (var reader = command.ExecuteReaderWithLog())
+                {
+                    if (reader.Read())
+                    {
+                        isdiap = reader.GetInt32(0) == 1;
+                        productCount = reader.GetDecimal(1);
+                    }
+                }
+                
+                // Если Isdiap = 1, добавляем в Components1 с общим количеством на банкет
+                if (isdiap)
+                {
+                    decimal totalVes = productCount > 0 ? productCount : count * countPeople;
+                    
+                    command = connection.CreateCommand();
+                    command.Transaction = transaction;
+                    command.CommandText = @"
+                        INSERT OR REPLACE INTO Components1 (Idmen, Delic_id, ProductID, Ves, Detail)
+                        VALUES (@menuId, @delicateId, @productId, @ves, NULL)";
+                    command.Parameters.AddWithValue("@menuId", menuId);
+                    command.Parameters.AddWithValue("@delicateId", delicateId);
+                    command.Parameters.AddWithValue("@productId", actualId);
+                    command.Parameters.AddWithValue("@ves", (double)totalVes);
+                    
+                    command.ExecuteNonQueryWithLog();
+                    
+                    Logger.Debug($"Добавлен продукт с общим количеством на банкет: ProductID={actualId}, TotalVes={totalVes}, CountPeople={countPeople}");
+                }
+            }
+            else
+            {
+                // Это обычное блюдо
+                // Копируем цены продуктов из справочника в меню
+                var components = GetDelicateComponents(connection, delicateId);
+                
+                // Получаем информацию о продуктах для проверки Isdiap
+                var productInfo = new Dictionary<int, (bool Isdiap, decimal Count)>();
+                foreach (var component in components)
+                {
+                    command = connection.CreateCommand();
+                    command.Transaction = transaction;
+                    command.CommandText = @"
+                        SELECT Isdiap, COALESCE(Count, 0) 
+                        FROM Producrs 
+                        WHERE Prod_ID = @productId";
+                    command.Parameters.AddWithValue("@productId", component.Prodid);
+                    
+                    using var reader = command.ExecuteReaderWithLog();
+                    if (reader.Read())
+                    {
+                        productInfo[component.Prodid] = (reader.GetInt32(0) == 1, reader.GetDecimal(1));
+                    }
+                    
+                    // Копируем цену продукта в меню (используя существующее соединение)
+                    CopyProductPriceToMenuInternal(connection, transaction, menuId, component.Prodid);
+                }
+                
+                // Добавляем продукты с Isdiap = 1 (общее количество на банкет) в Components1
+                foreach (var component in components)
+                {
+                    if (productInfo.ContainsKey(component.Prodid) && productInfo[component.Prodid].Isdiap)
+                    {
+                        // Получаем текущий вес из Components
+                        command = connection.CreateCommand();
+                        command.Transaction = transaction;
+                        command.CommandText = @"
+                            SELECT Ves 
+                            FROM Components 
+                            WHERE Delic_id = @delicateId AND ProductID = @productId";
+                        command.Parameters.AddWithValue("@delicateId", delicateId);
+                        command.Parameters.AddWithValue("@productId", component.Prodid);
+                        
+                        decimal baseVes = 0;
+                        using (var reader = command.ExecuteReaderWithLog())
+                        {
+                            if (reader.Read())
+                            {
+                                baseVes = reader.GetDecimal(0);
+                            }
+                        }
+                        
+                        // Вычисляем общее количество: если указан Count в продукте, используем его, иначе baseVes * countPeople
+                        decimal totalVes = productInfo[component.Prodid].Count > 0 
+                            ? productInfo[component.Prodid].Count 
+                            : baseVes * countPeople;
+                        
+                        // Добавляем в Components1 с общим количеством
+                        command = connection.CreateCommand();
+                        command.Transaction = transaction;
+                        command.CommandText = @"
+                            INSERT OR REPLACE INTO Components1 (Idmen, Delic_id, ProductID, Ves, Detail)
+                            VALUES (@menuId, @delicateId, @productId, @ves, NULL)";
+                        command.Parameters.AddWithValue("@menuId", menuId);
+                        command.Parameters.AddWithValue("@delicateId", delicateId);
+                        command.Parameters.AddWithValue("@productId", component.Prodid);
+                        command.Parameters.AddWithValue("@ves", (double)totalVes);
+                        
+                        command.ExecuteNonQueryWithLog();
+                        
+                        Logger.Debug($"Добавлен продукт с общим количеством на банкет: ProductID={component.Prodid}, TotalVes={totalVes}, CountPeople={countPeople}");
+                    }
+                }
+            }
+            
+                transaction.Commit();
+            }
+            catch
+            {
+                transaction.Rollback();
+                throw;
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.Error("Ошибка при добавлении блюда в меню", ex);
+            throw;
+        }
+        finally
+        {
+            // Включаем обратно проверку внешних ключей (если была отключена)
+            if (isProduct)
+            {
+                try
+                {
+                    var pragmaCommand = connection.CreateCommand();
+                    pragmaCommand.CommandText = "PRAGMA foreign_keys = ON";
+                    pragmaCommand.ExecuteNonQueryWithLog();
+                }
+                catch (Exception ex)
+                {
+                    Logger.Error("Ошибка при включении проверки внешних ключей", ex);
+                }
+            }
+        }
+    }
+    
+    /// <summary>
+    /// Внутренний метод для копирования цены продукта в меню (использует существующее соединение)
+    /// </summary>
+    private void CopyProductPriceToMenuInternal(SqliteConnection connection, SqliteTransaction? transaction, int menuId, int productId)
+    {
+        // Получаем цену продукта из справочника
+        var selectCommand = connection.CreateCommand();
+        selectCommand.Transaction = transaction;
+        selectCommand.CommandText = "SELECT COALESCE(Price, 0) FROM Producrs WHERE Prod_ID = @id";
+        selectCommand.Parameters.AddWithValue("@id", productId);
+
+        var priceResult = selectCommand.ExecuteScalarWithLog();
+        if (priceResult == null || priceResult == DBNull.Value)
+        {
+            Logger.Warning($"Не удалось скопировать цену: продукт {productId} отсутствует или не содержит цены. Запись в Menu_Product_Prices пропущена.");
+            return;
+        }
+
+        var price = Convert.ToDouble(priceResult);
+
+        // Сохраняем цену в меню, если её ещё нет
+        var insertCommand = connection.CreateCommand();
+        insertCommand.Transaction = transaction;
+        insertCommand.CommandText = @"
+            INSERT OR IGNORE INTO Menu_Product_Prices (Id_men, ProductID, Price)
+            VALUES (@menuId, @productId, @price)";
+        insertCommand.Parameters.AddWithValue("@menuId", menuId);
+        insertCommand.Parameters.AddWithValue("@productId", productId);
+        insertCommand.Parameters.AddWithValue("@price", price);
+
+        insertCommand.ExecuteNonQueryWithLog();
     }
     
     /// <summary>
@@ -547,6 +888,53 @@ public class MenuRepository
                 Fass = reader.GetDecimal(6),
                 FassIz = reader.IsDBNull(7) ? "" : reader.GetString(7),
                 Type = reader.GetString(8)
+            });
+
+        return components;
+    }
+
+    /// <summary>
+    /// Получить компоненты продукта из Components1 (для продуктов с Isdiap)
+    /// </summary>
+    private List<Components> GetProductComponents(SqliteConnection connection, int menuId, int productId)
+    {
+        var components = new List<Components>();
+
+        var command = connection.CreateCommand();
+        command.CommandText = @"
+            SELECT c1.Comp_Id, c1.Delic_id, c1.ProductID, c1.Ves, 
+                   p.Name as ProdName, 
+                   COALESCE(m.Name_Mera, '') as MeraName,
+                   COALESCE(m.MenuRoundingPrecision, 2) as MenuRoundingPrecision,
+                   CASE WHEN p.Fass = 0 THEN COALESCE(m.Fass_Def, 1) 
+                        ELSE COALESCE(COALESCE(p.Fass, m.Fass_Def), 1) END as Fass,
+                   COALESCE(CASE WHEN p.Izmer = p.Ves THEN m.Fass_Izmer 
+                            ELSE (SELECT m2.Name_Mera FROM Mera m2 WHERE m2.Mera_ID = p.Izmer) END, 
+                           (SELECT m2.Name_Mera FROM Mera m2 WHERE m2.Mera_ID = p.Izmer)) as FassIzmer,
+                   pt.Type_Opis
+            FROM Components1 c1
+            INNER JOIN Producrs p ON p.Prod_ID = c1.ProductID
+            LEFT JOIN Mera m ON m.Mera_ID = p.Izmer
+            INNER JOIN Produkt_Type pt ON p.Type = pt.TypeProdId
+            WHERE c1.Idmen = @menuId AND c1.Delic_id = -@productId AND c1.ProductID = @productId";
+
+        command.Parameters.AddWithValue("@menuId", menuId);
+        command.Parameters.AddWithValue("@productId", productId);
+
+        using var reader = command.ExecuteReader();
+        while (reader.Read())
+            components.Add(new Components
+            {
+                Id = reader.GetInt32(0),
+                Delid = reader.GetInt32(1),
+                Prodid = reader.GetInt32(2),
+                Ves = reader.GetDecimal(3),
+                NameT = reader.GetString(4),
+                Mera = reader.IsDBNull(5) ? "" : reader.GetString(5),
+                MenuRoundingPrecision = reader.GetInt32(6),
+                Fass = reader.GetDecimal(7),
+                FassIz = reader.IsDBNull(8) ? "" : reader.GetString(8),
+                Type = reader.GetString(9)
             });
 
         return components;

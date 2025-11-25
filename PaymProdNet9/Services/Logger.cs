@@ -136,6 +136,36 @@ public static class Logger
     }
 
     /// <summary>
+    /// Запись SQL-запроса (только в Debug сборке)
+    /// </summary>
+    [System.Diagnostics.Conditional("DEBUG")]
+    public static void Sql(string sql, System.Collections.Generic.Dictionary<string, object?>? parameters = null)
+    {
+        var message = $"SQL: {sql}";
+        if (parameters != null && parameters.Count > 0)
+        {
+            var paramString = string.Join(", ", parameters.Select(p => $"{p.Key}={FormatParameterValue(p.Value)}"));
+            message += $"\nПараметры: {paramString}";
+        }
+        WriteLog(LogLevel.Debug, message);
+    }
+
+    /// <summary>
+    /// Форматирует значение параметра для логирования
+    /// </summary>
+    private static string FormatParameterValue(object? value)
+    {
+        if (value == null || value == DBNull.Value)
+            return "NULL";
+        
+        var str = value.ToString() ?? "null";
+        // Ограничиваем длину для читаемости
+        if (str.Length > 100)
+            return str.Substring(0, 100) + "...";
+        return str;
+    }
+
+    /// <summary>
     /// Запись лога
     /// </summary>
     private static void WriteLog(LogLevel level, string message)
@@ -157,24 +187,34 @@ public static class Logger
         var timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
         var logMessage = $"[{timestamp}] [{level}] {message}";
 
-        // Запись в консоль
-        var originalColor = Console.ForegroundColor;
+        // Запись в консоль (если доступна)
         try
         {
-            Console.ForegroundColor = level switch
+            var originalColor = Console.ForegroundColor;
+            try
             {
-                LogLevel.Error => ConsoleColor.Red,
-                LogLevel.Warning => ConsoleColor.Yellow,
-                LogLevel.Info => ConsoleColor.Green,
-                LogLevel.Debug => ConsoleColor.Gray,
-                _ => ConsoleColor.White
-            };
-            Console.WriteLine(logMessage);
+                Console.ForegroundColor = level switch
+                {
+                    LogLevel.Error => ConsoleColor.Red,
+                    LogLevel.Warning => ConsoleColor.Yellow,
+                    LogLevel.Info => ConsoleColor.Green,
+                    LogLevel.Debug => ConsoleColor.Gray,
+                    _ => ConsoleColor.White
+                };
+                Console.WriteLine(logMessage);
+            }
+            finally
+            {
+                Console.ForegroundColor = originalColor;
+            }
         }
-        finally
+        catch
         {
-            Console.ForegroundColor = originalColor;
+            // Консоль может быть недоступна в WPF приложении
         }
+
+        // Запись в Debug Output (видно в Visual Studio / Rider)
+        System.Diagnostics.Debug.WriteLine(logMessage);
 
         // Запись в файл
         lock (_lockObject)

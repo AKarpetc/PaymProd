@@ -156,13 +156,6 @@ public partial class MenuPage : Page
         {
             var delicates = _delicateRepository.GetAvailableDelicatesForMenu(typeFilter);
 
-            // Получаем компоненты для каждого блюда
-            foreach (var delicate in delicates)
-            {
-                var delicateWithComponents = _delicateRepository.GetDelicateById(delicate.Id);
-                if (delicateWithComponents != null) delicate.Lcomp = delicateWithComponents.Lcomp;
-            }
-
             // Конвертируем в формат для отображения
             var displayDelicates = delicates.Select(d => new
             {
@@ -293,7 +286,9 @@ public partial class MenuPage : Page
 
             // Добавляем блюдо в меню
             var delicateId = (int)data.DelicateId;
+            Services.Logger.Debug($"Попытка добавить блюдо в меню: MenuId={_currentMenuId.Value}, DelicateId={delicateId}, Count={count}");
             _menuRepository.AddDelicateToMenu(_currentMenuId.Value, delicateId, count);
+            Services.Logger.Debug($"Блюдо успешно добавлено в меню: DelicateId={delicateId}");
 
             // Обновляем список
             LoadMenu(_currentMenuId.Value);
@@ -301,6 +296,7 @@ public partial class MenuPage : Page
         }
         catch (Exception ex)
         {
+            Services.Logger.Error("Ошибка при добавлении блюда в меню", ex);
             MessageBox.Show($"Ошибка при добавлении блюда: {ex.Message}",
                 "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
         }

@@ -86,7 +86,14 @@ public class ProductRepository
         command.Parameters.AddWithValue("@isdiap", mainCount ? 1 : 0);
         command.Parameters.AddWithValue("@price", price);
 
-        return Convert.ToInt32(command.ExecuteScalar());
+        var productId = Convert.ToInt32(command.ExecuteScalar());
+
+        if (prizMenu == 1)
+            EnsureLinkedDelicate(connection, productId, name, typeId, count);
+        else
+            RemoveLinkedDelicate(connection, productId);
+
+        return productId;
     }
 
     /// <summary>
@@ -150,6 +157,11 @@ public class ProductRepository
         command.Parameters.AddWithValue("@price", price);
 
         command.ExecuteNonQuery();
+
+        if (prizMenu == 1)
+            EnsureLinkedDelicate(connection, id, name, typeId, count);
+        else
+            RemoveLinkedDelicate(connection, id);
     }
 
     /// <summary>
@@ -169,6 +181,9 @@ public class ProductRepository
         if (count > 0) return false; // Продукт используется
 
         // Удаляем продукт
+        // Удаляем связанное блюдо, если оно было создано автоматически
+        RemoveLinkedDelicate(connection, id);
+
         command = connection.CreateCommand();
         command.CommandText = "DELETE FROM Producrs WHERE Prod_ID = @id";
         command.Parameters.AddWithValue("@id", id);
@@ -550,6 +565,208 @@ public class ProductRepository
 
         insertCommand.ExecuteNonQuery();
     }
+
+    #region Linked dishes helpers
+
+    private void EnsureLinkedDelicate(SqliteConnection connection, int productId, string productName, int productTypeId, decimal productCount)
+    {
+        var delicateTypeId = EnsureLinkedDelicateType(connection, productTypeId);
+        var portion = productCount > 0 ? productCount : 1m;
+
+        int delicateId;
+        var selectCommand = connection.CreateCommand();
+        selectCommand.CommandText = "SELECT Del_id FROM Delicates WHERE LinkedProductId = @productId";
+        selectCommand.Parameters.AddWithValue("@productId", productId);
+
+        using (var reader = selectCommand.ExecuteReader())
+        {
+            if (reader.Read())
+            {
+                delicateId = reader.GetInt32(0);
+                var update = connection.CreateCommand();
+                update.CommandText = @"
+                    UPDATE Delicates
+                    SET Del_Type = @typeId,
+                        Del_Name = @name,
+                        Del_Ves = @ves,
+                        Del_count = @count
+                    WHERE Del_id = @delicateId";
+                update.Parameters.AddWithValue("@typeId", delicateTypeId);
+                update.Parameters.AddWithValue("@name", productName);
+                update.Parameters.AddWithValue("@ves", (double)portion);
+                update.Parameters.AddWithValue("@count", (double)portion);
+                update.Parameters.AddWithValue("@delicateId", delicateId);
+                update.ExecuteNonQuery();
+            }
+            else
+            {
+                var insert = connection.CreateCommand();
+                insert.CommandText = @"
+                    INSERT INTO Delicates (Del_Type, Del_Name, Del_Ves, Del_count, Datew, LinkedProductId)
+                    VALUES (@typeId, @name, @ves, @count, datetime('now'), @productId);
+                    SELECT last_insert_rowid();";
+                insert.Parameters.AddWithValue("@typeId", delicateTypeId);
+                insert.Parameters.AddWithValue("@name", productName);
+                insert.Parameters.AddWithValue("@ves", (double)portion);
+                insert.Parameters.AddWithValue("@count", (double)portion);
+                insert.Parameters.AddWithValue("@productId", productId);
+                delicateId = Convert.ToInt32(insert.ExecuteScalar());
+            }
+        }
+
+        EnsureLinkedComponent(connection, delicateId, productId, portion);
+    }
+
+    private void EnsureLinkedComponent(SqliteConnection connection, int delicateId, int productId, decimal weight)
+    {
+        var cleanCommand = connection.CreateCommand();
+        cleanCommand.CommandText = "DELETE FROM Components WHERE Delic_id = @delicId AND ProductID <> @productId";
+        cleanCommand.Parameters.AddWithValue("@delicId", delicateId);
+        cleanCommand.Parameters.AddWithValue("@productId", productId);
+        cleanCommand.ExecuteNonQuery();
+
+        var selectComponent = connection.CreateCommand();
+        selectComponent.CommandText = "SELECT Comp_Id FROM Components WHERE Delic_id = @delicId AND ProductID = @productId LIMIT 1";
+        selectComponent.Parameters.AddWithValue("@delicId", delicateId);
+        selectComponent.Parameters.AddWithValue("@productId", productId);
+
+        using var reader = selectComponent.ExecuteReader();
+        if (reader.Read())
+        {
+            var update = connection.CreateCommand();
+            update.CommandText = "UPDATE Components SET Ves = @ves WHERE Comp_Id = @id";
+            update.Parameters.AddWithValue("@ves", (double)weight);
+            update.Parameters.AddWithValue("@id", reader.GetInt32(0));
+            update.ExecuteNonQuery();
+        }
+        else
+        {
+            var insert = connection.CreateCommand();
+            insert.CommandText = @"
+                INSERT INTO Components (Delic_id, ProductID, Ves, Detail)
+                VALUES (@delicId, @productId, @ves, NULL)";
+            insert.Parameters.AddWithValue("@delicId", delicateId);
+            insert.Parameters.AddWithValue("@productId", productId);
+            insert.Parameters.AddWithValue("@ves", (double)weight);
+            insert.ExecuteNonQuery();
+        }
+    }
+
+    private int EnsureLinkedDelicateType(SqliteConnection connection, int productTypeId)
+    {
+        var command = connection.CreateCommand();
+        command.CommandText = "SELECT Type_Del_ID FROM Type_Del WHERE LinkedProductTypeId = @typeId LIMIT 1";
+        command.Parameters.AddWithValue("@typeId", productTypeId);
+
+        using (var reader = command.ExecuteReader())
+        {
+            if (reader.Read())
+                return reader.GetInt32(0);
+        }
+
+        var typeInfo = GetProductTypeInfo(connection, productTypeId);
+
+        var insert = connection.CreateCommand();
+        insert.CommandText = @"
+            INSERT INTO Type_Del (Type_del_opis, SortOrder, LinkedProductTypeId)
+            VALUES (@name, @sortOrder, @linked);
+            SELECT last_insert_rowid();";
+        insert.Parameters.AddWithValue("@name", typeInfo.Name);
+        insert.Parameters.AddWithValue("@sortOrder", typeInfo.SortOrder);
+        insert.Parameters.AddWithValue("@linked", productTypeId);
+
+        return Convert.ToInt32(insert.ExecuteScalar());
+    }
+
+    private (string Name, int SortOrder) GetProductTypeInfo(SqliteConnection connection, int productTypeId)
+    {
+        var command = connection.CreateCommand();
+        command.CommandText = "SELECT Type_Opis, COALESCE(SortOrder, 0) FROM Produkt_Type WHERE TypeProdId = @typeId";
+        command.Parameters.AddWithValue("@typeId", productTypeId);
+
+        using var reader = command.ExecuteReader();
+        if (reader.Read())
+            return (reader.GetString(0), reader.GetInt32(1));
+
+        return ($"Тип {productTypeId}", 0);
+    }
+
+    private void RemoveLinkedDelicate(SqliteConnection connection, int productId)
+    {
+        var command = connection.CreateCommand();
+        command.CommandText = "SELECT Del_id, Del_Type FROM Delicates WHERE LinkedProductId = @productId";
+        command.Parameters.AddWithValue("@productId", productId);
+
+        int? delicateId = null;
+        int? delicateTypeId = null;
+
+        using (var reader = command.ExecuteReader())
+        {
+            if (reader.Read())
+            {
+                delicateId = reader.GetInt32(0);
+                delicateTypeId = reader.IsDBNull(1) ? null : reader.GetInt32(1);
+            }
+        }
+
+        if (!delicateId.HasValue)
+            return;
+
+        var deleteComponents1 = connection.CreateCommand();
+        deleteComponents1.CommandText = "DELETE FROM Components1 WHERE Delic_id = @delicId";
+        deleteComponents1.Parameters.AddWithValue("@delicId", delicateId.Value);
+        deleteComponents1.ExecuteNonQuery();
+
+        var deleteMenuDelicates = connection.CreateCommand();
+        deleteMenuDelicates.CommandText = "DELETE FROM Menu_Delicates WHERE Id_delic = @delicId";
+        deleteMenuDelicates.Parameters.AddWithValue("@delicId", delicateId.Value);
+        deleteMenuDelicates.ExecuteNonQuery();
+
+        var deleteComponents = connection.CreateCommand();
+        deleteComponents.CommandText = "DELETE FROM Components WHERE Delic_id = @delicId";
+        deleteComponents.Parameters.AddWithValue("@delicId", delicateId.Value);
+        deleteComponents.ExecuteNonQuery();
+
+        var deleteDelicate = connection.CreateCommand();
+        deleteDelicate.CommandText = "DELETE FROM Delicates WHERE Del_id = @delicId";
+        deleteDelicate.Parameters.AddWithValue("@delicId", delicateId.Value);
+        deleteDelicate.ExecuteNonQuery();
+
+        if (delicateTypeId.HasValue)
+            CleanupLinkedDelicateType(connection, delicateTypeId.Value);
+    }
+
+    private void CleanupLinkedDelicateType(SqliteConnection connection, int delicateTypeId)
+    {
+        var command = connection.CreateCommand();
+        command.CommandText = "SELECT LinkedProductTypeId FROM Type_Del WHERE Type_Del_ID = @typeId";
+        command.Parameters.AddWithValue("@typeId", delicateTypeId);
+
+        int? linkedProductTypeId = null;
+        using (var reader = command.ExecuteReader())
+        {
+            if (reader.Read() && !reader.IsDBNull(0))
+                linkedProductTypeId = reader.GetInt32(0);
+        }
+
+        if (!linkedProductTypeId.HasValue)
+            return;
+
+        var countCommand = connection.CreateCommand();
+        countCommand.CommandText = "SELECT COUNT(*) FROM Delicates WHERE Del_Type = @typeId";
+        countCommand.Parameters.AddWithValue("@typeId", delicateTypeId);
+        var usage = Convert.ToInt32(countCommand.ExecuteScalar());
+
+        if (usage > 0)
+            return;
+
+        var deleteType = connection.CreateCommand();
+        deleteType.CommandText = "DELETE FROM Type_Del WHERE Type_Del_ID = @typeId";
+        deleteType.Parameters.AddWithValue("@typeId", delicateTypeId);
+        deleteType.ExecuteNonQuery();
+    }
+
+    #endregion
 }
 
 /// <summary>

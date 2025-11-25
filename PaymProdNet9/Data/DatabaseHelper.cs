@@ -129,7 +129,8 @@ public static class DatabaseHelper
             CREATE TABLE IF NOT EXISTS Type_Del (
                 Type_Del_ID INTEGER PRIMARY KEY AUTOINCREMENT,
                 Type_del_opis TEXT NOT NULL,
-                SortOrder INTEGER DEFAULT 0
+                SortOrder INTEGER DEFAULT 0,
+                LinkedProductTypeId INTEGER
             );";
         command.ExecuteNonQuery();
 
@@ -142,6 +143,17 @@ public static class DatabaseHelper
         catch
         {
             // Колонка уже существует, игнорируем ошибку
+        }
+
+        // Миграция: добавляем LinkedProductTypeId, если его нет
+        try
+        {
+            command.CommandText = "ALTER TABLE Type_Del ADD COLUMN LinkedProductTypeId INTEGER";
+            command.ExecuteNonQuery();
+        }
+        catch
+        {
+            // Колонка уже существует
         }
 
         // Миграция: добавляем Price, если его нет
@@ -166,9 +178,21 @@ public static class DatabaseHelper
                 Del_Ves REAL DEFAULT 0,
                 Del_count REAL DEFAULT 0,
                 Datew TEXT,
+                LinkedProductId INTEGER,
                 FOREIGN KEY (Del_Type) REFERENCES Type_Del(Type_Del_ID)
             );";
         command.ExecuteNonQuery();
+
+        // Миграция: добавляем LinkedProductId, если его нет
+        try
+        {
+            command.CommandText = "ALTER TABLE Delicates ADD COLUMN LinkedProductId INTEGER";
+            command.ExecuteNonQuery();
+        }
+        catch
+        {
+            // Колонка уже существует
+        }
 
         // Создание таблицы компонентов
         command.CommandText = @"

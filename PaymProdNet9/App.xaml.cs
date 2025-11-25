@@ -29,13 +29,38 @@ public partial class App : Application
         // Обработка необработанных исключений
         AppDomain.CurrentDomain.UnhandledException += (sender, args) =>
         {
-            Logger.Error("Необработанное исключение в AppDomain", args.ExceptionObject as Exception);
+            var exception = args.ExceptionObject as Exception;
+            Logger.Error("Необработанное исключение в AppDomain", exception);
+            
+            // Показываем сообщение пользователю только для критических ошибок
+            if (args.IsTerminating)
+            {
+                var errorMessage = exception != null
+                    ? $"Критическая ошибка приложения:\n\n{exception.Message}\n\nПодробности в логах."
+                    : "Произошла критическая ошибка приложения. Подробности в логах.";
+                
+                MessageBox.Show(errorMessage, "Критическая ошибка", 
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         };
 
         DispatcherUnhandledException += (sender, args) =>
         {
             Logger.Error("Необработанное исключение в UI потоке", args.Exception);
+            
+            // Показываем сообщение пользователю
+            var errorMessage = $"Произошла ошибка:\n\n{args.Exception.Message}\n\nПодробности в логах.";
+            MessageBox.Show(errorMessage, "Ошибка", 
+                MessageBoxButton.OK, MessageBoxImage.Warning);
+            
             args.Handled = true; // Предотвращаем краш приложения
+        };
+
+        // Обработка необработанных исключений в задачах
+        TaskScheduler.UnobservedTaskException += (sender, args) =>
+        {
+            Logger.Error("Необработанное исключение в Task", args.Exception);
+            args.SetObserved(); // Помечаем как обработанное
         };
 
         // Проверяем наличие базы данных в AppData (созданной инструментом миграции)
