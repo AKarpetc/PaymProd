@@ -228,7 +228,9 @@ public partial class CurrentMenuPage : Page
                     : "Без состава",
                 WeightInfo = d.Ves > 0 ? $"{d.Ves}г" : d.Count > 0 ? "Порция" : "",
                 DelicateId = d.Id,
-                DefaultCount = PeopleCountTextBox.Text
+                DefaultCount = d.LinkedProductDefaultCount.HasValue
+                    ? d.LinkedProductDefaultCount.Value.ToString(CultureInfo.CurrentCulture)
+                    : PeopleCountTextBox.Text
             }).ToList();
 
             foreach (var item in displayDelicates) _availableDelicates.Add(item);
@@ -588,7 +590,9 @@ public partial class CurrentMenuPage : Page
                     : "Без состава",
                 WeightInfo = delicate.Ves > 0 ? $"{delicate.Ves}г" : delicate.Count > 0 ? "Порция" : "",
                 DelicateId = delicate.Id,
-                DefaultCount = PeopleCountTextBox.Text
+                DefaultCount = delicate.LinkedProductDefaultCount.HasValue
+                    ? delicate.LinkedProductDefaultCount.Value.ToString(CultureInfo.CurrentCulture)
+                    : PeopleCountTextBox.Text
             };
 
             _availableDelicates.Add(displayDelicate);

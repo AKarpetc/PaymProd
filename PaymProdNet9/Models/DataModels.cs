@@ -120,6 +120,7 @@ public class DelicatesColl
     public int? IDType { get; set; }
     public int TypeSortOrder { get; set; }
     public int? LinkedProductId { get; set; }
+    public decimal? LinkedProductDefaultCount { get; set; }
     public List<Components> Lcomp { get; set; } = new();
 }
 

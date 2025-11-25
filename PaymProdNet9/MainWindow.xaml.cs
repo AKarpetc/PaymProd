@@ -166,7 +166,9 @@ public partial class MainWindow : Window
                     : "Без состава",
                 WeightInfo = d.Ves > 0 ? $"{d.Ves}г" : d.Count > 0 ? "Порция" : "",
                 DelicateId = d.Id,
-                DefaultCount = PeopleCountTextBox.Text
+                DefaultCount = d.LinkedProductDefaultCount.HasValue
+                    ? d.LinkedProductDefaultCount.Value.ToString(CultureInfo.CurrentCulture)
+                    : PeopleCountTextBox.Text
             }).ToList();
 
             AvailableDelicatesPanel.ItemsSource = displayDelicates;

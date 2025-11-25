@@ -456,6 +456,47 @@ public class DelicateRepository
                     delicate.Lcomp = components;
         }
 
+        // Подтягиваем информацию о связанных продуктах (для автоподстановки количества)
+        var linkedProductIds = delicates.Where(d => d.LinkedProductId.HasValue)
+            .Select(d => d.LinkedProductId!.Value)
+            .Distinct()
+            .ToList();
+        if (linkedProductIds.Count > 0)
+        {
+            var parameterNames = linkedProductIds.Select((_, index) => $"@prod{index}").ToList();
+            var productCommand = connection.CreateCommand();
+            productCommand.CommandText = $@"
+                SELECT Prod_ID, COALESCE(Count, 0) AS CountValue, 
+                       COALESCE(Isdiap, 0) AS IsdiapValue, 
+                       COALESCE(Priz_menu, 0) AS PrizMenuValue
+                FROM Producrs
+                WHERE Prod_ID IN ({string.Join(", ", parameterNames)})";
+
+            for (var i = 0; i < linkedProductIds.Count; i++)
+                productCommand.Parameters.AddWithValue(parameterNames[i], linkedProductIds[i]);
+
+            var products = new Dictionary<int, (decimal Count, bool Isdiap, bool PrizMenu)>();
+            using (var reader = productCommand.ExecuteReader())
+            {
+                while (reader.Read())
+                {
+                    products[reader.GetInt32(0)] = (reader.GetDecimal(1),
+                        reader.GetInt32(2) == 1,
+                        reader.GetInt32(3) == 1);
+                }
+            }
+
+            foreach (var delicate in delicates)
+            {
+                if (delicate.LinkedProductId.HasValue &&
+                    products.TryGetValue(delicate.LinkedProductId.Value, out var info) &&
+                    info.Isdiap && info.PrizMenu && info.Count > 0)
+                {
+                    delicate.LinkedProductDefaultCount = info.Count;
+                }
+            }
+        }
+
         return delicates;
     }
 
