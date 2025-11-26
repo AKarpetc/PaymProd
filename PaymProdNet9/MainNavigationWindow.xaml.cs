@@ -136,7 +136,7 @@ public partial class MainNavigationWindow : Window
     /// <summary>
     /// Получить данные текущего меню для отчетов
     /// </summary>
-    private (ObservableCollection<MenuDel_act> menuDelicates, List<string> banquetInfo)? GetCurrentMenuData()
+    private (ObservableCollection<MenuDel_act> menuDelicates, List<string> banquetInfo, int menuId)? GetCurrentMenuData()
     {
         try
         {
@@ -166,7 +166,7 @@ public partial class MainNavigationWindow : Window
                 openMenu.Detail ?? ""
             };
 
-            return (menuDelicates, banquetInfo);
+            return (menuDelicates, banquetInfo, openMenu.Id);
         }
         catch (Exception ex)
         {
@@ -190,7 +190,7 @@ public partial class MainNavigationWindow : Window
             var menuData = GetCurrentMenuData();
             if (menuData == null) return;
 
-            var (menuDelicates, banquetInfo) = menuData.Value;
+            var (menuDelicates, banquetInfo, _) = menuData.Value;
 
             // Создаем страницу отчета по продуктам с данными
             var productsReportPage = new ProductsReportPage
@@ -222,7 +222,7 @@ public partial class MainNavigationWindow : Window
             var menuData = GetCurrentMenuData();
             if (menuData == null) return;
 
-            var (menuDelicates, banquetInfo) = menuData.Value;
+            var (menuDelicates, banquetInfo, _) = menuData.Value;
 
             // Создаем страницу сводной таблицы с данными
             var summaryTablePage = new SummaryTablePage
@@ -254,7 +254,7 @@ public partial class MainNavigationWindow : Window
             var menuData = GetCurrentMenuData();
             if (menuData == null) return;
 
-            var (menuDelicates, banquetInfo) = menuData.Value;
+            var (menuDelicates, banquetInfo, menuId) = menuData.Value;
 
             var menuName = $"{banquetInfo[0]}, {banquetInfo[1]} человек, {banquetInfo[2]}";
 
@@ -277,7 +277,8 @@ public partial class MainNavigationWindow : Window
             var printMenuPage = new PrintMenuPage
             {
                 Delicates = delicatesToPrint,
-                BanquetInfo = banquetInfo
+                BanquetInfo = banquetInfo,
+                MenuId = menuId
             };
 
             NavigationService.Instance.NavigateTo(printMenuPage);

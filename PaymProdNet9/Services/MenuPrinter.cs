@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using DocumentFormat.OpenXml;
@@ -15,16 +16,18 @@ namespace PaymProdNet9.Services;
 public class MenuPrinter
 {
     private readonly ProductRepository _productRepository;
+    private readonly MenuPriceService _menuPriceService;
 
     public MenuPrinter()
     {
         _productRepository = new ProductRepository();
+        _menuPriceService = new MenuPriceService();
     }
 
     /// <summary>
     ///     Печать меню
     /// </summary>
-    public void PrintMenu(List<DelicatesColl> delicates, string menuName)
+    public void PrintMenu(List<DelicatesColl> delicates, string menuName, bool includePrices = false, int? menuId = null)
     {
         try
         {
@@ -120,6 +123,7 @@ public class MenuPrinter
 
                 // Свойства таблицы
                 var tableProperties = new TableProperties(
+                    new TableWidth { Type = TableWidthUnitValues.Pct, Width = "5000" },
                     new TableBorders(
                         new TopBorder { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 6 },
                         new BottomBorder { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 6 },
@@ -131,13 +135,23 @@ public class MenuPrinter
                 );
                 table.AppendChild(tableProperties);
 
+                var tableGrid = includePrices
+                    ? new TableGrid(
+                        new GridColumn { Width = "2000" },
+                        new GridColumn { Width = "5000" },
+                        new GridColumn { Width = "2000" })
+                    : new TableGrid(
+                        new GridColumn { Width = "2000" },
+                        new GridColumn { Width = "7000" });
+                table.AppendChild(tableGrid);
+
                 foreach (var group in groupedDelicates)
                 {
                     // Заголовок группы (тип блюда)
                     var headerRow = new TableRow();
                     var headerCell = new TableCell();
                     var headerCellProperties = new TableCellProperties(
-                        new GridSpan { Val = 2 },
+                        new GridSpan { Val = includePrices ? 3 : 2 },
                         new Shading { Fill = "D3D3D3" }
                     );
                     headerCell.Append(headerCellProperties);
@@ -152,6 +166,12 @@ public class MenuPrinter
                     headerRow.Append(headerCell);
                     table.Append(headerRow);
 
+                    var columnsRow = new TableRow();
+                    columnsRow.Append(CreateTableHeaderCell("Блюдо"));
+                    columnsRow.Append(CreateTableHeaderCell("Состав"));
+                    if (includePrices) columnsRow.Append(CreateTableHeaderCell("Цена, тг"));
+                    table.Append(columnsRow);
+
                     // Блюда в группе
                     foreach (var delicate in group)
                     {
@@ -162,46 +182,56 @@ public class MenuPrinter
                         nameCell.Append(new Paragraph(new Run(new Text(delicate.Name))));
                         row.Append(nameCell);
 
-                        // Состав
-                        var compositionItems = new List<string>();
-                        foreach (var component in delicate.Lcomp)
+                        var compositionParagraph = new Paragraph();
+
+                        var components = delicate.Lcomp ?? new List<Components>();
+                        decimal dishTotal = 0;
+                        if (components.Any())
                         {
-                            var baseMeasure = GetBaseMeasure(component);
-                            var productName = !string.IsNullOrEmpty(component.NameT) ? component.NameT : component.Name;
-                            var totalWeight = RoundMenuValue(component.Ves * delicate.Count, GetMenuPrecision(baseMeasure));
-
-                            if (component.Fass > 0)
+                            var componentLines = new List<string>();
+                            foreach (var component in components)
                             {
-                                var packageUnit = GetPackageMeasure(component, baseMeasure);
-                                var packagePrecision = GetMenuPrecision(packageUnit);
-                                var packageCount = component.Fass == 0
-                                    ? 0
-                                    : (component.Ves * delicate.Count) / component.Fass;
-                                var roundedPackages = RoundMenuValue(packageCount, packagePrecision);
+                                var baseMeasure = GetBaseMeasure(component);
+                                var productName = !string.IsNullOrEmpty(component.NameT) ? component.NameT : component.Name;
+                                var totalWeight =
+                                    RoundMenuValue(component.Ves * delicate.Count, GetMenuPrecision(baseMeasure));
 
-                                if (roundedPackages < 1)
+                                string displayValue;
+                                if (component.Fass > 0)
                                 {
-                                    compositionItems.Add($"{productName} ({totalWeight}{baseMeasure})");
+                                    var packageUnit = GetPackageMeasure(component, baseMeasure);
+                                    var packagePrecision = GetMenuPrecision(packageUnit);
+                                    var packageCount = component.Fass == 0
+                                        ? 0
+                                        : (component.Ves * delicate.Count) / component.Fass;
+                                    var roundedPackages = RoundMenuValue(packageCount, packagePrecision);
+
+                                    displayValue = roundedPackages < 1
+                                        ? $"{totalWeight}{baseMeasure}"
+                                        : $"{roundedPackages}{packageUnit}";
                                 }
                                 else
                                 {
-                                    compositionItems.Add($"{productName} ({roundedPackages}{packageUnit})");
+                                    displayValue = $"{totalWeight}{baseMeasure}";
+                                }
+
+                                var line = BuildComponentLine(includePrices, component, productName, displayValue,
+                                    menuId, delicate.Count, ref dishTotal);
+                                componentLines.Add(line);
+                            }
+
+                            if (includePrices)
+                            {
+                                foreach (var line in componentLines)
+                                {
+                                    compositionParagraph.Append(new Break());
+                                    compositionParagraph.Append(new Run(new Text(line)));
                                 }
                             }
                             else
                             {
-                                compositionItems.Add($"{productName} ({totalWeight}{baseMeasure})");
-                            }
-                        }
-
-                        var compositionParagraph = new Paragraph();
-                        compositionParagraph.Append(new Run(new Text("Состав:")));
-                        if (compositionItems.Any())
-                        {
-                            foreach (var line in compositionItems)
-                            {
                                 compositionParagraph.Append(new Break());
-                                compositionParagraph.Append(new Run(new Text(line)));
+                                compositionParagraph.Append(new Run(new Text(string.Join(", ", componentLines))));
                             }
                         }
                         else
@@ -213,6 +243,14 @@ public class MenuPrinter
                         var compositionCell = new TableCell();
                         compositionCell.Append(compositionParagraph);
                         row.Append(compositionCell);
+
+                        if (includePrices)
+                        {
+                            var priceText = dishTotal > 0 ? FormatCurrency(dishTotal) : "—";
+                            var priceCell = new TableCell();
+                            priceCell.Append(new Paragraph(new Run(new Text(priceText))));
+                            row.Append(priceCell);
+                        }
 
                         table.Append(row);
                     }
@@ -231,6 +269,36 @@ public class MenuPrinter
             throw new Exception($"Ошибка при создании документа: {ex.Message}", ex);
         }
     }
+
+    private string BuildComponentLine(bool includePrices, Components component, string productName, string displayValue,
+        int? menuId, decimal dishCount, ref decimal dishTotal)
+    {
+        if (!includePrices)
+            return $"{productName} ({displayValue})";
+
+        var priceInfo = _menuPriceService.GetComponentPriceInfo(menuId ?? 0, component, dishCount);
+        if (priceInfo.TotalPrice <= 0)
+            return $"{productName} ({displayValue}) — цена не указана";
+
+        dishTotal += priceInfo.TotalPrice;
+        return $"{productName} ({displayValue}) — {FormatCurrency(priceInfo.TotalPrice)}";
+    }
+
+    private static TableCell CreateTableHeaderCell(string text)
+    {
+        var cell = new TableCell();
+        var paragraph = new Paragraph();
+        var run = new Run();
+        run.Append(new RunProperties(new Bold()));
+        run.Append(new Text(text));
+        paragraph.Append(run);
+        cell.Append(paragraph);
+        return cell;
+    }
+
+    private static string FormatCurrency(decimal value) =>
+        Math.Round(value, MidpointRounding.AwayFromZero)
+            .ToString("N0", CultureInfo.CurrentCulture);
 
     /// <summary>
     ///     Печать отчета с продуктами
