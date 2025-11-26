@@ -22,38 +22,23 @@ public class ProductRepository
         command.CommandText = @"
             SELECT p.Prod_ID, p.Name, pt.Type_Opis, m.Name_Mera, 
                    pt.TypeProdId, p.Ves, COALESCE(p.Fass, 0), 
-                   p.Izmer, mi.Name_Mera, p.Priz_menu, 
+                   p.Izmer, mi.Name_Mera,
+                   COALESCE(m.Fass_Def, 1) AS BaseFassDef,
+                   COALESCE(m.Fass_Izmer, m.Name_Mera) AS BaseFassIzmer,
+                   COALESCE(mi.Fass_Def, 1) AS PackFassDef,
+                   COALESCE(mi.Fass_Izmer, mi.Name_Mera) AS PackFassIzmer,
+                   p.Priz_menu, 
                    COALESCE(p.Count, 0), p.Avtomat, p.Chel, p.Isdiap,
                    COALESCE(p.Price, 0)
             FROM Producrs p
             INNER JOIN Produkt_Type pt ON p.Type = pt.TypeProdId
-            INNER JOIN Mera m ON m.Mera_ID = p.Ves
+            LEFT JOIN Mera m ON m.Mera_ID = p.Ves
             LEFT JOIN Mera mi ON mi.Mera_ID = p.Izmer";
 
         using var reader = command.ExecuteReader();
         while (reader.Read())
         {
-            var product = new ProductView
-            {
-                ID = reader.GetInt32(0),
-                Name = reader.GetString(1),
-                Type = reader.GetString(2),
-                Ves = reader.GetString(3),
-                TID = reader.GetInt32(4),
-                VID = reader.GetInt32(5),
-                Fass = reader.GetDecimal(6),
-                Iz = reader.IsDBNull(7) ? 0 : reader.GetInt32(7),
-                IzName = reader.IsDBNull(8) ? string.Empty : reader.GetString(8),
-                PrizMen = reader.GetInt32(9),
-                PrizMen1 = reader.GetInt32(9) == 1,
-                Count = reader.GetDecimal(10),
-                AutoAdd = reader.GetInt32(11) == 1,
-                CountPeople = reader.GetInt32(12),
-                MainCount = reader.GetInt32(13) == 1,
-                Price = reader.IsDBNull(14) ? 0 : Convert.ToDecimal(reader.GetDouble(14))
-            };
-
-            products.Add(product);
+            products.Add(BuildProductView(reader));
         }
 
         return products;
@@ -450,7 +435,12 @@ public class ProductRepository
             command.CommandText = $@"
                 SELECT p.Prod_ID, p.Name, pt.Type_Opis, m.Name_Mera, 
                        pt.TypeProdId, p.Ves, COALESCE(p.Fass, 0), 
-                       p.Izmer, mi.Name_Mera, p.Priz_menu, 
+                       p.Izmer, mi.Name_Mera,
+                       COALESCE(m.Fass_Def, 1) AS BaseFassDef,
+                       COALESCE(m.Fass_Izmer, m.Name_Mera) AS BaseFassIzmer,
+                       COALESCE(mi.Fass_Def, 1) AS PackFassDef,
+                       COALESCE(mi.Fass_Izmer, mi.Name_Mera) AS PackFassIzmer,
+                       p.Priz_menu, 
                        COALESCE(p.Count, 0), p.Avtomat, p.Chel, p.Isdiap,
                        COALESCE(p.Price, 0)
                 FROM Producrs p
@@ -461,32 +451,72 @@ public class ProductRepository
 
             using var reader = command.ExecuteReader();
             while (reader.Read())
-            {
-                var product = new ProductView
-                {
-                    ID = reader.GetInt32(0),
-                    Name = reader.GetString(1),
-                    Type = reader.GetString(2),
-                    Ves = reader.IsDBNull(3) ? string.Empty : reader.GetString(3),
-                    TID = reader.GetInt32(4),
-                    VID = reader.IsDBNull(5) ? 0 : reader.GetInt32(5),
-                    Fass = reader.GetDecimal(6),
-                    Iz = reader.IsDBNull(7) ? 0 : reader.GetInt32(7),
-                    IzName = reader.IsDBNull(8) ? string.Empty : reader.GetString(8),
-                    PrizMen = reader.GetInt32(9),
-                    PrizMen1 = reader.GetInt32(9) == 1,
-                    Count = reader.GetDecimal(10),
-                    AutoAdd = reader.GetInt32(11) == 1,
-                    CountPeople = reader.GetInt32(12),
-                    MainCount = reader.GetInt32(13) == 1,
-                    Price = reader.IsDBNull(14) ? 0 : Convert.ToDecimal(reader.GetDouble(14))
-                };
-
-                products.Add(product);
-            }
+                products.Add(BuildProductView(reader));
         }
 
         return products;
+    }
+
+    private ProductView BuildProductView(SqliteDataReader reader)
+    {
+        var product = new ProductView
+        {
+            ID = reader.GetInt32(0),
+            Name = reader.GetString(1),
+            Type = reader.GetString(2),
+            Ves = reader.IsDBNull(3) ? string.Empty : reader.GetString(3),
+            TID = reader.GetInt32(4),
+            VID = reader.IsDBNull(5) ? 0 : reader.GetInt32(5),
+            Fass = reader.IsDBNull(6) ? 0 : reader.GetDecimal(6),
+            Iz = reader.IsDBNull(7) ? 0 : reader.GetInt32(7),
+            IzName = reader.IsDBNull(8) ? string.Empty : reader.GetString(8),
+            PrizMen = reader.GetInt32(13),
+            PrizMen1 = reader.GetInt32(13) == 1,
+            Count = reader.GetDecimal(14),
+            AutoAdd = reader.GetInt32(15) == 1,
+            CountPeople = reader.GetInt32(16),
+            MainCount = reader.GetInt32(17) == 1,
+            Price = reader.IsDBNull(18) ? 0 : Convert.ToDecimal(reader.GetDouble(18))
+        };
+
+        var baseFassDef = reader.IsDBNull(9) ? 0 : Convert.ToDecimal(reader.GetDouble(9));
+        var baseFassIzmer = reader.IsDBNull(10) ? product.Ves : reader.GetString(10);
+        var packFassDef = reader.IsDBNull(11) ? 0 : Convert.ToDecimal(reader.GetDouble(11));
+        var packFassIzmer = reader.IsDBNull(12) ? product.IzName : reader.GetString(12);
+
+        ApplyPackagingDefaults(product, baseFassDef, baseFassIzmer, packFassDef, packFassIzmer);
+
+        return product;
+    }
+
+    private static void ApplyPackagingDefaults(ProductView product, decimal baseFassDef, string baseFassIzmer,
+        decimal packFassDef, string packFassIzmer)
+    {
+        var packagingFass = product.Fass;
+        var packagingName = product.IzName;
+
+        if (product.Iz == 0 || product.Iz == product.VID)
+        {
+            if (baseFassDef > 0)
+                packagingFass = baseFassDef;
+
+            packagingName = string.IsNullOrWhiteSpace(baseFassIzmer) ? product.Ves : baseFassIzmer;
+        }
+        else
+        {
+            if (packFassDef > 0)
+                packagingFass = packFassDef;
+
+            packagingName = !string.IsNullOrWhiteSpace(packFassIzmer)
+                ? packFassIzmer
+                : (string.IsNullOrWhiteSpace(baseFassIzmer) ? product.Ves : baseFassIzmer);
+        }
+
+        if (packagingFass <= 0) packagingFass = 1;
+        if (string.IsNullOrWhiteSpace(packagingName)) packagingName = product.Ves;
+
+        product.Fass = packagingFass;
+        product.IzName = packagingName;
     }
 
     /// <summary>
