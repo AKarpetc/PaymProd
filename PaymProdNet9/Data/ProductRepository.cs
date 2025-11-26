@@ -480,9 +480,9 @@ public class ProductRepository
         };
 
         var baseFassDef = reader.IsDBNull(9) ? 0 : Convert.ToDecimal(reader.GetDouble(9));
-        var baseFassIzmer = reader.IsDBNull(10) ? product.Ves : reader.GetString(10);
+        var baseFassIzmer = reader.IsDBNull(10) ? product.Ves : reader.GetString(10) ?? product.Ves;
         var packFassDef = reader.IsDBNull(11) ? 0 : Convert.ToDecimal(reader.GetDouble(11));
-        var packFassIzmer = reader.IsDBNull(12) ? product.IzName : reader.GetString(12);
+        var packFassIzmer = reader.IsDBNull(12) ? product.IzName : reader.GetString(12) ?? product.IzName;
 
         ApplyPackagingDefaults(product, baseFassDef, baseFassIzmer, packFassDef, packFassIzmer);
 

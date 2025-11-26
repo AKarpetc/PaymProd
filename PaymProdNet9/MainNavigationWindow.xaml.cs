@@ -248,17 +248,17 @@ public partial class MainNavigationWindow : Window
     {
         try
         {
+            SetActiveButton(sender as Button);
+            PageTitle.Text = "Печать меню";
+
             var menuData = GetCurrentMenuData();
             if (menuData == null) return;
 
             var (menuDelicates, banquetInfo) = menuData.Value;
 
-            var menuRepository = new MenuRepository();
-            var delicateRepository = new DelicateRepository();
-            var menuPrinter = new MenuPrinter();
-
             var menuName = $"{banquetInfo[0]}, {banquetInfo[1]} человек, {banquetInfo[2]}";
 
+            var delicateRepository = new DelicateRepository();
             var delicatesToPrint = new List<DelicatesColl>();
             foreach (var md in menuDelicates)
             {
@@ -274,7 +274,13 @@ public partial class MainNavigationWindow : Window
                 });
             }
 
-            menuPrinter.PrintMenu(delicatesToPrint, menuName);
+            var printMenuPage = new PrintMenuPage
+            {
+                Delicates = delicatesToPrint,
+                BanquetInfo = banquetInfo
+            };
+
+            NavigationService.Instance.NavigateTo(printMenuPage);
         }
         catch (Exception ex)
         {

@@ -163,7 +163,7 @@ public class MenuPrinter
                         row.Append(nameCell);
 
                         // Состав
-                        var composition = "Состав: ";
+                        var compositionItems = new List<string>();
                         foreach (var component in delicate.Lcomp)
                         {
                             var baseMeasure = GetBaseMeasure(component);
@@ -181,24 +181,37 @@ public class MenuPrinter
 
                                 if (roundedPackages < 1)
                                 {
-                                    composition += $"{productName}({totalWeight}{baseMeasure}), ";
+                                    compositionItems.Add($"{productName} ({totalWeight}{baseMeasure})");
                                 }
                                 else
                                 {
-                                    composition += $"{productName}({roundedPackages}{packageUnit}), ";
+                                    compositionItems.Add($"{productName} ({roundedPackages}{packageUnit})");
                                 }
                             }
                             else
                             {
-                                composition += $"{productName}({totalWeight}{baseMeasure}), ";
+                                compositionItems.Add($"{productName} ({totalWeight}{baseMeasure})");
                             }
                         }
 
-                        if (composition.EndsWith(", "))
-                            composition = composition.Substring(0, composition.Length - 2);
+                        var compositionParagraph = new Paragraph();
+                        compositionParagraph.Append(new Run(new Text("Состав:")));
+                        if (compositionItems.Any())
+                        {
+                            foreach (var line in compositionItems)
+                            {
+                                compositionParagraph.Append(new Break());
+                                compositionParagraph.Append(new Run(new Text(line)));
+                            }
+                        }
+                        else
+                        {
+                            compositionParagraph.Append(new Break());
+                            compositionParagraph.Append(new Run(new Text("нет данных")));
+                        }
 
                         var compositionCell = new TableCell();
-                        compositionCell.Append(new Paragraph(new Run(new Text(composition))));
+                        compositionCell.Append(compositionParagraph);
                         row.Append(compositionCell);
 
                         table.Append(row);
