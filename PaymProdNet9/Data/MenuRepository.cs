@@ -124,19 +124,111 @@ public class MenuRepository
         using var connection = DatabaseHelper.GetConnection();
         connection.Open();
 
-        var command = connection.CreateCommand();
-        command.CommandText = @"
-            UPDATE Menus 
-            SET Name = @name, Count_people = @count, Deteils = @details, Dateban = @dateban 
-            WHERE Id = @id";
+        using var transaction = connection.BeginTransaction();
 
-        command.Parameters.AddWithValue("@id", id);
-        command.Parameters.AddWithValue("@name", name);
-        command.Parameters.AddWithValue("@count", countPeople);
-        command.Parameters.AddWithValue("@details", details);
-        command.Parameters.AddWithValue("@dateban", dateBan);
+        try
+        {
+            // Получаем старое количество человек
+            var getOldCountCommand = connection.CreateCommand();
+            getOldCountCommand.Transaction = transaction;
+            getOldCountCommand.CommandText = "SELECT Count_people FROM Menus WHERE Id = @id";
+            getOldCountCommand.Parameters.AddWithValue("@id", id);
+            var oldCountPeople = Convert.ToInt32(getOldCountCommand.ExecuteScalarWithLog());
 
-        command.ExecuteNonQuery();
+            // Обновляем меню
+            var command = connection.CreateCommand();
+            command.Transaction = transaction;
+            command.CommandText = @"
+                UPDATE Menus 
+                SET Name = @name, Count_people = @count, Deteils = @details, Dateban = @dateban 
+                WHERE Id = @id";
+
+            command.Parameters.AddWithValue("@id", id);
+            command.Parameters.AddWithValue("@name", name);
+            command.Parameters.AddWithValue("@count", countPeople);
+            command.Parameters.AddWithValue("@details", details);
+            command.Parameters.AddWithValue("@dateban", dateBan);
+
+            command.ExecuteNonQueryWithLog();
+
+            // Пересчитываем количество блюд, если количество человек изменилось
+            if (oldCountPeople > 0 && oldCountPeople != countPeople)
+            {
+                var ratio = (decimal)countPeople / oldCountPeople;
+
+                // Получаем все блюда из меню
+                var getDishesCommand = connection.CreateCommand();
+                getDishesCommand.Transaction = transaction;
+                getDishesCommand.CommandText = @"
+                    SELECT md.Id, md.Id_delic, md.Delcount
+                    FROM Menu_Delicates md
+                    WHERE md.Id_men = @menuId";
+                getDishesCommand.Parameters.AddWithValue("@menuId", id);
+
+                var dishesToUpdate = new List<(int MenuDelicateId, int DelicateId, int NewCount)>();
+                using (var reader = getDishesCommand.ExecuteReaderWithLog())
+                {
+                    while (reader.Read())
+                    {
+                        var menuDelicateId = reader.GetInt32(0);
+                        var delicateId = reader.GetInt32(1);
+                        var oldDelcount = reader.GetInt32(2);
+
+                        // Для обычных блюд (не продуктов) получаем Del_count из Delicates
+                        if (delicateId > 0)
+                        {
+                            var getDelCountCommand = connection.CreateCommand();
+                            getDelCountCommand.Transaction = transaction;
+                            getDelCountCommand.CommandText = "SELECT COALESCE(Del_count, 0) FROM Delicates WHERE Del_id = @delicateId";
+                            getDelCountCommand.Parameters.AddWithValue("@delicateId", delicateId);
+                            var delCount = Convert.ToDecimal(getDelCountCommand.ExecuteScalarWithLog());
+
+                            int newCount;
+                            if (delCount > 0)
+                            {
+                                // Используем Del_count для расчета: новое количество = Del_count * новое количество человек
+                                newCount = (int)Math.Ceiling(delCount * countPeople);
+                            }
+                            else
+                            {
+                                // Если Del_count = 0, пересчитываем пропорционально
+                                newCount = (int)Math.Ceiling(oldDelcount * ratio);
+                            }
+
+                            dishesToUpdate.Add((menuDelicateId, delicateId, newCount));
+                        }
+                        else
+                        {
+                            // Для продуктов (отрицательный ID) пересчитываем пропорционально
+                            var newCount = (int)Math.Ceiling(oldDelcount * ratio);
+                            dishesToUpdate.Add((menuDelicateId, delicateId, newCount));
+                        }
+                    }
+                }
+
+                // Обновляем количество для каждого блюда
+                foreach (var (menuDelicateId, delicateId, newCount) in dishesToUpdate)
+                {
+                    var updateCommand = connection.CreateCommand();
+                    updateCommand.Transaction = transaction;
+                    updateCommand.CommandText = @"
+                        UPDATE Menu_Delicates 
+                        SET Delcount = @newCount 
+                        WHERE Id = @menuDelicateId";
+                    updateCommand.Parameters.AddWithValue("@newCount", newCount);
+                    updateCommand.Parameters.AddWithValue("@menuDelicateId", menuDelicateId);
+                    updateCommand.ExecuteNonQueryWithLog();
+                }
+            }
+
+            transaction.Commit();
+        }
+        catch (Exception ex)
+        {
+            transaction.Rollback();
+            Logger.Error("Ошибка при обновлении меню", ex);
+            throw;
+        }
     }
 
     /// <summary>
@@ -1118,5 +1210,24 @@ public class MenuRepository
             transaction.Rollback();
             throw;
         }
+    }
+
+    /// <summary>
+    /// Обновить количество блюда в меню
+    /// </summary>
+    public void UpdateMenuDelicateCount(int menuId, int delicateId, int count)
+    {
+        using var connection = DatabaseHelper.GetConnection();
+        connection.Open();
+
+        var command = connection.CreateCommand();
+        command.CommandText = @"
+            UPDATE Menu_Delicates 
+            SET Delcount = @count 
+            WHERE Id_men = @menuId AND Id_delic = @delicateId";
+        command.Parameters.AddWithValue("@menuId", menuId);
+        command.Parameters.AddWithValue("@delicateId", delicateId);
+        command.Parameters.AddWithValue("@count", count);
+        command.ExecuteNonQueryWithLog();
     }
 }

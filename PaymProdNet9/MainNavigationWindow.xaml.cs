@@ -119,6 +119,38 @@ public partial class MainNavigationWindow : Window
         BackButton.Visibility = NavigationService.Instance.CanGoBack
             ? Visibility.Visible
             : Visibility.Collapsed;
+
+        // Обновляем заголовок страницы в зависимости от типа страницы
+        UpdatePageTitle(e.Content);
+    }
+
+    /// <summary>
+    /// Обновление заголовка страницы в зависимости от типа страницы
+    /// </summary>
+    private void UpdatePageTitle(object? content)
+    {
+        if (content == null) return;
+
+        var pageType = content.GetType();
+        var pageName = pageType.Name;
+
+        PageTitle.Text = pageName switch
+        {
+            nameof(CurrentMenuPage) => "Текущее меню - Составление банкета",
+            nameof(SavedMenusPage) => "Сохраненные меню - Все банкеты",
+            nameof(DelicatesPage) => "Справочник блюд",
+            nameof(ProductsPage) => "Справочник продуктов",
+            nameof(ProductPricesPage) => "Общая цена продуктов",
+            nameof(MeasuresPage) => "Единицы измерения",
+            nameof(ProductTypesPage) => "Типы продуктов",
+            nameof(DelicateTypesPage) => "Типы блюд",
+            nameof(DatabaseManagerPage) => "Управление базой данных",
+            nameof(ProductsReportPage) => "Отчет по продуктам",
+            nameof(SummaryTablePage) => "Сводная таблица",
+            nameof(PrintMenuPage) => "Печать меню",
+            nameof(MenuPage) => "Текущее меню - Составление банкета",
+            _ => PageTitle.Text // Оставляем текущий заголовок, если тип страницы не определен
+        };
     }
 
     private void SetActiveButton(Button? button)

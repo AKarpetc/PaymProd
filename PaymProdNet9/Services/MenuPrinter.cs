@@ -152,11 +152,13 @@ public class MenuPrinter
                     var headerCell = new TableCell();
                     var headerCellProperties = new TableCellProperties(
                         new GridSpan { Val = includePrices ? 3 : 2 },
-                        new Shading { Fill = "D3D3D3" }
+                        new Shading { Fill = "D3D3D3" },
+                        new TableCellVerticalAlignment { Val = TableVerticalAlignmentValues.Center }
                     );
                     headerCell.Append(headerCellProperties);
 
-                    var headerParagraph = new Paragraph();
+                    var headerParagraph = new Paragraph(
+                        new ParagraphProperties(new Justification { Val = JustificationValues.Center }));
                     var headerRun = new Run();
                     var headerRunProps = new RunProperties(new Bold(), new FontSize { Val = "28" });
                     headerRun.Append(headerRunProps);
@@ -179,10 +181,14 @@ public class MenuPrinter
 
                         // Название блюда
                         var nameCell = new TableCell();
-                        nameCell.Append(new Paragraph(new Run(new Text(delicate.Name))));
+                        nameCell.Append(new Paragraph(
+                            new ParagraphProperties(new Justification { Val = JustificationValues.Left }),
+                            new Run(new Text(delicate.Name))));
+                        EnsureVerticalCenter(nameCell);
                         row.Append(nameCell);
 
-                        var compositionParagraph = new Paragraph();
+                        var compositionParagraph = new Paragraph(
+                            new ParagraphProperties(new Justification { Val = JustificationValues.Left }));
 
                         var components = delicate.Lcomp ?? new List<Components>();
                         decimal dishTotal = 0;
@@ -242,13 +248,17 @@ public class MenuPrinter
 
                         var compositionCell = new TableCell();
                         compositionCell.Append(compositionParagraph);
+                        EnsureVerticalCenter(compositionCell);
                         row.Append(compositionCell);
 
                         if (includePrices)
                         {
                             var priceText = dishTotal > 0 ? FormatCurrency(dishTotal) : "—";
                             var priceCell = new TableCell();
-                            priceCell.Append(new Paragraph(new Run(new Text(priceText))));
+                            priceCell.Append(new Paragraph(
+                                new ParagraphProperties(new Justification { Val = JustificationValues.Left }),
+                                new Run(new Text(priceText))));
+                            EnsureVerticalCenter(priceCell);
                             row.Append(priceCell);
                         }
 
@@ -281,19 +291,40 @@ public class MenuPrinter
             return $"{productName} ({displayValue}) — цена не указана";
 
         dishTotal += priceInfo.TotalPrice;
-        return $"{productName} ({displayValue}) — {FormatCurrency(priceInfo.TotalPrice)}";
+        return $"{productName} ({displayValue}) — {FormatCurrency(priceInfo.TotalPrice)} тг";
     }
 
     private static TableCell CreateTableHeaderCell(string text)
     {
         var cell = new TableCell();
-        var paragraph = new Paragraph();
+        EnsureVerticalCenter(cell);
+        var paragraph = new Paragraph(new ParagraphProperties(new Justification { Val = JustificationValues.Center }));
         var run = new Run();
         run.Append(new RunProperties(new Bold()));
         run.Append(new Text(text));
         paragraph.Append(run);
         cell.Append(paragraph);
         return cell;
+    }
+
+    private static void EnsureVerticalCenter(TableCell cell)
+    {
+        var props = cell.GetFirstChild<TableCellProperties>();
+        if (props == null)
+        {
+            props = new TableCellProperties();
+            cell.PrependChild(props);
+        }
+
+        var existing = props.GetFirstChild<TableCellVerticalAlignment>();
+        if (existing != null)
+        {
+            existing.Val = TableVerticalAlignmentValues.Center;
+        }
+        else
+        {
+            props.AppendChild(new TableCellVerticalAlignment { Val = TableVerticalAlignmentValues.Center });
+        }
     }
 
     private static string FormatCurrency(decimal value) =>

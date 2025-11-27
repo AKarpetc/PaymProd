@@ -249,7 +249,7 @@
                             <DataGridTextColumn Header="Состав" Binding="{Binding Sost}"
                                                 Width="3*" IsReadOnly="True" />
                             <DataGridTextColumn Header="Количество" Binding="{Binding Countpor}"
-                                                Width="*" />
+                                                Width="*" IsReadOnly="True" />
                         </DataGrid.Columns>
                     </DataGrid>
                 </Grid>
@@ -283,6 +283,15 @@
                             <TextBlock x:Name="EditDelicateNameText"
                                        Style="{StaticResource MaterialDesignBody1TextBlock}"
                                        Margin="0,0,0,20" />
+
+                            <TextBlock Text="Количество:"
+                                       Style="{StaticResource MaterialDesignHeadline6TextBlock}"
+                                       Margin="0,0,0,10" />
+                            <TextBox x:Name="EditDelicateCountTextBox"
+                                     materialDesign:HintAssist.Hint="Введите количество"
+                                     Style="{StaticResource MaterialDesignOutlinedTextBox}"
+                                     PreviewTextInput="NumericOnly_PreviewTextInput"
+                                     Margin="0,0,0,20" />
 
                             <TextBlock Text="Состав блюда (можно изменить):"
                                        Style="{StaticResource MaterialDesignHeadline6TextBlock}"

@@ -200,7 +200,7 @@ public partial class PrintMenuPage : Page
             }
 
             string line = priceInfo.TotalPrice > 0
-                ? $"{productName} ({formattedWeight}) — {FormatCurrency(priceInfo.TotalPrice)}"
+                ? $"{productName} ({formattedWeight}) — {FormatCurrency(priceInfo.TotalPrice)} тг"
                 : $"{productName} ({formattedWeight}) — цена не указана";
 
             lines.Add(line);

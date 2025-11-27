@@ -26,6 +26,7 @@ public partial class CurrentMenuPage : Page
 
     // Для редактирования блюда в меню
     private int? _editingDelicateId;
+    private MenuDel_act? _editingDelicate;
     private ObservableCollection<Components> _editingDelicateComponents;
     private ObservableCollection<ProductView> _editingAvailableProducts;
     private Dictionary<int, ProductView> _productLookup;
@@ -639,10 +640,14 @@ public partial class CurrentMenuPage : Page
             }
 
             _editingDelicateId = delicate.Del_id;
+            _editingDelicate = delicate;
 
             // Загружаем название блюда
             EditDelicateNameText.Text = delicate.Del;
             EditDelicateTitle.Text = $"Редактирование блюда: {delicate.Del}";
+
+            // Загружаем количество
+            EditDelicateCountTextBox.Text = delicate.Countpor.ToString();
 
             // Загружаем компоненты блюда для этого меню
             LoadEditingDelicateComponents();
@@ -804,6 +809,15 @@ public partial class CurrentMenuPage : Page
                 _editingDelicateId.Value,
                 _editingDelicateComponents.ToList());
 
+            // Сохраняем количество, если оно было изменено
+            if (int.TryParse(EditDelicateCountTextBox.Text, out var newCount) && newCount > 0)
+            {
+                _menuRepository.UpdateMenuDelicateCount(
+                    _currentMenuId.Value,
+                    _editingDelicateId.Value,
+                    newCount);
+            }
+
             // Закрываем панель редактирования
             EditDelicateInMenuPanel.Visibility = Visibility.Collapsed;
 
@@ -828,6 +842,7 @@ public partial class CurrentMenuPage : Page
     {
         EditDelicateInMenuPanel.Visibility = Visibility.Collapsed;
         _editingDelicateId = null;
+        _editingDelicate = null;
         _editingDelicateComponents.Clear();
         EditProductSearchBox.Clear();
     }
@@ -974,5 +989,13 @@ public partial class CurrentMenuPage : Page
         }
 
         return null;
+    }
+
+    /// <summary>
+    /// Валидация числового ввода
+    /// </summary>
+    private void NumericOnly_PreviewTextInput(object sender, TextCompositionEventArgs e)
+    {
+        e.Handled = !System.Text.RegularExpressions.Regex.IsMatch(e.Text, "^[0-9]+$");
     }
 }
