@@ -114,7 +114,8 @@
                             <DataGridTextColumn Header="Ед. (основная)" Binding="{Binding Ves}" Width="*" />
                             <DataGridTextColumn Header="Фасовка" Binding="{Binding Fass}" Width="*" />
                             <DataGridTextColumn Header="Ед. (фасовка)" Binding="{Binding IzName}" Width="*" />
-                            <DataGridTextColumn Header="Кол-во людей" Binding="{Binding CountPeople}" Width="*" />
+                            <!-- Поле "Кол-во людей" скрыто - не используется в текущей логике -->
+                            <!-- <DataGridTextColumn Header="Кол-во людей" Binding="{Binding CountPeople}" Width="*" /> -->
                             <DataGridTextColumn Header="Цена, тг" Binding="{Binding Price}" Width="*" />
 
                             <DataGridTemplateColumn Header="В блюда" Width="*">
@@ -266,7 +267,8 @@
                                          Style="{StaticResource MaterialDesignOutlinedTextBox}" />
                             </StackPanel>
 
-                            <StackPanel Grid.Row="3" Grid.Column="0" Margin="0,10,10,0">
+                            <!-- Поле "Количество людей" скрыто - не используется в текущей логике -->
+                            <StackPanel Grid.Row="3" Grid.Column="0" Margin="0,10,10,0" Visibility="Collapsed">
                                 <TextBlock Text="Количество людей:"
                                            Style="{StaticResource MaterialDesignBody2TextBlock}"
                                            Margin="0,0,0,5" />

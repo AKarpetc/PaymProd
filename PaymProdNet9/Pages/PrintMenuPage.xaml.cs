@@ -234,18 +234,41 @@ public partial class PrintMenuPage : Page
         {
             var productName = !string.IsNullOrEmpty(component.NameT) ? component.NameT : component.Name;
             var baseUnit = !string.IsNullOrWhiteSpace(component.Mera) ? component.Mera : "г";
-            var totalWeight = component.Ves * (delicate.Count > 0 ? delicate.Count : 1);
-            var formattedWeight = FormatValue(totalWeight, baseUnit);
-
+            var count = delicate.Count > 0 ? delicate.Count : 1;
+            
+            // Логика из старого приложения (PaymProd/Class/Menus.cs)
+            decimal displayValue;
+            string displayUnit;
+            
             if (component.Fass > 0)
             {
-                var packageUnit = !string.IsNullOrWhiteSpace(component.FassIz) ? component.FassIz : baseUnit;
-                var packageCount = component.Fass == 0 ? 0 : (component.Ves * delicate.Count) / component.Fass;
-                if (packageCount >= 1)
+                // Расчёт количества упаковок: (вес * количество порций) / фасовка
+                var packageCount = (component.Ves * count) / component.Fass;
+                
+                // Если количество упаковок <= 1, устанавливаем 0 (будем показывать в базовых единицах)
+                var fass = packageCount <= 1 ? 0 : Math.Round(packageCount, 2, MidpointRounding.AwayFromZero);
+                
+                if (fass < 1)
                 {
-                    formattedWeight = FormatValue(packageCount, packageUnit);
+                    // Показываем в базовых единицах (как в старом коде)
+                    displayValue = Math.Round(component.Ves * count, 2, MidpointRounding.AwayFromZero);
+                    displayUnit = baseUnit;
+                }
+                else
+                {
+                    // Показываем в упаковках
+                    displayValue = fass;
+                    displayUnit = !string.IsNullOrWhiteSpace(component.FassIz) ? component.FassIz : baseUnit;
                 }
             }
+            else
+            {
+                // Без фасовки - показываем общий вес
+                displayValue = Math.Round(component.Ves * count, 2, MidpointRounding.AwayFromZero);
+                displayUnit = baseUnit;
+            }
+            
+            var formattedWeight = FormatValueOld(displayValue, displayUnit);
 
             string line;
             if (includePrices)
@@ -264,6 +287,19 @@ public partial class PrintMenuPage : Page
             lines.Add(line);
         }
         return lines;
+    }
+    
+    /// <summary>
+    /// Форматирование значения по логике старого приложения (Math.Round)
+    /// </summary>
+    private static string FormatValueOld(decimal value, string unit)
+    {
+        // В старом приложении использовалось Math.Round с 2 знаками
+        // Если значение целое, показываем без дробной части
+        if (value == Math.Truncate(value))
+            return $"{(int)value}{unit}";
+        
+        return $"{value:F2}{unit}";
     }
 
     private string FormatCurrency(decimal value) =>

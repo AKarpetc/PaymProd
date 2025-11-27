@@ -48,20 +48,6 @@ public class MenuPrinter
                 return measureLookup.TryGetValue(key, out var measure) ? measure : null;
             }
 
-            int GetMenuPrecision(string? measureName)
-            {
-                var measure = FindMeasure(measureName);
-                return measure?.MenuRoundingPrecision ?? 2;
-            }
-
-            decimal RoundMenuValue(decimal value, int precision)
-            {
-                var doubleValue = (double)value;
-                if (precision <= 0) return (decimal)Math.Ceiling(doubleValue);
-                var multiplier = Math.Pow(10, precision);
-                return (decimal)(Math.Ceiling(doubleValue * multiplier) / multiplier);
-            }
-
             string GetBaseMeasure(Components component)
             {
                 if (productLookup.TryGetValue(component.Prodid, out var product) &&
@@ -199,26 +185,36 @@ public class MenuPrinter
                             {
                                 var baseMeasure = GetBaseMeasure(component);
                                 var productName = !string.IsNullOrEmpty(component.NameT) ? component.NameT : component.Name;
-                                var totalWeight =
-                                    RoundMenuValue(component.Ves * delicate.Count, GetMenuPrecision(baseMeasure));
+                                var count = delicate.Count > 0 ? delicate.Count : 1;
 
+                                // Логика из старого приложения (PaymProd/Class/Menus.cs)
                                 string displayValue;
                                 if (component.Fass > 0)
                                 {
-                                    var packageUnit = GetPackageMeasure(component, baseMeasure);
-                                    var packagePrecision = GetMenuPrecision(packageUnit);
-                                    var packageCount = component.Fass == 0
-                                        ? 0
-                                        : (component.Ves * delicate.Count) / component.Fass;
-                                    var roundedPackages = RoundMenuValue(packageCount, packagePrecision);
-
-                                    displayValue = roundedPackages < 1
-                                        ? $"{totalWeight}{baseMeasure}"
-                                        : $"{roundedPackages}{packageUnit}";
+                                    // Расчёт количества упаковок: (вес * количество порций) / фасовка
+                                    var packageCount = (component.Ves * count) / component.Fass;
+                                    
+                                    // Если количество упаковок <= 1, устанавливаем 0 (будем показывать в базовых единицах)
+                                    var fass = packageCount <= 1 ? 0 : Math.Round(packageCount, 2, MidpointRounding.AwayFromZero);
+                                    
+                                    if (fass < 1)
+                                    {
+                                        // Показываем в базовых единицах (как в старом коде)
+                                        var totalWeight = Math.Round(component.Ves * count, 2, MidpointRounding.AwayFromZero);
+                                        displayValue = FormatMenuValue(totalWeight, baseMeasure);
+                                    }
+                                    else
+                                    {
+                                        // Показываем в упаковках
+                                        var packageUnit = GetPackageMeasure(component, baseMeasure);
+                                        displayValue = FormatMenuValue(fass, packageUnit);
+                                    }
                                 }
                                 else
                                 {
-                                    displayValue = $"{totalWeight}{baseMeasure}";
+                                    // Без фасовки - показываем общий вес
+                                    var totalWeight = Math.Round(component.Ves * count, 2, MidpointRounding.AwayFromZero);
+                                    displayValue = FormatMenuValue(totalWeight, baseMeasure);
                                 }
 
                                 var line = BuildComponentLine(includePrices, component, productName, displayValue,
@@ -330,6 +326,19 @@ public class MenuPrinter
     private static string FormatCurrency(decimal value) =>
         Math.Round(value, MidpointRounding.AwayFromZero)
             .ToString("N0", CultureInfo.CurrentCulture);
+
+    /// <summary>
+    /// Форматирование значения для меню по логике старого приложения
+    /// </summary>
+    private static string FormatMenuValue(decimal value, string unit)
+    {
+        // В старом приложении использовалось Math.Round с 2 знаками
+        // Если значение целое, показываем без дробной части
+        if (value == Math.Truncate(value))
+            return $"{(int)value}{unit}";
+        
+        return $"{value:F2}{unit}";
+    }
 
     /// <summary>
     ///     Печать отчета с продуктами
@@ -590,6 +599,10 @@ public class MenuPrinter
                 (string amount, string unit) FormatAmount(GroupedProduct product)
                 {
                     var defaultUnit = !string.IsNullOrEmpty(product.Mera) ? product.Mera : "шт";
+                    
+                    // Проверяем flag - если единица фасовки отличается от единицы веса
+                    var hasDifferentPackageUnit = !string.IsNullOrEmpty(product.FassIz) && 
+                                                   product.FassIz != product.Mera;
 
                     if (product.Fass > 0)
                     {
@@ -597,32 +610,84 @@ public class MenuPrinter
                             ? product.TotalPackages
                             : (product.Fass == 0 ? 0 : product.TotalWeight / product.Fass);
 
-                    var packageUnit = !string.IsNullOrEmpty(product.FassIz) ? product.FassIz : defaultUnit;
-                    var packageMeasure = FindMeasure(packageUnit);
-                    var packagePrecision = packageMeasure?.RoundingPrecision ?? 0;
+                        var packageUnit = !string.IsNullOrEmpty(product.FassIz) ? product.FassIz : defaultUnit;
+                        var packageMeasure = FindMeasure(packageUnit);
+                        var packagePrecision = packageMeasure?.RoundingPrecision ?? 0;
 
-                    double roundedPackages;
-                    if (packagePrecision == 0)
-                    {
-                        roundedPackages = Math.Ceiling((double)packages);
-                    }
-                    else
-                    {
-                        var multiplier = Math.Pow(10, packagePrecision);
-                        roundedPackages = Math.Ceiling((double)packages * multiplier) / multiplier;
-                    }
+                        // Логика из старого приложения: если количество < 1 и flag != 1, 
+                        // конвертируем в граммы (умножаем на 1000)
+                        if (packages < 1 && !hasDifferentPackageUnit)
+                        {
+                            // Конвертируем в граммы
+                            var gramsValue = packages * 1000;
+                            var gramsMeasure = FindMeasure(defaultUnit);
+                            var gramsPrecision = gramsMeasure?.RoundingPrecision ?? 2;
+                            
+                            double roundedGrams;
+                            if (gramsPrecision == 0)
+                            {
+                                roundedGrams = Math.Ceiling((double)gramsValue);
+                            }
+                            else
+                            {
+                                var multiplier = Math.Pow(10, gramsPrecision);
+                                roundedGrams = Math.Ceiling((double)gramsValue * multiplier) / multiplier;
+                            }
+                            
+                            var formattedGrams = gramsPrecision == 0
+                                ? ((int)roundedGrams).ToString()
+                                : roundedGrams.ToString($"F{gramsPrecision}");
+                                
+                            return (formattedGrams, defaultUnit);
+                        }
 
-                    var formattedPackages = packagePrecision == 0
-                        ? ((int)roundedPackages).ToString()
-                        : roundedPackages.ToString($"F{packagePrecision}");
+                        double roundedPackages;
+                        if (packagePrecision == 0)
+                        {
+                            // Для flag == 1 (hasDifferentPackageUnit) округляем вверх до целого
+                            roundedPackages = Math.Ceiling((double)packages);
+                        }
+                        else
+                        {
+                            var multiplier = Math.Pow(10, packagePrecision);
+                            roundedPackages = Math.Ceiling((double)packages * multiplier) / multiplier;
+                        }
 
-                    return (formattedPackages, packageUnit);
+                        var formattedPackages = packagePrecision == 0
+                            ? ((int)roundedPackages).ToString()
+                            : roundedPackages.ToString($"F{packagePrecision}");
+
+                        return (formattedPackages, packageUnit);
                     }
 
                     var totalValue = (double)product.TotalWeight;
                     var roundingPrecision = 2;
                     var measure = FindMeasure(defaultUnit);
                     if (measure != null) roundingPrecision = measure.RoundingPrecision;
+
+                    // Логика из старого приложения: если количество < 1, конвертируем в граммы
+                    if (totalValue < 1)
+                    {
+                        var gramsValue = totalValue * 1000;
+                        var gramsPrecision = measure?.RoundingPrecision ?? 2;
+                        
+                        double roundedGrams;
+                        if (gramsPrecision == 0)
+                        {
+                            roundedGrams = Math.Ceiling(gramsValue);
+                        }
+                        else
+                        {
+                            var multiplier = Math.Pow(10, gramsPrecision);
+                            roundedGrams = Math.Ceiling(gramsValue * multiplier) / multiplier;
+                        }
+                        
+                        var formattedGrams = gramsPrecision == 0
+                            ? ((int)roundedGrams).ToString()
+                            : roundedGrams.ToString($"F{gramsPrecision}");
+                            
+                        return (formattedGrams, defaultUnit);
+                    }
 
                     double roundedValue;
                     if (roundingPrecision == 0)
@@ -748,11 +813,11 @@ public class MenuPrinter
 
 public record GroupedProduct
 {
-    public string Name { get; init; }
+    public string Name { get; init; } = string.Empty;
     public decimal TotalWeight { get; init; }
     public decimal TotalPackages { get; init; }
-    public string FassIz { get; init; }
-    public string Mera { get; init; }
+    public string? FassIz { get; init; }
+    public string? Mera { get; init; }
     public decimal Fass { get; init; }
     public decimal TotalPrice { get; init; }
 }

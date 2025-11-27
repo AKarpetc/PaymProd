@@ -534,6 +534,10 @@ public partial class ProductsReportPage : Page
     private (string amount, string unit) FormatAmount(GroupedProduct product, List<Measure> measures)
     {
         var defaultUnit = !string.IsNullOrEmpty(product.Mera) ? product.Mera : "шт";
+        
+        // Проверяем flag - если единица фасовки отличается от единицы веса
+        var hasDifferentPackageUnit = !string.IsNullOrEmpty(product.FassIz) && 
+                                       product.FassIz != product.Mera;
 
         if (product.Fass > 0)
         {
@@ -546,9 +550,37 @@ public partial class ProductsReportPage : Page
             var packageMeasure = FindMeasure(measures, packageUnit);
             if (packageMeasure != null) packagePrecision = packageMeasure.RoundingPrecision;
 
+            // Логика из старого приложения: если количество < 1 и flag != 1, 
+            // конвертируем в граммы (умножаем на 1000)
+            if (packages < 1 && !hasDifferentPackageUnit)
+            {
+                // Конвертируем в граммы
+                var gramsValue = packages * 1000;
+                var gramsMeasure = FindMeasure(measures, defaultUnit);
+                var gramsPrecision = gramsMeasure?.RoundingPrecision ?? 2;
+                
+                double roundedGrams;
+                if (gramsPrecision == 0)
+                {
+                    roundedGrams = Math.Ceiling((double)gramsValue);
+                }
+                else
+                {
+                    var multiplier = Math.Pow(10, gramsPrecision);
+                    roundedGrams = Math.Ceiling((double)gramsValue * multiplier) / multiplier;
+                }
+                
+                var formattedGrams = gramsPrecision == 0
+                    ? ((int)roundedGrams).ToString()
+                    : roundedGrams.ToString($"F{gramsPrecision}");
+                    
+                return (formattedGrams, defaultUnit);
+            }
+
             double roundedPackages;
             if (packagePrecision == 0)
             {
+                // Для flag == 1 (hasDifferentPackageUnit) округляем вверх до целого
                 roundedPackages = Math.Ceiling((double)packages);
             }
             else
@@ -568,6 +600,30 @@ public partial class ProductsReportPage : Page
         var roundingPrecision = 2;
         var measure = FindMeasure(measures, defaultUnit);
         if (measure != null) roundingPrecision = measure.RoundingPrecision;
+
+        // Логика из старого приложения: если количество < 1, конвертируем в граммы
+        if (totalValue < 1)
+        {
+            var gramsValue = totalValue * 1000;
+            var gramsPrecision = measure?.RoundingPrecision ?? 2;
+            
+            double roundedGrams;
+            if (gramsPrecision == 0)
+            {
+                roundedGrams = Math.Ceiling(gramsValue);
+            }
+            else
+            {
+                var multiplier = Math.Pow(10, gramsPrecision);
+                roundedGrams = Math.Ceiling(gramsValue * multiplier) / multiplier;
+            }
+            
+            var formattedGrams = gramsPrecision == 0
+                ? ((int)roundedGrams).ToString()
+                : roundedGrams.ToString($"F{gramsPrecision}");
+                
+            return (formattedGrams, defaultUnit);
+        }
 
         double roundedValue;
         if (roundingPrecision == 0)

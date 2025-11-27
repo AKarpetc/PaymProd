@@ -700,13 +700,24 @@ public class MenuRepository
                 {
                     isdiap = reader.GetInt32(0) == 1;
                     var productCountValue = reader.GetDecimal(1);
-                    totalCount = isdiap
-                        ? (productCountValue > 0 ? productCountValue : baseCount * countPeople)
-                        : (baseCount > 0 ? baseCount : countPeople);
+                    
+                    // Логика из старого приложения:
+                    // - Если Isdiap = 1 (общее количество на весь банкет): используем Count из продукта
+                    // - Если Isdiap = 0: используем количество людей (как в старом коде Del_count=1, поэтому countPeople * 1)
+                    if (isdiap)
+                    {
+                        // Общее количество на весь банкет
+                        totalCount = productCountValue > 0 ? productCountValue : countPeople;
+                    }
+                    else
+                    {
+                        // Количество на человека - используем количество людей
+                        totalCount = countPeople;
+                    }
                 }
                 else
                 {
-                    totalCount = baseCount > 0 ? baseCount : countPeople;
+                    totalCount = countPeople;
                 }
             }
 
