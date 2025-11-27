@@ -15,18 +15,40 @@
                     Orientation="Horizontal"
                     Margin="10"
                     HorizontalAlignment="Left">
-            <Button Click="SaveToWord_Click"
+            <Button Style="{StaticResource MaterialDesignRaisedButton}"
+                    Padding="20,8"
+                    Click="GenerateReportWithPrices_Click">
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <materialDesign:PackIcon Kind="CashMultiple" Margin="0,0,8,0"/>
+                    <TextBlock Text="Отчет с ценами" VerticalAlignment="Center"/>
+                </StackPanel>
+            </Button>
+            <Button Style="{StaticResource MaterialDesignRaisedButton}"
+                    Padding="20,8"
+                    Margin="10,0,0,0"
+                    Click="GenerateReportWithoutPrices_Click">
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <materialDesign:PackIcon Kind="FileDocumentOutline" Margin="0,0,8,0"/>
+                    <TextBlock Text="Отчет без цен" VerticalAlignment="Center"/>
+                </StackPanel>
+            </Button>
+            <Button x:Name="SaveToWordButton"
+                    Visibility="Collapsed"
                     Style="{StaticResource MaterialDesignRaisedButton}"
                     Padding="20,8"
-                    Margin="0,0,10,0">
+                    Margin="20,0,0,0"
+                    Click="SaveToWord_Click">
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                     <materialDesign:PackIcon Kind="FileWord" Margin="0,0,8,0"/>
                     <TextBlock Text="Сохранить в Word" VerticalAlignment="Center"/>
                 </StackPanel>
             </Button>
-            <Button Click="Print_Click"
+            <Button x:Name="PrintButton"
+                    Visibility="Collapsed"
                     Style="{StaticResource MaterialDesignOutlinedButton}"
-                    Padding="20,8">
+                    Padding="20,8"
+                    Margin="10,0,0,0"
+                    Click="Print_Click">
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                     <materialDesign:PackIcon Kind="Printer" Margin="0,0,8,0"/>
                     <TextBlock Text="Печать" VerticalAlignment="Center"/>
@@ -37,15 +59,7 @@
         <!-- Отчет по продуктам -->
         <materialDesign:Card Grid.Row="1" Margin="10" Padding="20">
             <FlowDocumentScrollViewer>
-                <FlowDocument x:Name="ReportDocument">
-                    <Paragraph x:Name="HeaderParagraph" TextAlignment="Center" FontSize="16" FontWeight="Bold" />
-                    <Table x:Name="ReportTable" CellSpacing="1" BorderBrush="Black" BorderThickness="1">
-                        <Table.Columns>
-                            <TableColumn Width="3*" />
-                            <TableColumn Width="1*" />
-                        </Table.Columns>
-                    </Table>
-                </FlowDocument>
+                <FlowDocument x:Name="ReportDocument" />
             </FlowDocumentScrollViewer>
         </materialDesign:Card>
     </Grid>

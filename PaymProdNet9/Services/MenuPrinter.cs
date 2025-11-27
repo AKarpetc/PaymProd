@@ -334,7 +334,7 @@ public class MenuPrinter
     /// <summary>
     ///     Печать отчета с продуктами
     /// </summary>
-    public void PrintReport(List<DelicatesCollForSvod> reportData, string menuName)
+    public void PrintReport(List<DelicatesCollForSvod> reportData, string menuName, bool includePrices = false)
     {
         try
         {
@@ -399,75 +399,127 @@ public class MenuPrinter
                     .ThenBy(g => g.Key)
                     .ToList();
 
-                var table = new Table(
-                    new TableProperties(
-                        new TableWidth { Type = TableWidthUnitValues.Dxa, Width = "9000" },
-                        new TableJustification { Val = TableRowAlignmentValues.Center },
-                        new TableBorders(
-                            new TopBorder { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 4 },
-                            new BottomBorder { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 4 },
-                            new LeftBorder { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 4 },
-                            new RightBorder { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 4 },
-                            new InsideHorizontalBorder
-                                { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 4 },
-                            new InsideVerticalBorder
-                                { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 4 }
+                if (includePrices)
+                {
+                    var priceTable = new Table(
+                        new TableProperties(
+                            new TableWidth { Type = TableWidthUnitValues.Dxa, Width = "9000" },
+                            new TableJustification { Val = TableRowAlignmentValues.Center },
+                            new TableBorders(
+                                new TopBorder { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 4 },
+                                new BottomBorder { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 4 },
+                                new LeftBorder { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 4 },
+                                new RightBorder { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 4 },
+                                new InsideHorizontalBorder
+                                    { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 4 },
+                                new InsideVerticalBorder
+                                    { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 4 }
+                            )
+                        ),
+                        new TableGrid(
+                            new GridColumn { Width = "3600" },
+                            new GridColumn { Width = "1400" },
+                            new GridColumn { Width = "900" },
+                            new GridColumn { Width = "1800" }
                         )
-                    ),
-                    new TableGrid(
-                        new GridColumn { Width = "2800" },
-                        new GridColumn { Width = "900" },
-                        new GridColumn { Width = "600" },
-                        new GridColumn { Width = "500" },
-                        new GridColumn { Width = "2800" },
-                        new GridColumn { Width = "900" },
-                        new GridColumn { Width = "600" }
-                    )
-                );
+                    );
 
-                var rows = new List<TempRow>();
-                foreach (var t in groupedList)
-                {
-                    rows.AddRange(AppendTypeSection(t));
-                    rows.AddRange(CreateSpacerRow());
+                    foreach (var group in groupedList)
+                    {
+                        var headerRow = new TableRow();
+                        headerRow.Append(CreateCell(group.Key, true, "E3EAF2", JustificationValues.Center, 4));
+                        priceTable.Append(headerRow);
+
+                        var titlesRow = new TableRow();
+                        titlesRow.Append(CreateCell("Продукт", true, "DDEBF7", JustificationValues.Center));
+                        titlesRow.Append(CreateCell("Количество", true, "DDEBF7", JustificationValues.Center));
+                        titlesRow.Append(CreateCell("Ед.", true, "DDEBF7", JustificationValues.Center));
+                        titlesRow.Append(CreateCell("Цена", true, "DDEBF7", JustificationValues.Center));
+                        priceTable.Append(titlesRow);
+
+                        var groupedProductsLeft = GetGroupedProductsLeft(group).ToArray();
+
+                        foreach (var product in groupedProductsLeft)
+                        {
+                            var (amountText, unitText) = FormatAmount(product);
+                            priceTable.Append(CreatePriceRow(product.Name, amountText, unitText,
+                                FormatCurrency(product.TotalPrice)));
+                        }
+                    }
+
+                    body.Append(priceTable);
                 }
-
-                if (rows.Count > 0) rows.Remove(rows.Last());
-
-                var rowsMiddleNumber = rows.Count % 2 == 0 ? rows.Count / 2 : rows.Count / 2 + 1;
-
-                var left = rows.GetRange(0, rowsMiddleNumber);
-                var right = rows.GetRange(rowsMiddleNumber, rows.Count - rowsMiddleNumber);
-
-                if (rows.Count < 20)
+                else
                 {
-                    left = rows;
-                    right = [];
+                    var table = new Table(
+                        new TableProperties(
+                            new TableWidth { Type = TableWidthUnitValues.Dxa, Width = "9000" },
+                            new TableJustification { Val = TableRowAlignmentValues.Center },
+                            new TableBorders(
+                                new TopBorder { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 4 },
+                                new BottomBorder { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 4 },
+                                new LeftBorder { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 4 },
+                                new RightBorder { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 4 },
+                                new InsideHorizontalBorder
+                                    { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 4 },
+                                new InsideVerticalBorder
+                                    { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 4 }
+                            )
+                        ),
+                        new TableGrid(
+                            new GridColumn { Width = "2800" },
+                            new GridColumn { Width = "900" },
+                            new GridColumn { Width = "600" },
+                            new GridColumn { Width = "500" },
+                            new GridColumn { Width = "2800" },
+                            new GridColumn { Width = "900" },
+                            new GridColumn { Width = "600" }
+                        )
+                    );
+
+                    var rows = new List<TempRow>();
+                    foreach (var t in groupedList)
+                    {
+                        rows.AddRange(AppendTypeSection(t));
+                        rows.AddRange(CreateSpacerRow());
+                    }
+
+                    if (rows.Count > 0) rows.Remove(rows.Last());
+
+                    var rowsMiddleNumber = rows.Count % 2 == 0 ? rows.Count / 2 : rows.Count / 2 + 1;
+
+                    var left = rows.GetRange(0, rowsMiddleNumber);
+                    var right = rows.GetRange(rowsMiddleNumber, rows.Count - rowsMiddleNumber);
+
+                    if (rows.Count < 20)
+                    {
+                        left = rows;
+                        right = [];
+                    }
+
+                    var count = left.Count > right.Count ? left.Count : right.Count;
+
+                    for (var i = 0; i < count; i++)
+                    {
+                        var leftRow = left.Count <= i ? null : left[i];
+                        var rightRow = right.Count <= i ? null : right[i];
+
+                        if (leftRow == null && rightRow != null) left.Add(CreateSpacerRow());
+
+                        var row = new TableRow();
+
+                        if (leftRow != null) row.Append(leftRow.Cells.ToArray());
+
+                        row.Append(CreateCell(" ", false, null, JustificationValues.Center, 1,
+                            false, true));
+
+                        if (rightRow != null) row.Append(rightRow.Cells.ToArray());
+
+                        table.Append(row);
+                    }
+
+                    body.Append(table);
                 }
-
-                var count = left.Count > right.Count ? left.Count : right.Count;
-
-                for (var i = 0; i < count; i++)
-                {
-                    var leftRow = left.Count <= i ? null : left[i];
-                    var rightRow = right.Count <= i ? null : right[i];
-
-                    if (leftRow == null && rightRow != null) left.Add(CreateSpacerRow());
-
-                    var row = new TableRow();
-
-                    if (leftRow != null) row.Append(leftRow.Cells.ToArray());
-
-                    row.Append(CreateCell(" ", false, null, JustificationValues.Center, 1,
-                        false, true));
-
-                    if (rightRow != null) row.Append(rightRow.Cells.ToArray());
-
-                    table.Append(row);
-                }
-
-
-                body.Append(table);
                 mainPart.Document.Save();
 
                 Process.Start(new ProcessStartInfo(fileName) { UseShellExecute = true });
@@ -523,6 +575,16 @@ public class MenuPrinter
                     spacerRow.AddCell(CreateSpaceCell());
 
                     return spacerRow;
+                }
+
+                TableRow CreatePriceRow(string productName, string amountText, string unitText, string priceText)
+                {
+                    var row = new TableRow();
+                    row.Append(CreateCell(productName, false, null, JustificationValues.Left));
+                    row.Append(CreateCell(amountText, false, null, JustificationValues.Right));
+                    row.Append(CreateCell(unitText, false, null, JustificationValues.Center));
+                    row.Append(CreateCell(priceText, false, null, JustificationValues.Right));
+                    return row;
                 }
 
                 (string amount, string unit) FormatAmount(GroupedProduct product)
@@ -675,7 +737,8 @@ public class MenuPrinter
                 TotalPackages = g.Sum(r => r.Fass > 0 ? r.ItogFass : 0),
                 FassIz = g.First().FassIz,
                 Mera = g.First().Mera,
-                Fass = g.First().Fass
+                Fass = g.First().Fass,
+                TotalPrice = g.Sum(r => r.TotalPrice)
             })
             .OrderBy(p => p.Name);
 
@@ -691,6 +754,7 @@ public record GroupedProduct
     public string FassIz { get; init; }
     public string Mera { get; init; }
     public decimal Fass { get; init; }
+    public decimal TotalPrice { get; init; }
 }
 
 public record TempRow

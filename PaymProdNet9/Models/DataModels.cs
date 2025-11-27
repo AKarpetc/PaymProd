@@ -136,6 +136,7 @@ public class DelicatesCollForSvod : Components
     public decimal Countpor { get; set; }
     public decimal Itog { get; set; }
     public decimal ItogFass { get; set; }
+    public decimal TotalPrice { get; set; }
 }
 
 /// <summary>

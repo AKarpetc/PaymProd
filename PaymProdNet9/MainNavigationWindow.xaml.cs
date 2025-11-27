@@ -222,13 +222,14 @@ public partial class MainNavigationWindow : Window
             var menuData = GetCurrentMenuData();
             if (menuData == null) return;
 
-            var (menuDelicates, banquetInfo, _) = menuData.Value;
+            var (menuDelicates, banquetInfo, menuId) = menuData.Value;
 
             // Создаем страницу отчета по продуктам с данными
             var productsReportPage = new ProductsReportPage
             {
                 MenuDelicates = menuDelicates,
-                BanquetInfo = banquetInfo
+                BanquetInfo = banquetInfo,
+                MenuId = menuId
             };
 
             // Навигируем к странице отчета
