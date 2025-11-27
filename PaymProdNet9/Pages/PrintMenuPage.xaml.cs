@@ -52,15 +52,23 @@ public partial class PrintMenuPage : Page
 
     private void GenerateReport(bool includePrices)
     {
-        if (Delicates == null || Delicates.Count == 0)
+        try
         {
-            ShowPlaceholder("Нет данных для отображения.");
-            return;
-        }
+            if (Delicates == null || Delicates.Count == 0)
+            {
+                ShowPlaceholder("Нет данных для отображения.");
+                return;
+            }
 
-        BuildDocument(includePrices);
-        _currentReportWithPrices = includePrices;
-        SaveToWordButton.Visibility = Visibility.Visible;
+            BuildDocument(includePrices);
+            _currentReportWithPrices = includePrices;
+            SaveToWordButton.Visibility = Visibility.Visible;
+        }
+        catch (Exception ex)
+        {
+            Logger.Error("Ошибка при генерации отчета по меню", ex);
+            ShowPlaceholder($"Ошибка при генерации отчета: {ex.Message}");
+        }
     }
 
     private void BuildDocument(bool includePrices)
@@ -296,6 +304,7 @@ public partial class PrintMenuPage : Page
         }
         catch (Exception ex)
         {
+            Logger.Error("Ошибка при сохранении отчета по меню", ex);
             MessageBox.Show($"Ошибка при сохранении: {ex.Message}",
                 "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
         }

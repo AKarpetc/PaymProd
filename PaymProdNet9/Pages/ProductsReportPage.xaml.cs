@@ -126,6 +126,7 @@ public partial class ProductsReportPage : Page
         }
         catch (Exception ex)
         {
+            Logger.Error("Ошибка при генерации отчета по продуктам", ex);
             MessageBox.Show($"Ошибка при генерации отчета: {ex.Message}",
                 "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
             ShowPlaceholder("Ошибка при генерации отчета.");
@@ -437,6 +438,7 @@ public partial class ProductsReportPage : Page
         }
         catch (Exception ex)
         {
+            Logger.Error("Ошибка при сохранении отчета по продуктам в Word", ex);
             MessageBox.Show($"Ошибка при создании документа: {ex.Message}",
                 "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
         }
@@ -464,6 +466,7 @@ public partial class ProductsReportPage : Page
         }
         catch (Exception ex)
         {
+            Logger.Error("Ошибка при печати отчета по продуктам", ex);
             MessageBox.Show($"Ошибка при печати: {ex.Message}",
                 "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
         }
