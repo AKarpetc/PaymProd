@@ -147,7 +147,7 @@ public partial class MainNavigationWindow : Window
             nameof(DatabaseManagerPage) => "Управление базой данных",
             nameof(ProductsReportPage) => "Отчет по продуктам",
             nameof(SummaryTablePage) => "Сводная таблица",
-            nameof(PrintMenuPage) => "Печать меню",
+            nameof(PrintMenuPage) => "Отчет по меню",
             nameof(MenuPage) => "Текущее меню - Составление банкета",
             _ => PageTitle.Text // Оставляем текущий заголовок, если тип страницы не определен
         };
@@ -274,14 +274,14 @@ public partial class MainNavigationWindow : Window
     }
 
     /// <summary>
-    /// Печать меню
+    /// Отчет по меню
     /// </summary>
     private void PrintMenu_Click(object sender, RoutedEventArgs e)
     {
         try
         {
             SetActiveButton(sender as Button);
-            PageTitle.Text = "Печать меню";
+            PageTitle.Text = "Отчет по меню";
 
             var menuData = GetCurrentMenuData();
             if (menuData == null) return;

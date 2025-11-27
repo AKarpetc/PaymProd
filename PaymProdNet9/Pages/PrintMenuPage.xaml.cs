@@ -18,6 +18,7 @@ public partial class PrintMenuPage : Page
 
     private readonly MenuPrinter _menuPrinter;
     private readonly MenuPriceService _menuPriceService;
+    private bool? _currentReportWithPrices;
 
     public PrintMenuPage()
     {
@@ -28,10 +29,41 @@ public partial class PrintMenuPage : Page
 
     private void Page_Loaded(object sender, RoutedEventArgs e)
     {
-        BuildDocument();
+        ShowPlaceholder();
     }
 
-    private void BuildDocument()
+    private void ShowPlaceholder(string? message = null)
+    {
+        var text = message ?? "Выберите тип отчета для отображения.";
+        DocumentViewer.Document = new FlowDocument(new Paragraph(new Run(text)));
+        SaveToWordButton.Visibility = Visibility.Collapsed;
+        _currentReportWithPrices = null;
+    }
+
+    private void GenerateReportWithPrices_Click(object sender, RoutedEventArgs e)
+    {
+        GenerateReport(true);
+    }
+
+    private void GenerateReportWithoutPrices_Click(object sender, RoutedEventArgs e)
+    {
+        GenerateReport(false);
+    }
+
+    private void GenerateReport(bool includePrices)
+    {
+        if (Delicates == null || Delicates.Count == 0)
+        {
+            ShowPlaceholder("Нет данных для отображения.");
+            return;
+        }
+
+        BuildDocument(includePrices);
+        _currentReportWithPrices = includePrices;
+        SaveToWordButton.Visibility = Visibility.Visible;
+    }
+
+    private void BuildDocument(bool includePrices)
     {
         if (Delicates == null || Delicates.Count == 0)
         {
@@ -69,8 +101,9 @@ public partial class PrintMenuPage : Page
 
         var table = new Table();
         table.Columns.Add(new TableColumn { Width = new GridLength(250) });
-        table.Columns.Add(new TableColumn { Width = new GridLength(500) });
-        table.Columns.Add(new TableColumn { Width = new GridLength(150) });
+        table.Columns.Add(new TableColumn { Width = includePrices ? new GridLength(500) : new GridLength(650) });
+        if (includePrices)
+            table.Columns.Add(new TableColumn { Width = new GridLength(150) });
 
         var rowGroup = new TableRowGroup();
 
@@ -82,7 +115,7 @@ public partial class PrintMenuPage : Page
                 FontWeight = FontWeights.Bold
             }))
             {
-                ColumnSpan = 3,
+                ColumnSpan = includePrices ? 3 : 2,
                 Background = Brushes.LightGray,
                 TextAlignment = TextAlignment.Center,
                 Padding = new Thickness(4),
@@ -95,7 +128,8 @@ public partial class PrintMenuPage : Page
             var columnsHeaderRow = new TableRow();
             columnsHeaderRow.Cells.Add(CreateColumnHeaderCell("Блюдо"));
             columnsHeaderRow.Cells.Add(CreateColumnHeaderCell("Состав"));
-            columnsHeaderRow.Cells.Add(CreateColumnHeaderCell("Цена, тг"));
+            if (includePrices)
+                columnsHeaderRow.Cells.Add(CreateColumnHeaderCell("Цена, тг"));
             rowGroup.Rows.Add(columnsHeaderRow);
 
             foreach (var delicate in group)
@@ -110,7 +144,7 @@ public partial class PrintMenuPage : Page
                 };
                 row.Cells.Add(nameCell);
 
-                var compositionParagraph = BuildCompositionParagraph(delicate, out var dishPrice);
+                var compositionParagraph = BuildCompositionParagraph(delicate, includePrices, out var dishPrice);
                 var compositionCell = new TableCell(compositionParagraph)
                 {
                     Padding = new Thickness(4),
@@ -120,14 +154,17 @@ public partial class PrintMenuPage : Page
                 };
                 row.Cells.Add(compositionCell);
 
-                var priceCell = new TableCell(new Paragraph(new Run(dishPrice > 0 ? FormatCurrency(dishPrice) : "—")))
+                if (includePrices)
                 {
-                    Padding = new Thickness(4),
-                    BorderBrush = Brushes.Black,
-                    BorderThickness = new Thickness(1),
-                    TextAlignment = TextAlignment.Right
-                };
-                row.Cells.Add(priceCell);
+                    var priceCell = new TableCell(new Paragraph(new Run(dishPrice > 0 ? FormatCurrency(dishPrice) : "—")))
+                    {
+                        Padding = new Thickness(4),
+                        BorderBrush = Brushes.Black,
+                        BorderThickness = new Thickness(1),
+                        TextAlignment = TextAlignment.Right
+                    };
+                    row.Cells.Add(priceCell);
+                }
 
                 rowGroup.Rows.Add(row);
             }
@@ -153,14 +190,20 @@ public partial class PrintMenuPage : Page
         return cell;
     }
 
-    private Paragraph BuildCompositionParagraph(DelicatesColl delicate, out decimal dishTotal)
+    private Paragraph BuildCompositionParagraph(DelicatesColl delicate, bool includePrices, out decimal dishTotal)
     {
         var paragraph = new Paragraph();
-        var lines = BuildCompositionLines(delicate, out dishTotal);
+        var lines = BuildCompositionLines(delicate, includePrices, out dishTotal);
 
         if (lines.Count == 0)
         {
             paragraph.Inlines.Add(new Run("Без состава"));
+            return paragraph;
+        }
+
+        if (!includePrices)
+        {
+            paragraph.Inlines.Add(new Run(string.Join(", ", lines)));
             return paragraph;
         }
 
@@ -173,7 +216,7 @@ public partial class PrintMenuPage : Page
         return paragraph;
     }
 
-    private List<string> BuildCompositionLines(DelicatesColl delicate, out decimal dishTotal)
+    private List<string> BuildCompositionLines(DelicatesColl delicate, bool includePrices, out decimal dishTotal)
     {
         var lines = new List<string>();
         dishTotal = 0;
@@ -186,9 +229,6 @@ public partial class PrintMenuPage : Page
             var totalWeight = component.Ves * (delicate.Count > 0 ? delicate.Count : 1);
             var formattedWeight = FormatValue(totalWeight, baseUnit);
 
-            var priceInfo = _menuPriceService.GetComponentPriceInfo(MenuId, component, delicate.Count);
-            dishTotal += priceInfo.TotalPrice;
-
             if (component.Fass > 0)
             {
                 var packageUnit = !string.IsNullOrWhiteSpace(component.FassIz) ? component.FassIz : baseUnit;
@@ -199,9 +239,19 @@ public partial class PrintMenuPage : Page
                 }
             }
 
-            string line = priceInfo.TotalPrice > 0
-                ? $"{productName} ({formattedWeight}) — {FormatCurrency(priceInfo.TotalPrice)} тг"
-                : $"{productName} ({formattedWeight}) — цена не указана";
+            string line;
+            if (includePrices)
+            {
+                var priceInfo = _menuPriceService.GetComponentPriceInfo(MenuId, component, delicate.Count);
+                dishTotal += priceInfo.TotalPrice;
+                line = priceInfo.TotalPrice > 0
+                    ? $"{productName} ({formattedWeight}) — {FormatCurrency(priceInfo.TotalPrice)} тг"
+                    : $"{productName} ({formattedWeight}) — цена не указана";
+            }
+            else
+            {
+                line = $"{productName} ({formattedWeight})";
+            }
 
             lines.Add(line);
         }
@@ -227,27 +277,10 @@ public partial class PrintMenuPage : Page
     {
         try
         {
-            var menuTitle = BanquetInfo.Count >= 3
-                ? $"{BanquetInfo[0]}, {BanquetInfo[1]} человек, {BanquetInfo[2]}"
-                : "Меню";
-
-            _menuPrinter.PrintMenu(Delicates, menuTitle);
-        }
-        catch (Exception ex)
-        {
-            MessageBox.Show($"Ошибка при сохранении: {ex.Message}",
-                "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
-        }
-    }
-
-    private void SaveToWordWithPrices_Click(object sender, RoutedEventArgs e)
-    {
-        try
-        {
-            if (Delicates.Count == 0)
+            if (!_currentReportWithPrices.HasValue)
             {
-                MessageBox.Show("Нет данных для сохранения.", "Информация", MessageBoxButton.OK,
-                    MessageBoxImage.Information);
+                MessageBox.Show("Сначала сформируйте отчет.", "Внимание",
+                    MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
 
@@ -255,7 +288,11 @@ public partial class PrintMenuPage : Page
                 ? $"{BanquetInfo[0]}, {BanquetInfo[1]} человек, {BanquetInfo[2]}"
                 : "Меню";
 
-            _menuPrinter.PrintMenu(Delicates, menuTitle, includePrices: true, menuId: MenuId > 0 ? MenuId : null);
+            _menuPrinter.PrintMenu(
+                Delicates,
+                menuTitle,
+                includePrices: _currentReportWithPrices.Value,
+                menuId: MenuId > 0 ? MenuId : null);
         }
         catch (Exception ex)
         {

@@ -15,24 +15,37 @@
                     HorizontalAlignment="Left"
                     Margin="0,0,0,10">
             <Button Style="{StaticResource MaterialDesignRaisedButton}"
-                    Background="#4CAF50"
-                    Foreground="White"
-                    Padding="20,5"
-                    Click="SaveToWord_Click">
-                <StackPanel Orientation="Horizontal">
-                    <materialDesign:PackIcon Kind="FileWord" Width="20" Height="20" Margin="0,0,10,0"/>
-                    <TextBlock Text="Сохранить в Word" VerticalAlignment="Center"/>
-                </StackPanel>
-            </Button>
-            <Button Style="{StaticResource MaterialDesignRaisedButton}"
                     Background="#2E7D32"
                     Foreground="White"
                     Padding="20,5"
-                    Margin="10,0,0,0"
-                    Click="SaveToWordWithPrices_Click">
+                    Click="GenerateReportWithPrices_Click">
                 <StackPanel Orientation="Horizontal">
-                    <materialDesign:PackIcon Kind="FileDocument" Width="20" Height="20" Margin="0,0,10,0"/>
-                    <TextBlock Text="Сохранить в Word с ценами" VerticalAlignment="Center"/>
+                    <materialDesign:PackIcon Kind="CashMultiple" Width="20" Height="20" Margin="0,0,10,0"/>
+                    <TextBlock Text="Отчет с ценами" VerticalAlignment="Center"/>
+                </StackPanel>
+            </Button>
+            <Button Style="{StaticResource MaterialDesignRaisedButton}"
+                    Background="#0288D1"
+                    Foreground="White"
+                    Padding="20,5"
+                    Margin="10,0,0,0"
+                    Click="GenerateReportWithoutPrices_Click">
+                <StackPanel Orientation="Horizontal">
+                    <materialDesign:PackIcon Kind="FileDocumentOutline" Width="20" Height="20" Margin="0,0,10,0"/>
+                    <TextBlock Text="Отчет без цен" VerticalAlignment="Center"/>
+                </StackPanel>
+            </Button>
+            <Button x:Name="SaveToWordButton"
+                    Style="{StaticResource MaterialDesignRaisedButton}"
+                    Background="#4CAF50"
+                    Foreground="White"
+                    Padding="20,5"
+                    Margin="10,0,0,0"
+                    Click="SaveToWord_Click"
+                    Visibility="Collapsed">
+                <StackPanel Orientation="Horizontal">
+                    <materialDesign:PackIcon Kind="FileWord" Width="20" Height="20" Margin="0,0,10,0"/>
+                    <TextBlock Text="Сохранить в Word" VerticalAlignment="Center"/>
                 </StackPanel>
             </Button>
         </StackPanel>

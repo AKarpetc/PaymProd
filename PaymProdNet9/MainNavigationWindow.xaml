@@ -232,12 +232,12 @@
                                 Style="{StaticResource NavButtonStyle}"
                                 Click="PrintMenu_Click">
                             <StackPanel Orientation="Horizontal">
-                                <materialDesign:PackIcon Kind="Printer"
+                                <materialDesign:PackIcon Kind="FileDocument"
                                                          Width="24"
                                                          Height="24"
                                                          VerticalAlignment="Center"
                                                          Margin="0,0,15,0" />
-                                <TextBlock Text="Печать меню" VerticalAlignment="Center" />
+                                <TextBlock Text="Отчет по меню" VerticalAlignment="Center" />
                             </StackPanel>
                         </Button>
 
