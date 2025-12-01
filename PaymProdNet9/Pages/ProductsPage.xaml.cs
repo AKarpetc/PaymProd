@@ -1,5 +1,6 @@
 using PaymProdNet9.Data;
 using PaymProdNet9.Models;
+using PaymProdNet9.Services;
 using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Windows;
@@ -178,8 +179,14 @@ public partial class ProductsPage : Page
         _currentProductId = product.ID;
 
         ProductNameTextBox.Text = product.Name;
-        ProductCountTextBox.Text = product.Count.ToString();
-        ProductFassTextBox.Text = product.Fass.ToString();
+        ProductCountTextBox.Text = product.Count.ToString(CultureInfo.CurrentCulture);
+        // Форматируем фасовку с учетом культуры (без лишних нулей, если целое число)
+        var fassValue = product.Fass;
+        Logger.Debug($"Загрузка продукта ID={product.ID}: Fass из базы={fassValue}");
+        ProductFassTextBox.Text = fassValue == (int)fassValue 
+            ? ((int)fassValue).ToString(CultureInfo.CurrentCulture)
+            : fassValue.ToString(CultureInfo.CurrentCulture);
+        Logger.Debug($"Загрузка продукта ID={product.ID}: Fass в TextBox='{ProductFassTextBox.Text}'");
         ProductCountPeopleTextBox.Text = product.CountPeople.ToString();
         ProductPriceTextBox.Text = product.Price == 0
             ? string.Empty
@@ -307,10 +314,55 @@ public partial class ProductsPage : Page
             }
 
             double fass = 0;
-            if (!string.IsNullOrWhiteSpace(ProductFassTextBox.Text))
+            var fassText = ProductFassTextBox.Text?.Trim() ?? string.Empty;
+            Logger.Debug($"Парсинг фасовки: исходный текст='{fassText}'");
+            
+            if (!string.IsNullOrWhiteSpace(fassText))
             {
-                double.TryParse(ProductFassTextBox.Text, out fass);
+                // Используем правильный парсинг с учетом культуры (как для цены)
+                bool parsed = false;
+                if (double.TryParse(fassText, NumberStyles.Any, CultureInfo.CurrentCulture, out fass))
+                {
+                    parsed = true;
+                    Logger.Debug($"Фасовка распарсена с CurrentCulture: {fass}");
+                }
+                else if (double.TryParse(fassText, NumberStyles.Any, CultureInfo.InvariantCulture, out fass))
+                {
+                    parsed = true;
+                    Logger.Debug($"Фасовка распарсена с InvariantCulture: {fass}");
+                }
+                else
+                {
+                    // Пробуем заменить запятую на точку и наоборот
+                    var textWithDot = fassText.Replace(',', '.');
+                    var textWithComma = fassText.Replace('.', ',');
+                    
+                    if (double.TryParse(textWithDot, NumberStyles.Any, CultureInfo.InvariantCulture, out fass))
+                    {
+                        parsed = true;
+                        Logger.Debug($"Фасовка распарсена после замены запятой на точку: {fass}");
+                    }
+                    else if (double.TryParse(textWithComma, NumberStyles.Any, CultureInfo.CurrentCulture, out fass))
+                    {
+                        parsed = true;
+                        Logger.Debug($"Фасовка распарсена после замены точки на запятую: {fass}");
+                    }
+                }
+                
+                if (!parsed)
+                {
+                    Logger.Error($"Не удалось распарсить фасовку: '{fassText}'");
+                    MessageBox.Show($"Неверное значение фасовки! Используйте число (например: 600 или 600,0).\nВведено: '{fassText}'",
+                        "Внимание", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
             }
+            else
+            {
+                Logger.Debug("Фасовка пустая, используется значение по умолчанию 0");
+            }
+            
+            Logger.Debug($"Итоговое значение фасовки для сохранения: {fass}");
 
             int countPeople = 0;
             if (!string.IsNullOrWhiteSpace(ProductCountPeopleTextBox.Text))
@@ -332,12 +384,14 @@ public partial class ProductsPage : Page
             if (_currentProductId.HasValue)
             {
                 // Обновление существующего продукта
+                var fassValue = (decimal)fass;
+                Logger.Debug($"Сохранение продукта ID={_currentProductId.Value}, Fass={fassValue} (из текста '{ProductFassTextBox.Text}')");
                 _productRepository.UpdateProduct(
                     _currentProductId.Value,
                     ProductNameTextBox.Text,
                     vesId,
                     typeId,
-                    (decimal)fass,
+                    fassValue,
                     fassMeasureId,
                     prizMenu,
                     count,
@@ -353,11 +407,12 @@ public partial class ProductsPage : Page
             else
             {
                 // Создание нового продукта
+                Logger.Debug($"Создание продукта, Fass={fass} (из текста '{ProductFassTextBox.Text}')");
                 _productRepository.AddProduct(
                     ProductNameTextBox.Text,
                     vesId,
                     typeId,
-                    fass,
+                    fass, // AddProduct ожидает double
                     fassMeasureId,
                     prizMenu,
                     count,
@@ -372,6 +427,16 @@ public partial class ProductsPage : Page
             }
 
             LoadProducts();
+            
+            // Проверяем значение после загрузки
+            if (_currentProductId.HasValue)
+            {
+                var loadedProduct = _allProducts.FirstOrDefault(p => p.ID == _currentProductId.Value);
+                if (loadedProduct != null)
+                {
+                    Logger.Debug($"SaveProduct: После LoadProducts продукт ID={_currentProductId.Value}, Fass={loadedProduct.Fass}");
+                }
+            }
             ShowListView(); // Return to list view
         }
         catch (Exception ex)

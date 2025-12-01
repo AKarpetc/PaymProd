@@ -762,10 +762,10 @@ public partial class CurrentMenuPage : Page
                 Prodid = selectedProduct.ID,
                 NameT = selectedProduct.Name,
                 Ves = 0,
-                Mera = string.IsNullOrWhiteSpace(selectedProduct.Ves) ? selectedProduct.IzName : selectedProduct.Ves,
+                Mera = !string.IsNullOrWhiteSpace(selectedProduct.Ves) ? selectedProduct.Ves : "г", // Основная единица измерения
                 FassIz = selectedProduct.IzName,
                 MenuRoundingPrecision = GetMenuPrecision(
-                    string.IsNullOrWhiteSpace(selectedProduct.Ves) ? selectedProduct.IzName : selectedProduct.Ves)
+                    !string.IsNullOrWhiteSpace(selectedProduct.Ves) ? selectedProduct.Ves : "г")
             };
 
             _editingDelicateComponents.Add(component);

@@ -199,8 +199,8 @@ public partial class DelicatesPage : Page
         DelicateTypeComboBox.SelectedIndex = -1;
         _currentDelicateComponents.Clear();
 
-        // Автоматически добавляем продукты с флагом "автоматически добавлять"
-        LoadAutoAddProducts();
+        // Продукты с флагом "автоматически добавлять" добавляются только в меню, а не в блюда
+        // LoadAutoAddProducts(); // Убрано - продукты с AutoAdd не должны добавляться в блюда
 
         ShowEditView(false);
         DelicateNameTextBox.Focus();
@@ -232,7 +232,7 @@ public partial class DelicatesPage : Page
                     Prodid = product.ID,
                     NameT = product.Name,
                     Ves = product.Count > 0 ? product.Count : 0, // Используем Count из продукта, если указан
-                    Mera = product.IzName
+                    Mera = !string.IsNullOrWhiteSpace(product.Ves) ? product.Ves : "г" // Основная единица измерения
                 };
 
                 _currentDelicateComponents.Add(component);
@@ -278,8 +278,8 @@ public partial class DelicatesPage : Page
             // Загружаем компоненты
             LoadDelicateComponents(delicate.Id);
 
-            // Добавляем продукты с флагом "автоматически добавлять", если их еще нет
-            LoadAutoAddProducts();
+            // Продукты с флагом "автоматически добавлять" добавляются только в меню, а не в блюда
+            // LoadAutoAddProducts(); // Убрано - продукты с AutoAdd не должны добавляться в блюда
 
             ShowEditView(true);
         }
@@ -485,7 +485,7 @@ public partial class DelicatesPage : Page
                 Prodid = selectedProduct.ID,
                 NameT = selectedProduct.Name,
                 Ves = 0,
-                Mera = selectedProduct.IzName
+                Mera = !string.IsNullOrWhiteSpace(selectedProduct.Ves) ? selectedProduct.Ves : "г" // Основная единица измерения
             };
 
             _currentDelicateComponents.Add(component);

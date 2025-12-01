@@ -1,5 +1,6 @@
 using Microsoft.Data.Sqlite;
 using PaymProdNet9.Models;
+using PaymProdNet9.Services;
 
 namespace PaymProdNet9.Data;
 
@@ -35,7 +36,7 @@ public class ProductRepository
             LEFT JOIN Mera m ON m.Mera_ID = p.Ves
             LEFT JOIN Mera mi ON mi.Mera_ID = p.Izmer";
 
-        using var reader = command.ExecuteReader();
+        using var reader = command.ExecuteReaderWithLog();
         while (reader.Read())
         {
             products.Add(BuildProductView(reader));
@@ -62,6 +63,7 @@ public class ProductRepository
         command.Parameters.AddWithValue("@name", name);
         command.Parameters.AddWithValue("@type", typeId);
         command.Parameters.AddWithValue("@ves", vesId.HasValue && vesId.Value > 0 ? (object)vesId.Value : DBNull.Value);
+        Logger.Debug($"AddProduct: Сохранение фасовки Fass={fass} для продукта '{name}'");
         command.Parameters.AddWithValue("@fass", fass);
         command.Parameters.AddWithValue("@izmer", izmerId);
         command.Parameters.AddWithValue("@prizMenu", prizMenu);
@@ -132,7 +134,9 @@ public class ProductRepository
         command.Parameters.AddWithValue("@name", name);
         command.Parameters.AddWithValue("@type", typeId);
         command.Parameters.AddWithValue("@ves", vesId.HasValue && vesId.Value > 0 ? (object)vesId.Value : DBNull.Value);
-        command.Parameters.AddWithValue("@fass", (double)fass);
+        var fassValue = (double)fass;
+        Logger.Debug($"UpdateProduct: Сохранение фасовки Fass={fassValue} (decimal={fass}) для продукта ID={id}");
+        command.Parameters.AddWithValue("@fass", fassValue);
         command.Parameters.AddWithValue("@izmer", izmerId);
         command.Parameters.AddWithValue("@prizMenu", prizMenu);
         command.Parameters.AddWithValue("@count", (double)count);
@@ -141,7 +145,20 @@ public class ProductRepository
         command.Parameters.AddWithValue("@isdiap", mainCount ? 1 : 0);
         command.Parameters.AddWithValue("@price", price);
 
-        command.ExecuteNonQuery();
+        var rowsAffected = command.ExecuteNonQueryWithLog();
+        Logger.Debug($"UpdateProduct: Обновлено строк: {rowsAffected}");
+
+        // Проверяем, что значение действительно сохранилось
+        var verifyCommand = connection.CreateCommand();
+        verifyCommand.CommandText = "SELECT Fass FROM Producrs WHERE Prod_ID = @id";
+        verifyCommand.Parameters.AddWithValue("@id", id);
+        var savedFass = Convert.ToDouble(verifyCommand.ExecuteScalar());
+        Logger.Debug($"UpdateProduct: Проверка сохраненного значения Fass={savedFass} (ожидалось {fassValue})");
+        
+        if (Math.Abs(savedFass - fassValue) > 0.001)
+        {
+            Logger.Error($"UpdateProduct: ОШИБКА! Сохраненное значение Fass={savedFass} не совпадает с ожидаемым {fassValue}");
+        }
 
         if (prizMenu == 1)
             EnsureLinkedDelicate(connection, id, name, typeId, count);
@@ -459,15 +476,19 @@ public class ProductRepository
 
     private ProductView BuildProductView(SqliteDataReader reader)
     {
+        var productId = reader.GetInt32(0);
+        var fassValue = reader.IsDBNull(6) ? 0 : reader.GetDecimal(6);
+        Logger.Debug($"BuildProductView: Загрузка продукта ID={productId}, Fass из базы={fassValue}");
+        
         var product = new ProductView
         {
-            ID = reader.GetInt32(0),
+            ID = productId,
             Name = reader.GetString(1),
             Type = reader.GetString(2),
             Ves = reader.IsDBNull(3) ? string.Empty : reader.GetString(3),
             TID = reader.GetInt32(4),
             VID = reader.IsDBNull(5) ? 0 : reader.GetInt32(5),
-            Fass = reader.IsDBNull(6) ? 0 : reader.GetDecimal(6),
+            Fass = fassValue,
             Iz = reader.IsDBNull(7) ? 0 : reader.GetInt32(7),
             IzName = reader.IsDBNull(8) ? string.Empty : reader.GetString(8),
             PrizMen = reader.GetInt32(13),
@@ -492,19 +513,24 @@ public class ProductRepository
     private static void ApplyPackagingDefaults(ProductView product, decimal baseFassDef, string baseFassIzmer,
         decimal packFassDef, string packFassIzmer)
     {
+        // НЕ перезаписываем Fass продукта - используем значение из базы данных
         var packagingFass = product.Fass;
         var packagingName = product.IzName;
 
         if (product.Iz == 0 || product.Iz == product.VID)
         {
-            if (baseFassDef > 0)
+            // НЕ перезаписываем Fass, если оно уже установлено (больше 0)
+            // Используем baseFassDef только если Fass продукта не установлен (равен 0)
+            if (baseFassDef > 0 && product.Fass == 0)
                 packagingFass = baseFassDef;
 
             packagingName = string.IsNullOrWhiteSpace(baseFassIzmer) ? product.Ves : baseFassIzmer;
         }
         else
         {
-            if (packFassDef > 0)
+            // НЕ перезаписываем Fass, если оно уже установлено (больше 0)
+            // Используем packFassDef только если Fass продукта не установлен (равен 0)
+            if (packFassDef > 0 && product.Fass == 0)
                 packagingFass = packFassDef;
 
             packagingName = !string.IsNullOrWhiteSpace(packFassIzmer)
@@ -512,10 +538,22 @@ public class ProductRepository
                 : (string.IsNullOrWhiteSpace(baseFassIzmer) ? product.Ves : baseFassIzmer);
         }
 
-        if (packagingFass <= 0) packagingFass = 1;
+        // НЕ устанавливаем значение по умолчанию 1, если Fass продукта уже установлено
+        // Используем значение по умолчанию только если Fass продукта не установлено (равен 0)
+        if (product.Fass == 0 && packagingFass <= 0) packagingFass = 1;
         if (string.IsNullOrWhiteSpace(packagingName)) packagingName = product.Ves;
 
-        product.Fass = packagingFass;
+        // Сохраняем значение Fass продукта - НЕ перезаписываем, если оно уже установлено
+        if (product.Fass > 0)
+        {
+            // Fass продукта уже установлено - не изменяем его
+            Logger.Debug($"ApplyPackagingDefaults: Сохраняем существующее значение Fass={product.Fass} для продукта ID={product.ID}");
+        }
+        else
+        {
+            // Fass продукта не установлено - используем значение по умолчанию
+            product.Fass = packagingFass;
+        }
         product.IzName = packagingName;
     }
 
