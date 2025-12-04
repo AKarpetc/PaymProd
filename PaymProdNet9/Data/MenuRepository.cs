@@ -312,7 +312,7 @@ public class MenuRepository
         while (reader.Read())
         {
             var delId = reader.GetInt32(2);
-            var delName = reader.GetString(4);
+            var delName = reader.IsDBNull(4) ? $"Блюдо #{delId}" : reader.GetString(4);
             bool isProduct = delId < 0;
 
             List<Components> components;

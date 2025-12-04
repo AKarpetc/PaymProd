@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Data;
 using Microsoft.Data.SqlClient;
 using Microsoft.Data.Sqlite;
@@ -45,8 +46,7 @@ class Program
                 Console.WriteLine("\nExample:");
                 Console.WriteLine("  PaymProdMigrate.exe MenuCaolc.mdf");
                 Console.WriteLine("  PaymProdMigrate.exe C:\\Data\\MenuCaolc.mdf C:\\Output\\MenuCalc.db");
-                Console.WriteLine("\nPress any key to exit...");
-                Console.ReadKey();
+                WaitForExitIfInteractive();
                 return 1;
             }
         }
@@ -96,15 +96,13 @@ class Program
             
             PrintSuccess(stats, targetFile);
             
-            Console.WriteLine("\nPress any key to exit...");
-            Console.ReadKey();
+            WaitForExitIfInteractive();
             return 0;
         }
         catch (Exception ex)
         {
             PrintError(ex);
-            Console.WriteLine("\nPress any key to exit...");
-            Console.ReadKey();
+            WaitForExitIfInteractive();
             return 1;
         }
     }
@@ -361,6 +359,47 @@ class Program
         ";
         cmd.ExecuteNonQuery();
     }
+
+    static bool TableExists(SqlConnection source, string tableName)
+    {
+        using var checkCmd = source.CreateCommand();
+        checkCmd.CommandText = @"SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = @table";
+        checkCmd.Parameters.AddWithValue("@table", tableName);
+        return Convert.ToInt32(checkCmd.ExecuteScalar()) > 0;
+    }
+
+    static HashSet<string> GetColumnNames(SqlConnection source, string tableName)
+    {
+        using var cmd = source.CreateCommand();
+        cmd.CommandText = @"SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = @table";
+        cmd.Parameters.AddWithValue("@table", tableName);
+
+        using var reader = cmd.ExecuteReader();
+        var columns = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        while (reader.Read())
+        {
+            columns.Add(reader.GetString(0));
+        }
+        return columns;
+    }
+
+    static string ResolveColumn(HashSet<string> columns, string tableName, string targetColumn, params string[] candidates)
+    {
+        foreach (var candidate in candidates)
+        {
+            if (columns.Contains(candidate))
+            {
+                return candidate;
+            }
+        }
+
+        if (columns.Contains(targetColumn))
+        {
+            return targetColumn;
+        }
+
+        throw new InvalidOperationException($"{tableName}: Required column '{targetColumn}' not found in source database.");
+    }
     
     static int MigrateTable(SqlConnection source, SqliteConnection target, string tableName, string columns)
     {
@@ -483,25 +522,35 @@ class Program
     {
         try
         {
-            // First check if Menus table exists in source
-            using var checkCmd = source.CreateCommand();
-            checkCmd.CommandText = @"SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLES 
-                WHERE TABLE_NAME = 'Menus'";
-            var exists = Convert.ToInt32(checkCmd.ExecuteScalar()) > 0;
-            
-            if (!exists)
+            if (!TableExists(source, "Menus"))
             {
                 WriteWarning("Menus: Table does not exist in source database");
                 return 0;
             }
             
+            var columns = GetColumnNames(source, "Menus");
+            string Map(string targetColumn, params string[] candidates) =>
+                ResolveColumn(columns, "Menus", targetColumn, candidates);
+            
+            var selectSql = $@"
+                SELECT 
+                    [{Map("Id", "Menu_Id", "Id")}] AS Id,
+                    [{Map("Name", "Name_menu", "Name")}] AS Name,
+                    [{Map("Count_people", "Count_Human", "Count_people")}] AS Count_people,
+                    [{Map("Deteils", "Data_menu", "deteils", "Deteils")}] AS Deteils,
+                    [{Map("Datew", "Data_soz", "dateW", "Datew")}] AS Datew,
+                    [{Map("Isopen", "Isopen", "isOpen")}] AS Isopen,
+                    [{Map("Dateban", "DateBan", "dateBan", "Dateban")}] AS Dateban,
+                    [{Map("Ifchan", "Ifchan", "ifchan")}] AS Ifchan
+                FROM [Menus]";
+            
             using var sourceCmd = source.CreateCommand();
-            sourceCmd.CommandText = "SELECT Menu_Id, Name_menu, Count_Human, Data_menu, Data_soz FROM [Menus]";
+            sourceCmd.CommandText = selectSql;
             using var reader = sourceCmd.ExecuteReader();
             
             var insertSQL = @"INSERT INTO Menus 
                 (Id, Name, Count_people, Deteils, Datew, Isopen, Dateban, Ifchan) 
-                VALUES (@p0, @p1, @p2, @p3, @p4, 0, NULL, 0)";
+                VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7)";
             
             int count = 0;
             while (reader.Read())
@@ -509,11 +558,14 @@ class Program
                 using var cmd = target.CreateCommand();
                 cmd.CommandText = insertSQL;
                 
-                cmd.Parameters.AddWithValue("@p0", reader.IsDBNull(0) ? DBNull.Value : reader.GetValue(0)); // Menu_Id -> Id
-                cmd.Parameters.AddWithValue("@p1", reader.IsDBNull(1) ? DBNull.Value : reader.GetValue(1)); // Name_menu -> Name
-                cmd.Parameters.AddWithValue("@p2", reader.IsDBNull(2) ? DBNull.Value : reader.GetValue(2)); // Count_Human -> Count_people
-                cmd.Parameters.AddWithValue("@p3", reader.IsDBNull(3) ? DBNull.Value : reader.GetValue(3)); // Data_menu -> Deteils
-                cmd.Parameters.AddWithValue("@p4", reader.IsDBNull(4) ? DBNull.Value : reader.GetValue(4)); // Data_soz -> Datew
+                cmd.Parameters.AddWithValue("@p0", reader.IsDBNull(0) ? DBNull.Value : reader.GetValue(0)); // Id
+                cmd.Parameters.AddWithValue("@p1", reader.IsDBNull(1) ? DBNull.Value : reader.GetValue(1)); // Name
+                cmd.Parameters.AddWithValue("@p2", reader.IsDBNull(2) ? DBNull.Value : reader.GetValue(2)); // Count_people
+                cmd.Parameters.AddWithValue("@p3", reader.IsDBNull(3) ? DBNull.Value : reader.GetValue(3)); // Deteils
+                cmd.Parameters.AddWithValue("@p4", reader.IsDBNull(4) ? DBNull.Value : reader.GetValue(4)); // Datew
+                cmd.Parameters.AddWithValue("@p5", reader.IsDBNull(5) ? 0 : reader.GetValue(5)); // Isopen
+                cmd.Parameters.AddWithValue("@p6", reader.IsDBNull(6) ? DBNull.Value : reader.GetValue(6)); // Dateban
+                cmd.Parameters.AddWithValue("@p7", reader.IsDBNull(7) ? 0 : reader.GetValue(7)); // Ifchan
                 
                 cmd.ExecuteNonQuery();
                 count++;
@@ -533,20 +585,26 @@ class Program
     {
         try
         {
-            // First check if Menu_Delicates table exists in source
-            using var checkCmd = source.CreateCommand();
-            checkCmd.CommandText = @"SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLES 
-                WHERE TABLE_NAME = 'Menu_Delicates'";
-            var exists = Convert.ToInt32(checkCmd.ExecuteScalar()) > 0;
-            
-            if (!exists)
+            if (!TableExists(source, "Menu_Delicates"))
             {
                 WriteWarning("Menu_Delicates: Table does not exist in source database");
                 return 0;
             }
             
+            var columns = GetColumnNames(source, "Menu_Delicates");
+            string Map(string targetColumn, params string[] candidates) =>
+                ResolveColumn(columns, "Menu_Delicates", targetColumn, candidates);
+            
+            var selectSql = $@"
+                SELECT
+                    [{Map("Id", "id_row", "Id")}] AS Id,
+                    [{Map("Id_men", "Id_menu", "id_men", "Id_men")}] AS Id_men,
+                    [{Map("Id_delic", "Id_delic")}] AS Id_delic,
+                    [{Map("Delcount", "Count_por", "Delcount")}] AS Delcount
+                FROM [Menu_Delicates]";
+            
             using var sourceCmd = source.CreateCommand();
-            sourceCmd.CommandText = "SELECT id_row, Id_menu, Id_delic, Count_por FROM [Menu_Delicates]";
+            sourceCmd.CommandText = selectSql;
             using var reader = sourceCmd.ExecuteReader();
             
             var insertSQL = @"INSERT INTO Menu_Delicates 
@@ -559,10 +617,10 @@ class Program
                 using var cmd = target.CreateCommand();
                 cmd.CommandText = insertSQL;
                 
-                cmd.Parameters.AddWithValue("@p0", reader.IsDBNull(0) ? DBNull.Value : reader.GetValue(0)); // id_row -> Id
-                cmd.Parameters.AddWithValue("@p1", reader.IsDBNull(1) ? DBNull.Value : reader.GetValue(1)); // Id_menu -> Id_men
-                cmd.Parameters.AddWithValue("@p2", reader.IsDBNull(2) ? DBNull.Value : reader.GetValue(2)); // Id_delic -> Id_delic
-                cmd.Parameters.AddWithValue("@p3", reader.IsDBNull(3) ? Convert.ToInt32(reader.GetValue(3)) : 0); // Count_por -> Delcount (REAL to INTEGER)
+                cmd.Parameters.AddWithValue("@p0", reader.IsDBNull(0) ? DBNull.Value : reader.GetValue(0)); // Id
+                cmd.Parameters.AddWithValue("@p1", reader.IsDBNull(1) ? DBNull.Value : reader.GetValue(1)); // Id_men
+                cmd.Parameters.AddWithValue("@p2", reader.IsDBNull(2) ? DBNull.Value : reader.GetValue(2)); // Id_delic
+                cmd.Parameters.AddWithValue("@p3", reader.IsDBNull(3) ? 0 : reader.GetValue(3)); // Delcount
                 
                 cmd.ExecuteNonQuery();
                 count++;
@@ -659,6 +717,28 @@ class Program
         Console.Write("  ⚠ ");
         Console.ResetColor();
         Console.WriteLine(message);
+    }
+
+    static bool ShouldPause()
+    {
+        if (!Environment.UserInteractive || Console.IsInputRedirected)
+        {
+            return false;
+        }
+
+        var noPause = Environment.GetEnvironmentVariable("PAYMPROD_NO_PAUSE");
+        return !string.Equals(noPause, "1", StringComparison.OrdinalIgnoreCase);
+    }
+
+    static void WaitForExitIfInteractive()
+    {
+        if (!ShouldPause())
+        {
+            return;
+        }
+
+        Console.WriteLine("\nPress any key to exit...");
+        Console.ReadKey();
     }
 }
 
