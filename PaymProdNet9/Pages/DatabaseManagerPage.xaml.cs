@@ -271,4 +271,95 @@ public partial class DatabaseManagerPage : Page
                 "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
+
+    private void ResetDbButton_Click(object sender, RoutedEventArgs e)
+    {
+        var result = MessageBox.Show(
+            "Создать новую пустую базу данных?\n\nТекущая база будет сохранена как резервная копия.",
+            "Подтверждение",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning);
+
+        if (result != MessageBoxResult.Yes)
+            return;
+
+        string? backupPath = null;
+        try
+        {
+            var currentPath = DatabaseBackupHelper.GetCurrentDatabasePath();
+            if (File.Exists(currentPath))
+            {
+                backupPath = DatabaseBackupHelper.CreateAutoBackup();
+            }
+        }
+        catch (Exception backupEx)
+        {
+            var continueResult = MessageBox.Show(
+                $"Не удалось создать резервную копию:\n{backupEx.Message}\n\nПродолжить без резервной копии?",
+                "Внимание",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning);
+
+            if (continueResult != MessageBoxResult.Yes)
+            {
+                return;
+            }
+        }
+
+        try
+        {
+            DatabaseBackupHelper.CreateFreshDatabase();
+            var message = "Создана новая база данных.";
+            if (!string.IsNullOrWhiteSpace(backupPath))
+            {
+                message += $"\nРезервная копия: {backupPath}";
+            }
+
+            message += "\n\nПерезапустите приложение, чтобы начать работу с чистой базой.";
+
+            MessageBox.Show(message,
+                "Готово",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+
+            LoadCurrentDatabaseInfo();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Ошибка при создании новой базы данных:\n{ex.Message}",
+                "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    private async void DownloadStartDbButton_Click(object sender, RoutedEventArgs e)
+    {
+        DownloadStartDbButton.IsEnabled = false;
+        try
+        {
+            var currentPath = DatabaseBackupHelper.GetCurrentDatabasePath();
+            var window = Window.GetWindow(this);
+            var downloaded = await UpdateService.TryDownloadStartDatabaseAsync(
+                currentPath,
+                window,
+                replaceExisting: true,
+                silentSuccess: false);
+
+            if (downloaded)
+            {
+                LoadCurrentDatabaseInfo();
+            }
+            else
+            {
+                MessageBox.Show(
+                    "Загрузка стартовой базы данных отменена или недоступна.",
+                    "Информация",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+            }
+        }
+        finally
+        {
+            DownloadStartDbButton.IsEnabled = true;
+        }
+    }
 }

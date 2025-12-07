@@ -175,7 +175,7 @@ public static class DatabaseBackupHelper
     /// <summary>
     /// Получить путь к текущей базе данных
     /// </summary>
-    private static string GetCurrentDatabasePath()
+    public static string GetCurrentDatabasePath()
     {
         var appDataPath = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
@@ -184,6 +184,28 @@ public static class DatabaseBackupHelper
         var binPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "MenuCalc.db");
 
         return File.Exists(appDataPath) ? appDataPath : binPath;
+    }
+
+    /// <summary>
+    /// Создать новую пустую базу данных, удалив текущую
+    /// </summary>
+    public static void CreateFreshDatabase()
+    {
+        var currentDbPath = GetCurrentDatabasePath();
+        SqliteConnection.ClearAllPools();
+
+        var directory = Path.GetDirectoryName(currentDbPath);
+        if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
+        {
+            Directory.CreateDirectory(directory);
+        }
+
+        if (File.Exists(currentDbPath))
+        {
+            File.Delete(currentDbPath);
+        }
+
+        DatabaseHelper.InitializeDatabase(currentDbPath);
     }
 
     /// <summary>

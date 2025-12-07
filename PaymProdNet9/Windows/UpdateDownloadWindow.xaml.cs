@@ -10,12 +10,25 @@ public partial class UpdateDownloadWindow : Window
         InitializeComponent();
     }
 
-    public void SetVersion(string version)
+    public void SetTitle(string title)
     {
         Dispatcher.Invoke(() =>
         {
-            VersionTextBlock.Text = $"Версия: {version}";
+            TitleTextBlock.Text = title;
         });
+    }
+
+    public void SetSubtitle(string text)
+    {
+        Dispatcher.Invoke(() =>
+        {
+            VersionTextBlock.Text = text;
+        });
+    }
+
+    public void SetVersion(string version)
+    {
+        SetSubtitle($"Версия: {version}");
     }
 
     public void UpdateProgress(double? fraction, long downloadedBytes, long totalBytes)

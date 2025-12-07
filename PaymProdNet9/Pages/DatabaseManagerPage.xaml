@@ -105,6 +105,18 @@
                             Style="{StaticResource InfoButton}"
                             Click="ConfigureGoogleDriveButton_Click"
                             ToolTip="Настроить OAuth токен для автоматической загрузки" />
+
+                    <Button Name="ResetDbButton"
+                            Content="🆕 Начать с новой базы"
+                            Style="{StaticResource DangerButton}"
+                            Click="ResetDbButton_Click"
+                            ToolTip="Создать пустую базу данных (текущая будет удалена)" />
+
+                    <Button Name="DownloadStartDbButton"
+                            Content="⬇️ Скачать стартовую базу"
+                            Style="{StaticResource InfoButton}"
+                            Click="DownloadStartDbButton_Click"
+                            ToolTip="Заменить текущую базу подготовленными данными" />
                 </WrapPanel>
             </StackPanel>
         </GroupBox>

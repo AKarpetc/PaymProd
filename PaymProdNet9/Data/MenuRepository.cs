@@ -1,6 +1,7 @@
 using Microsoft.Data.Sqlite;
 using PaymProdNet9.Models;
 using PaymProdNet9.Services;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -28,14 +29,19 @@ public class MenuRepository
 
         using var reader = command.ExecuteReader();
         while (reader.Read())
+        {
+            var rawName = reader.IsDBNull(1) ? string.Empty : reader.GetString(1);
+            var dateBan = reader.IsDBNull(3) ? string.Empty : reader.GetString(3);
+
             menus.Add(new Menus
             {
                 Id = reader.GetInt32(0),
-                Name = reader.GetString(1),
+                Name = NormalizeMenuName(rawName, dateBan),
                 CountP = reader.GetInt32(2),
-                DateBan = reader.IsDBNull(3) ? string.Empty : reader.GetString(3),
+                DateBan = dateBan,
                 Detail = reader.IsDBNull(4) ? string.Empty : reader.GetString(4)
             });
+        }
 
         return menus;
     }
@@ -53,14 +59,19 @@ public class MenuRepository
 
         using var reader = command.ExecuteReader();
         if (reader.Read())
+        {
+            var rawName = reader.IsDBNull(1) ? string.Empty : reader.GetString(1);
+            var dateBan = reader.IsDBNull(3) ? string.Empty : reader.GetString(3);
+
             return new Menus
             {
                 Id = reader.GetInt32(0),
-                Name = reader.GetString(1),
+                Name = NormalizeMenuName(rawName, dateBan),
                 CountP = reader.GetInt32(2),
-                DateBan = reader.IsDBNull(3) ? string.Empty : reader.GetString(3),
+                DateBan = dateBan,
                 Detail = reader.IsDBNull(4) ? string.Empty : reader.GetString(4)
             };
+        }
 
         return null;
     }
@@ -1240,5 +1251,23 @@ public class MenuRepository
         command.Parameters.AddWithValue("@delicateId", delicateId);
         command.Parameters.AddWithValue("@count", count);
         command.ExecuteNonQueryWithLog();
+    }
+
+    private static string NormalizeMenuName(string? rawName, string? referenceDate)
+    {
+        if (!string.IsNullOrWhiteSpace(rawName))
+            return rawName.Trim();
+
+        if (!string.IsNullOrWhiteSpace(referenceDate))
+        {
+            if (DateTime.TryParse(referenceDate, out var parsed))
+            {
+                return $"Меню от {parsed:dd.MM.yyyy}";
+            }
+
+            return $"Меню от {referenceDate}";
+        }
+
+        return "Меню без названия";
     }
 }

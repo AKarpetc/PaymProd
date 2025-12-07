@@ -79,6 +79,11 @@ public partial class App : Application
         if (!string.IsNullOrEmpty(directory) && !System.IO.Directory.Exists(directory))
             System.IO.Directory.CreateDirectory(directory);
 
+        if (!System.IO.File.Exists(dbPath))
+        {
+            await UpdateService.TryDownloadStartDatabaseAsync(dbPath, null, replaceExisting: false, silentSuccess: true);
+        }
+
         try
         {
             Logger.Debug($"Инициализация базы данных: {dbPath}");

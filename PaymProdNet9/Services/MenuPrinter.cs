@@ -363,16 +363,29 @@ public class MenuPrinter
 
                 var lowerName = measureName.ToLower().Trim();
 
-                // Прямое совпадение
                 if (measuresDict.ContainsKey(lowerName))
                     return measuresDict[lowerName];
 
-                // Поиск по частичному совпадению
                 foreach (var measure in measures)
                     if (lowerName.Contains(measure.Name.ToLower()) || measure.Name.ToLower().Contains(lowerName))
                         return measure;
 
                 return null;
+            }
+
+            string NormalizeUnit(string unit) =>
+                unit?.Trim().ToLowerInvariant() ?? string.Empty;
+
+            Measure? FindChildMeasure(string? parentUnit)
+            {
+                if (string.IsNullOrWhiteSpace(parentUnit))
+                    return null;
+
+                var normalizedParent = NormalizeUnit(parentUnit);
+                return measures.FirstOrDefault(m =>
+                    m.Fass > 0 &&
+                    !string.IsNullOrWhiteSpace(m.FassIzmer) &&
+                    NormalizeUnit(m.FassIzmer) == normalizedParent);
             }
 
             // Получаем типы продуктов для сортировки
@@ -609,9 +622,6 @@ public class MenuPrinter
                     return FormatDiscrete(product, defaultUnit);
                 }
 
-                string NormalizeUnit(string unit) =>
-                    unit?.Trim().ToLowerInvariant() ?? string.Empty;
-
                 bool IsDiscreteUnit(string unit)
                 {
                     if (string.IsNullOrEmpty(unit)) return false;
@@ -628,15 +638,61 @@ public class MenuPrinter
                     var roundingPrecision = measure?.RoundingPrecision ?? 2;
                     var totalValue = (double)product.TotalWeight;
                     var displayUnit = originalUnit;
+                    var currentMeasure = measure;
+                    const int maxUnitHops = 10;
 
-                    if (totalValue < 1 && (normalizedUnit.Contains("кг") || normalizedUnit.Contains("л")))
+                    if (currentMeasure != null)
                     {
-                        totalValue *= 1000;
-                        displayUnit = normalizedUnit.Contains("кг")
-                            ? "грамм"
-                            : normalizedUnit.Contains("л")
-                                ? "мл"
-                                : originalUnit;
+                        var hop = 0;
+                        while (hop++ < maxUnitHops &&
+                               currentMeasure.Fass > 0 &&
+                               totalValue >= currentMeasure.Fass &&
+                               !string.IsNullOrWhiteSpace(currentMeasure.FassIzmer))
+                        {
+                            var parent = FindMeasure(currentMeasure.FassIzmer);
+                            if (parent == null)
+                            {
+                                break;
+                            }
+
+                            if (NormalizeUnit(parent.Name) == NormalizeUnit(displayUnit))
+                            {
+                                break;
+                            }
+
+                            totalValue /= currentMeasure.Fass;
+                            currentMeasure = parent;
+                            displayUnit = currentMeasure.Name;
+                            roundingPrecision = currentMeasure.RoundingPrecision;
+                        }
+
+                        normalizedUnit = NormalizeUnit(displayUnit);
+
+                        hop = 0;
+                        while (totalValue < 1 && hop++ < maxUnitHops)
+                        {
+                            var child = FindChildMeasure(normalizedUnit);
+                            if (child == null || child.Fass <= 0)
+                            {
+                                break;
+                            }
+
+                            if (NormalizeUnit(child.Name) == normalizedUnit)
+                            {
+                                break;
+                            }
+
+                            totalValue *= child.Fass;
+                            currentMeasure = child;
+                            displayUnit = child.Name;
+                            roundingPrecision = child.RoundingPrecision;
+                            normalizedUnit = NormalizeUnit(displayUnit);
+
+                            if (totalValue >= 1)
+                            {
+                                break;
+                            }
+                        }
                     }
 
                     double roundedValue;
@@ -660,10 +716,16 @@ public class MenuPrinter
                 (string amount, string unit) FormatDiscrete(GroupedProduct product, string defaultUnit)
                 {
                     var measure = FindMeasure(defaultUnit);
+                    var effectivePackSize = product.Fass > 0
+                        ? (double)product.Fass
+                        : measure?.Fass > 0
+                            ? measure.Fass
+                            : 1d;
+
                     var value = product.TotalPackages > 0
                         ? (double)product.TotalPackages
-                        : product.Fass > 0
-                            ? (double)(product.TotalWeight / product.Fass)
+                        : effectivePackSize > 0
+                            ? (double)(product.TotalWeight / (decimal)effectivePackSize)
                             : (double)product.TotalWeight;
 
                     var precision = measure?.MenuRoundingPrecision ?? measure?.RoundingPrecision ?? 0;
