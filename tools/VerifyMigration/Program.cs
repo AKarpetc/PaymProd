@@ -51,9 +51,14 @@ foreach (var check in tableChecks)
     Console.WriteLine($"  {check.Label,-15} {ExecuteInt(check.Sql),6}");
 }
 
+var productMenus = ExecuteInt("SELECT COUNT(*) FROM Menu_Delicates WHERE Id_delic < 0");
+Console.WriteLine($"  {"Menu products",-15} {productMenus,6}");
+
 var components = ExecuteInt("SELECT COUNT(*) FROM Components");
 var components1 = ExecuteInt("SELECT COUNT(*) FROM Components1");
-Console.WriteLine($"\nComponents copy matches: {(components == components1 ? "YES" : "NO")} ({components} vs {components1})");
+var componentsMatch = components == components1;
+var componentsNote = componentsMatch ? "" : " (Components1 stores per-menu overrides)";
+Console.WriteLine($"\nComponents copy matches: {(componentsMatch ? "YES" : "NO")}{componentsNote} ({components} vs {components1})");
 
 var missingProductDefaults = ExecuteInt("""
     SELECT COUNT(*) FROM Producrs

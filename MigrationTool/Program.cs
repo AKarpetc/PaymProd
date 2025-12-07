@@ -10,6 +10,8 @@ class Program
 {
     private const string APP_NAME = "PaymProd Database Migration Tool";
     private const string VERSION = "1.0.0";
+    private static HashSet<int> SourceDelicateIds = new HashSet<int>();
+    private static HashSet<int> SourceProductIds = new HashSet<int>();
     
     static int Main(string[] args)
     {
@@ -204,6 +206,8 @@ class Program
                 "3. Start LocalDB: sqllocaldb start MSSQLLocalDB", ex);
         }
         
+        LoadSourceMetadata(sourceConn);
+        
         // Create SQLite database
         WriteInfo("Creating SQLite database...");
         using var targetConn = new SqliteConnection($"Data Source={targetFile}");
@@ -230,6 +234,7 @@ class Program
         stats.TypeDel = MigrateTable(sourceConn, targetConn, "Type_Del", "Type_Del_ID, Type_del_opis");
         stats.ProduktType = MigrateTable(sourceConn, targetConn, "Produkt_Type", "TypeProdId, Type_Opis");
         stats.Mera = MigrateTable(sourceConn, targetConn, "Mera", "Mera_ID, Name_Mera, Fass_Def, Fass_Izmer");
+        ApplyMeasureRoundingDefaults(targetConn);
         
         Console.ForegroundColor = ConsoleColor.Yellow;
         Console.WriteLine("\nMigrating products and dishes...");
@@ -243,18 +248,10 @@ class Program
         Console.ResetColor();
         stats.Menus = MigrateMenus(sourceConn, targetConn);
         stats.MenuDelicates = MigrateMenuDelicates(sourceConn, targetConn);
-        
-        // Copy Components to Components1
-        Console.ForegroundColor = ConsoleColor.Yellow;
-        Console.WriteLine("\nCopying to Components1...");
-        Console.ResetColor();
-        using (var cmd = targetConn.CreateCommand())
-        {
-            cmd.CommandText = "INSERT INTO Components1 SELECT * FROM Components";
-            var count = cmd.ExecuteNonQuery();
-            stats.Components1 = count;
-            WriteSuccess($"Components1: {count} records");
-        }
+        stats.Components1 = MigrateComponents1(sourceConn, targetConn);
+
+        EnsureLinkedProductDishes(targetConn);
+        PopulateMenuProductPrices(targetConn);
         
         // Re-enable foreign key constraints
         using (var cmd = targetConn.CreateCommand())
@@ -266,6 +263,30 @@ class Program
         return stats;
     }
     
+    static void LoadSourceMetadata(SqlConnection sourceConn)
+    {
+        WriteInfo("Loading source metadata...");
+        SourceDelicateIds = LoadIds(sourceConn, "Delicates", "Del_id");
+        SourceProductIds = LoadIds(sourceConn, "Producrs", "Prod_ID");
+        WriteSuccess($"Loaded {SourceDelicateIds.Count} delicacy IDs and {SourceProductIds.Count} product IDs");
+    }
+
+    static HashSet<int> LoadIds(SqlConnection sourceConn, string tableName, string columnName)
+    {
+        var ids = new HashSet<int>();
+        using var cmd = sourceConn.CreateCommand();
+        cmd.CommandText = $"SELECT [{columnName}] FROM [{tableName}]";
+        using var reader = cmd.ExecuteReader();
+        while (reader.Read())
+        {
+            if (!reader.IsDBNull(0))
+            {
+                ids.Add(Convert.ToInt32(reader.GetValue(0)));
+            }
+        }
+        return ids;
+    }
+
     static void CreateTables(SqliteConnection conn)
     {
         using var cmd = conn.CreateCommand();
@@ -274,12 +295,15 @@ class Program
                 Mera_ID INTEGER PRIMARY KEY AUTOINCREMENT,
                 Name_Mera TEXT NOT NULL,
                 Fass_Def REAL DEFAULT 1,
-                Fass_Izmer TEXT
+                Fass_Izmer TEXT,
+                RoundingPrecision INTEGER DEFAULT 2,
+                MenuRoundingPrecision INTEGER DEFAULT 2
             );
 
             CREATE TABLE IF NOT EXISTS Produkt_Type (
                 TypeProdId INTEGER PRIMARY KEY AUTOINCREMENT,
-                Type_Opis TEXT NOT NULL
+                Type_Opis TEXT NOT NULL,
+                SortOrder INTEGER DEFAULT 0
             );
 
             CREATE TABLE IF NOT EXISTS Producrs (
@@ -294,6 +318,7 @@ class Program
                 Avtomat INTEGER DEFAULT 0,
                 Chel INTEGER DEFAULT 0,
                 Isdiap INTEGER DEFAULT 0,
+                Price REAL DEFAULT 0,
                 FOREIGN KEY (Type) REFERENCES Produkt_Type(TypeProdId),
                 FOREIGN KEY (Ves) REFERENCES Mera(Mera_ID),
                 FOREIGN KEY (Izmer) REFERENCES Mera(Mera_ID)
@@ -301,7 +326,9 @@ class Program
 
             CREATE TABLE IF NOT EXISTS Type_Del (
                 Type_Del_ID INTEGER PRIMARY KEY AUTOINCREMENT,
-                Type_del_opis TEXT NOT NULL
+                Type_del_opis TEXT NOT NULL,
+                SortOrder INTEGER DEFAULT 0,
+                LinkedProductTypeId INTEGER
             );
 
             CREATE TABLE IF NOT EXISTS Delicates (
@@ -313,6 +340,7 @@ class Program
                 Del_Ves REAL DEFAULT 0,
                 Del_count REAL DEFAULT 0,
                 Datew TEXT,
+                LinkedProductId INTEGER,
                 FOREIGN KEY (Del_Type) REFERENCES Type_Del(Type_Del_ID)
             );
 
@@ -355,6 +383,16 @@ class Program
                 FOREIGN KEY (Delic_id) REFERENCES Delicates(Del_id),
                 FOREIGN KEY (ProductID) REFERENCES Producrs(Prod_ID),
                 FOREIGN KEY (Idmen) REFERENCES Menus(Id)
+            );
+
+            CREATE TABLE IF NOT EXISTS Menu_Product_Prices (
+                Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                Id_men INTEGER,
+                ProductID INTEGER,
+                Price REAL DEFAULT 0,
+                UNIQUE(Id_men, ProductID),
+                FOREIGN KEY (Id_men) REFERENCES Menus(Id),
+                FOREIGN KEY (ProductID) REFERENCES Producrs(Prod_ID)
             );
         ";
         cmd.ExecuteNonQuery();
@@ -400,6 +438,23 @@ class Program
 
         throw new InvalidOperationException($"{tableName}: Required column '{targetColumn}' not found in source database.");
     }
+
+    static int NormalizeMenuDelicId(int originalId)
+    {
+        return IsProductReference(originalId) ? -originalId : originalId;
+    }
+
+    static bool IsProductReference(int id)
+    {
+        if (id == 0)
+        {
+            return false;
+        }
+
+        var isDelicate = SourceDelicateIds.Contains(id);
+        var isProduct = SourceProductIds.Contains(id);
+        return !isDelicate && isProduct;
+    }
     
     static int MigrateTable(SqlConnection source, SqliteConnection target, string tableName, string columns)
     {
@@ -444,12 +499,12 @@ class Program
         try
         {
             using var sourceCmd = source.CreateCommand();
-            sourceCmd.CommandText = "SELECT Prod_ID, Name, Type, Ves, Fass, Izmer FROM [Producrs]";
+            sourceCmd.CommandText = "SELECT Prod_ID, Name, Type, Ves, Fass, Izmer, Priz_menu, count, avtomat, chel, isDiap FROM [Producrs]";
             using var reader = sourceCmd.ExecuteReader();
             
             var insertSQL = @"INSERT INTO Producrs 
-                (Prod_ID, Name, Type, Ves, Fass, Izmer, Priz_menu, Count, Avtomat, Chel, Isdiap) 
-                VALUES (@p0, @p1, @p2, @p3, @p4, @p5, 0, 0, 0, 0, 0)";
+                (Prod_ID, Name, Type, Ves, Fass, Izmer, Priz_menu, Count, Avtomat, Chel, Isdiap, Price) 
+                VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9, @p10, 0)";
             
             int count = 0;
             while (reader.Read())
@@ -463,6 +518,11 @@ class Program
                 cmd.Parameters.AddWithValue("@p3", reader.IsDBNull(3) ? DBNull.Value : reader.GetValue(3));
                 cmd.Parameters.AddWithValue("@p4", reader.IsDBNull(4) ? DBNull.Value : reader.GetValue(4));
                 cmd.Parameters.AddWithValue("@p5", reader.IsDBNull(5) ? DBNull.Value : reader.GetValue(5));
+                cmd.Parameters.AddWithValue("@p6", reader.IsDBNull(6) ? 0 : reader.GetInt32(6));
+                cmd.Parameters.AddWithValue("@p7", reader.IsDBNull(7) ? 0 : Convert.ToDouble(reader.GetValue(7)));
+                cmd.Parameters.AddWithValue("@p8", reader.IsDBNull(8) ? 0 : reader.GetInt32(8));
+                cmd.Parameters.AddWithValue("@p9", reader.IsDBNull(9) ? 0 : reader.GetInt32(9));
+                cmd.Parameters.AddWithValue("@p10", reader.IsDBNull(10) ? 0 : reader.GetInt32(10));
                 
                 cmd.ExecuteNonQuery();
                 count++;
@@ -619,8 +679,11 @@ class Program
                 
                 cmd.Parameters.AddWithValue("@p0", reader.IsDBNull(0) ? DBNull.Value : reader.GetValue(0)); // Id
                 cmd.Parameters.AddWithValue("@p1", reader.IsDBNull(1) ? DBNull.Value : reader.GetValue(1)); // Id_men
-                cmd.Parameters.AddWithValue("@p2", reader.IsDBNull(2) ? DBNull.Value : reader.GetValue(2)); // Id_delic
-                cmd.Parameters.AddWithValue("@p3", reader.IsDBNull(3) ? 0 : reader.GetValue(3)); // Delcount
+                int? sourceDelicId = reader.IsDBNull(2) ? (int?)null : Convert.ToInt32(reader.GetValue(2));
+                var normalizedDelicId = sourceDelicId.HasValue ? NormalizeMenuDelicId(sourceDelicId.Value) : (int?)null;
+                cmd.Parameters.AddWithValue("@p2", normalizedDelicId.HasValue ? (object)normalizedDelicId.Value : DBNull.Value); // Id_delic (with product mapping)
+                var delCountValue = reader.IsDBNull(3) ? 0 : Convert.ToInt32(reader.GetValue(3));
+                cmd.Parameters.AddWithValue("@p3", delCountValue); // Delcount
                 
                 cmd.ExecuteNonQuery();
                 count++;
@@ -633,6 +696,258 @@ class Program
         {
             WriteWarning($"Menu_Delicates: {ex.Message}");
             return 0;
+        }
+    }
+
+    static int MigrateComponents1(SqlConnection source, SqliteConnection target)
+    {
+        try
+        {
+            if (!TableExists(source, "Components1"))
+            {
+                WriteWarning("Components1: Table does not exist in source database");
+                return 0;
+            }
+
+            using var sourceCmd = source.CreateCommand();
+            sourceCmd.CommandText = "SELECT Comp_Id, Delic_id, ProductID, Ves, idmen FROM Components1";
+            using var reader = sourceCmd.ExecuteReader();
+
+            var insertSql = @"INSERT INTO Components1 (Comp_Id, Delic_id, ProductID, Ves, Idmen)
+                              VALUES (@p0, @p1, @p2, @p3, @p4)";
+
+            int count = 0;
+            while (reader.Read())
+            {
+                using var cmd = target.CreateCommand();
+                cmd.CommandText = insertSql;
+
+                cmd.Parameters.AddWithValue("@p0", reader.IsDBNull(0) ? DBNull.Value : reader.GetValue(0));
+
+                int? sourceDelicId = reader.IsDBNull(1) ? (int?)null : Convert.ToInt32(reader.GetValue(1));
+                var normalizedDelicId = sourceDelicId.HasValue ? NormalizeMenuDelicId(sourceDelicId.Value) : (int?)null;
+                cmd.Parameters.AddWithValue("@p1", normalizedDelicId.HasValue ? (object)normalizedDelicId.Value : DBNull.Value);
+
+                cmd.Parameters.AddWithValue("@p2", reader.IsDBNull(2) ? DBNull.Value : reader.GetValue(2));
+                cmd.Parameters.AddWithValue("@p3", reader.IsDBNull(3) ? 0 : reader.GetValue(3));
+                cmd.Parameters.AddWithValue("@p4", reader.IsDBNull(4) ? DBNull.Value : reader.GetValue(4));
+
+                cmd.ExecuteNonQuery();
+                count++;
+            }
+
+            WriteSuccess($"Components1: {count} records");
+            return count;
+        }
+        catch (Exception ex)
+        {
+            WriteWarning($"Components1: {ex.Message}");
+            return 0;
+        }
+    }
+
+    static void EnsureLinkedProductDishes(SqliteConnection connection)
+    {
+        WriteInfo("Ensuring linked dishes for products with Priz_menu = 1...");
+
+        var products = new List<ProductRecord>();
+        using (var productCommand = connection.CreateCommand())
+        {
+            productCommand.CommandText = "SELECT Prod_ID, Name, Type, COALESCE(Count,0), COALESCE(Priz_menu,0) FROM Producrs";
+            using var reader = productCommand.ExecuteReader();
+            while (reader.Read())
+            {
+                products.Add(new ProductRecord(
+                    reader.GetInt32(0),
+                    reader.GetString(1),
+                    reader.IsDBNull(2) ? (int?)null : reader.GetInt32(2),
+                    reader.GetDouble(3),
+                    reader.GetInt32(4)
+                ));
+            }
+        }
+
+        if (products.Count == 0)
+        {
+            WriteWarning("No products found to link.");
+            return;
+        }
+
+        using var transaction = connection.BeginTransaction();
+        int linkedCount = 0;
+        foreach (var product in products)
+        {
+            if (product.PrizMenu != 1)
+            {
+                continue;
+            }
+
+            if (!product.TypeId.HasValue)
+            {
+                WriteWarning($"Product '{product.Name}' (ID={product.Id}) has Priz_menu=1 but no Type. Skipping linked dish creation.");
+                continue;
+            }
+
+            var delicateTypeId = EnsureLinkedDelicateType(connection, transaction, product.TypeId.Value);
+            var portion = product.Count > 0 ? product.Count : 1d;
+            var delicateId = GetOrCreateLinkedDelicate(connection, transaction, product.Id, delicateTypeId, product.Name, portion);
+            EnsureLinkedComponent(connection, transaction, delicateId, product.Id, portion);
+            linkedCount++;
+        }
+
+        transaction.Commit();
+        WriteSuccess($"Linked dishes synchronized for {linkedCount} products");
+    }
+
+    static int EnsureLinkedDelicateType(SqliteConnection connection, SqliteTransaction transaction, int productTypeId)
+    {
+        using var selectCommand = connection.CreateCommand();
+        selectCommand.Transaction = transaction;
+        selectCommand.CommandText = "SELECT Type_Del_ID FROM Type_Del WHERE LinkedProductTypeId = @typeId LIMIT 1";
+        selectCommand.Parameters.AddWithValue("@typeId", productTypeId);
+
+        using (var reader = selectCommand.ExecuteReader())
+        {
+            if (reader.Read())
+            {
+                return reader.GetInt32(0);
+            }
+        }
+
+        var typeInfo = GetProductTypeInfo(connection, transaction, productTypeId);
+
+        using var insertCommand = connection.CreateCommand();
+        insertCommand.Transaction = transaction;
+        insertCommand.CommandText = @"
+            INSERT INTO Type_Del (Type_del_opis, SortOrder, LinkedProductTypeId)
+            VALUES (@name, @sortOrder, @linked);
+            SELECT last_insert_rowid();";
+        insertCommand.Parameters.AddWithValue("@name", typeInfo.Name);
+        insertCommand.Parameters.AddWithValue("@sortOrder", typeInfo.SortOrder);
+        insertCommand.Parameters.AddWithValue("@linked", productTypeId);
+
+        return Convert.ToInt32(insertCommand.ExecuteScalar());
+    }
+
+    static (string Name, int SortOrder) GetProductTypeInfo(SqliteConnection connection, SqliteTransaction transaction, int productTypeId)
+    {
+        using var command = connection.CreateCommand();
+        command.Transaction = transaction;
+        command.CommandText = "SELECT Type_Opis, COALESCE(SortOrder, 0) FROM Produkt_Type WHERE TypeProdId = @typeId";
+        command.Parameters.AddWithValue("@typeId", productTypeId);
+
+        using var reader = command.ExecuteReader();
+        if (reader.Read())
+        {
+            return (reader.GetString(0), reader.GetInt32(1));
+        }
+
+        return ($"Тип {productTypeId}", 0);
+    }
+
+    static int GetOrCreateLinkedDelicate(SqliteConnection connection, SqliteTransaction transaction, int productId, int delicateTypeId, string productName, double portion)
+    {
+        using var selectCommand = connection.CreateCommand();
+        selectCommand.Transaction = transaction;
+        selectCommand.CommandText = "SELECT Del_id FROM Delicates WHERE LinkedProductId = @productId LIMIT 1";
+        selectCommand.Parameters.AddWithValue("@productId", productId);
+
+        using (var reader = selectCommand.ExecuteReader())
+        {
+            if (reader.Read())
+            {
+                var existingId = reader.GetInt32(0);
+                using var update = connection.CreateCommand();
+                update.Transaction = transaction;
+                update.CommandText = @"
+                    UPDATE Delicates
+                    SET Del_Type = @typeId,
+                        Del_Name = @name,
+                        Del_Ves = @ves,
+                        Del_count = @count
+                    WHERE Del_id = @delicateId";
+                update.Parameters.AddWithValue("@typeId", delicateTypeId);
+                update.Parameters.AddWithValue("@name", productName);
+                update.Parameters.AddWithValue("@ves", portion);
+                update.Parameters.AddWithValue("@count", portion);
+                update.Parameters.AddWithValue("@delicateId", existingId);
+                update.ExecuteNonQuery();
+                return existingId;
+            }
+        }
+
+        using var insert = connection.CreateCommand();
+        insert.Transaction = transaction;
+        insert.CommandText = @"
+            INSERT INTO Delicates (Del_Type, Del_Name, Del_Ves, Del_count, Datew, LinkedProductId)
+            VALUES (@typeId, @name, @ves, @count, datetime('now'), @productId);
+            SELECT last_insert_rowid();";
+        insert.Parameters.AddWithValue("@typeId", delicateTypeId);
+        insert.Parameters.AddWithValue("@name", productName);
+        insert.Parameters.AddWithValue("@ves", portion);
+        insert.Parameters.AddWithValue("@count", portion);
+        insert.Parameters.AddWithValue("@productId", productId);
+        return Convert.ToInt32(insert.ExecuteScalar());
+    }
+
+    static void EnsureLinkedComponent(SqliteConnection connection, SqliteTransaction transaction, int delicateId, int productId, double weight)
+    {
+        using (var deleteCommand = connection.CreateCommand())
+        {
+            deleteCommand.Transaction = transaction;
+            deleteCommand.CommandText = "DELETE FROM Components WHERE Delic_id = @delicId";
+            deleteCommand.Parameters.AddWithValue("@delicId", delicateId);
+            deleteCommand.ExecuteNonQuery();
+        }
+
+        using var insertCommand = connection.CreateCommand();
+        insertCommand.Transaction = transaction;
+        insertCommand.CommandText = @"
+            INSERT INTO Components (Delic_id, ProductID, Ves, Detail)
+            VALUES (@delicId, @productId, @ves, NULL)";
+        insertCommand.Parameters.AddWithValue("@delicId", delicateId);
+        insertCommand.Parameters.AddWithValue("@productId", productId);
+        insertCommand.Parameters.AddWithValue("@ves", weight);
+        insertCommand.ExecuteNonQuery();
+    }
+
+    static void PopulateMenuProductPrices(SqliteConnection connection)
+    {
+        WriteInfo("Populating menu product prices...");
+        using var cmd = connection.CreateCommand();
+        cmd.CommandText = @"
+            INSERT OR IGNORE INTO Menu_Product_Prices (Id_men, ProductID, Price)
+            SELECT md.Id_men, -md.Id_delic AS ProductID, COALESCE(p.Price, 0)
+            FROM Menu_Delicates md
+            INNER JOIN Producrs p ON p.Prod_ID = -md.Id_delic
+            WHERE md.Id_delic < 0";
+        var inserted = cmd.ExecuteNonQuery();
+        WriteSuccess($"Menu_Product_Prices: {inserted} records");
+    }
+
+    static void ApplyMeasureRoundingDefaults(SqliteConnection connection)
+    {
+        var zeroUnits = new[]
+        {
+            "шт", "пач", "бут", "банки", "рулон", "м", "см"
+        };
+
+        foreach (var unit in zeroUnits)
+        {
+            using var cmd = connection.CreateCommand();
+            cmd.CommandText = @"UPDATE Mera 
+                SET RoundingPrecision = 0, MenuRoundingPrecision = 0 
+                WHERE lower(Name_Mera) = @unit";
+            cmd.Parameters.AddWithValue("@unit", unit.ToLowerInvariant());
+            cmd.ExecuteNonQuery();
+        }
+
+        using (var cmd = connection.CreateCommand())
+        {
+            cmd.CommandText = @"UPDATE Mera 
+                SET RoundingPrecision = 3, MenuRoundingPrecision = 3 
+                WHERE lower(Name_Mera) = 'л'";
+            cmd.ExecuteNonQuery();
         }
     }
     
@@ -754,3 +1069,5 @@ class MigrationStats
     public int Menus { get; set; }
     public int MenuDelicates { get; set; }
 }
+
+record ProductRecord(int Id, string Name, int? TypeId, double Count, int PrizMenu);
