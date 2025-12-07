@@ -534,99 +534,50 @@ public partial class ProductsReportPage : Page
     private (string amount, string unit) FormatAmount(GroupedProduct product, List<Measure> measures)
     {
         var defaultUnit = !string.IsNullOrEmpty(product.Mera) ? product.Mera : "шт";
-        
-        // Проверяем flag - если единица фасовки отличается от единицы веса
-        var hasDifferentPackageUnit = !string.IsNullOrEmpty(product.FassIz) && 
-                                       product.FassIz != product.Mera;
+        var normalizedUnit = NormalizeUnit(defaultUnit);
+        var measure = FindMeasure(measures, defaultUnit);
 
-        if (product.Fass > 0)
+        if (!IsDiscreteUnit(normalizedUnit))
         {
-            var packages = product.TotalPackages > 0
-                ? product.TotalPackages
-                : (product.Fass == 0 ? 0 : product.TotalWeight / product.Fass);
-
-            var packageUnit = !string.IsNullOrEmpty(product.FassIz) ? product.FassIz : defaultUnit;
-            var packagePrecision = 0;
-            var packageMeasure = FindMeasure(measures, packageUnit);
-            if (packageMeasure != null) packagePrecision = packageMeasure.RoundingPrecision;
-
-            // Логика из старого приложения: если количество < 1 и flag != 1, 
-            // конвертируем в граммы (умножаем на 1000)
-            if (packages < 1 && !hasDifferentPackageUnit)
-            {
-                // Конвертируем в граммы
-                var gramsValue = packages * 1000;
-                var gramsMeasure = FindMeasure(measures, defaultUnit);
-                var gramsPrecision = gramsMeasure?.RoundingPrecision ?? 2;
-                
-                double roundedGrams;
-                if (gramsPrecision == 0)
-                {
-                    roundedGrams = Math.Ceiling((double)gramsValue);
-                }
-                else
-                {
-                    var multiplier = Math.Pow(10, gramsPrecision);
-                    roundedGrams = Math.Ceiling((double)gramsValue * multiplier) / multiplier;
-                }
-                
-                var formattedGrams = gramsPrecision == 0
-                    ? ((int)roundedGrams).ToString()
-                    : roundedGrams.ToString($"F{gramsPrecision}");
-                    
-                return (formattedGrams, defaultUnit);
-            }
-
-            double roundedPackages;
-            if (packagePrecision == 0)
-            {
-                // Для flag == 1 (hasDifferentPackageUnit) округляем вверх до целого
-                roundedPackages = Math.Ceiling((double)packages);
-            }
-            else
-            {
-                var multiplier = Math.Pow(10, packagePrecision);
-                roundedPackages = Math.Ceiling((double)packages * multiplier) / multiplier;
-            }
-
-            var formattedPackages = packagePrecision == 0
-                ? ((int)roundedPackages).ToString()
-                : roundedPackages.ToString($"F{packagePrecision}");
-
-            return (formattedPackages, packageUnit);
+            return FormatContinuousAmount(product, defaultUnit, normalizedUnit, measure);
         }
 
-        var totalValue = (double)product.TotalWeight;
-        var roundingPrecision = 2;
-        var measure = FindMeasure(measures, defaultUnit);
-        if (measure != null) roundingPrecision = measure.RoundingPrecision;
+        return FormatDiscreteAmount(product, defaultUnit, measure);
+    }
 
-        // Логика из старого приложения: если количество < 1, конвертируем в граммы
-        if (totalValue < 1)
+    private static string NormalizeUnit(string unit) =>
+        unit?.Trim().ToLowerInvariant() ?? string.Empty;
+
+    private static bool IsDiscreteUnit(string unit)
+    {
+        if (string.IsNullOrEmpty(unit)) return false;
+
+        string[] discreteKeywords = { "шт", "бут", "бан", "пач", "рулон", "компл", "уп", "набор" };
+        return discreteKeywords.Any(unit.Contains);
+    }
+
+    private (string amount, string unit) FormatContinuousAmount(
+        GroupedProduct product,
+        string originalUnit,
+        string normalizedUnit,
+        Measure? measure)
+    {
+        var roundingPrecision = measure?.RoundingPrecision ?? 2;
+        var totalValue = (double)product.TotalWeight;
+        var displayUnit = originalUnit;
+
+        if (totalValue < 1 && (normalizedUnit.Contains("кг") || normalizedUnit.Contains("л")))
         {
-            var gramsValue = totalValue * 1000;
-            var gramsPrecision = measure?.RoundingPrecision ?? 2;
-            
-            double roundedGrams;
-            if (gramsPrecision == 0)
-            {
-                roundedGrams = Math.Ceiling(gramsValue);
-            }
-            else
-            {
-                var multiplier = Math.Pow(10, gramsPrecision);
-                roundedGrams = Math.Ceiling(gramsValue * multiplier) / multiplier;
-            }
-            
-            var formattedGrams = gramsPrecision == 0
-                ? ((int)roundedGrams).ToString()
-                : roundedGrams.ToString($"F{gramsPrecision}");
-                
-            return (formattedGrams, defaultUnit);
+            totalValue *= 1000;
+            displayUnit = normalizedUnit.Contains("кг")
+                ? "грамм"
+                : normalizedUnit.Contains("л")
+                    ? "мл"
+                    : originalUnit;
         }
 
         double roundedValue;
-        if (roundingPrecision == 0)
+        if (roundingPrecision <= 0)
         {
             roundedValue = Math.Ceiling(totalValue);
         }
@@ -636,12 +587,48 @@ public partial class ProductsReportPage : Page
             roundedValue = Math.Ceiling(totalValue * multiplier) / multiplier;
         }
 
-        var formattedNumber = roundingPrecision == 0
-            ? ((int)roundedValue).ToString()
-            : roundedValue.ToString($"F{roundingPrecision}");
+        var formatted = roundingPrecision <= 0
+            ? ((int)roundedValue).ToString(CultureInfo.CurrentCulture)
+            : roundedValue.ToString($"F{roundingPrecision}", CultureInfo.CurrentCulture);
 
-        return (formattedNumber, defaultUnit);
+        return (formatted, displayUnit);
     }
+
+    private (string amount, string unit) FormatDiscreteAmount(
+        GroupedProduct product,
+        string defaultUnit,
+        Measure? measure)
+    {
+        var value = product.TotalPackages > 0
+            ? (double)product.TotalPackages
+            : product.Fass > 0
+                ? (double)(product.TotalWeight / product.Fass)
+                : (double)product.TotalWeight;
+
+        var precision = measure?.MenuRoundingPrecision ?? measure?.RoundingPrecision ?? 0;
+        double roundedValue;
+
+        if (precision <= 0)
+        {
+            roundedValue = Math.Ceiling(value);
+        }
+        else
+        {
+            var multiplier = Math.Pow(10, precision);
+            roundedValue = Math.Ceiling(value * multiplier) / multiplier;
+        }
+
+        var formatted = precision <= 0
+            ? ((int)roundedValue).ToString(CultureInfo.CurrentCulture)
+            : roundedValue.ToString($"F{precision}", CultureInfo.CurrentCulture);
+
+        var unitText = !string.IsNullOrWhiteSpace(product.FassIz)
+            ? product.FassIz
+            : defaultUnit;
+
+        return (formatted, unitText);
+    }
+
 
     private string FormatPrice(decimal value) =>
         value > 0 ? value.ToString("N0", CultureInfo.CurrentCulture) : "—";
