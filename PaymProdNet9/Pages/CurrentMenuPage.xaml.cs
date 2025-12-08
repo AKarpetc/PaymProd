@@ -175,6 +175,9 @@ public partial class CurrentMenuPage : Page
 
             if (DateTime.TryParse(menu.DateBan, out var date)) BanquetDatePicker.SelectedDate = date;
 
+            // Проверяем и добавляем недостающие продукты с AutoAdd
+            _menuRepository.EnsureAutoAddProductsInMenu(menuId, menu.CountP);
+
             // Загружаем блюда меню
             _currentMenuDelicates.Clear();
             var menuDelicates = _menuRepository.GetMenuDelicates(menuId);

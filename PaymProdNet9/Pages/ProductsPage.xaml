@@ -130,14 +130,36 @@
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
 
-                            <DataGridTemplateColumn Header="Авто" Width="*">
+                            <DataGridTemplateColumn Header="Авто в отчет" Width="*">
+                                <DataGridTemplateColumn.HeaderTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Orientation="Horizontal" ToolTip="Автоматически добавляется в отчет по продуктам (раздел Хозтовары)">
+                                            <TextBlock Text="Авто в отчет" />
+                                            <materialDesign:PackIcon Kind="Information" 
+                                                                     Width="14" 
+                                                                     Height="14" 
+                                                                     Foreground="#2196F3"
+                                                                     Margin="3,0,0,0"
+                                                                     VerticalAlignment="Center" />
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.HeaderTemplate>
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
-                                        <materialDesign:PackIcon Kind="Autorenew"
-                                                                 Width="18"
-                                                                 Height="18"
-                                                                 Foreground="#4CAF50"
-                                                                 Visibility="{Binding AutoAdd, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                            <materialDesign:PackIcon Kind="CheckCircle"
+                                                                     Width="18"
+                                                                     Height="18"
+                                                                     Foreground="#4CAF50"
+                                                                     Visibility="{Binding AutoAdd, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                                                     ToolTip="Автоматически добавляется в отчет по продуктам" />
+                                            <TextBlock Text="✓"
+                                                       Foreground="#4CAF50"
+                                                       FontWeight="Bold"
+                                                       Visibility="{Binding AutoAdd, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                                       ToolTip="Автоматически добавляется в отчет по продуктам"
+                                                       Margin="3,0,0,0" />
+                                        </StackPanel>
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
@@ -284,8 +306,11 @@
                                 <CheckBox x:Name="ProductAddToDishesCheckBox" Margin="0,5">
                                     <TextBlock Text="Добавить в блюда" TextWrapping="Wrap"/>
                                 </CheckBox>
-                                <CheckBox x:Name="ProductAutoAddCheckBox" Margin="0,5">
-                                    <TextBlock Text="Автоматом добавлять (общее количество на весь банкет)" TextWrapping="Wrap"/>
+                                <CheckBox x:Name="ProductAutoAddCheckBox" Margin="0,5" ToolTip="Если отмечено, продукт автоматически добавляется в отчет по продуктам в раздел 'Хозтовары' при генерации отчета для текущего меню">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="Автоматически добавлять в отчет" TextWrapping="Wrap" FontWeight="SemiBold"/>
+                                        <TextBlock Text=" (раздел Хозтовары)" TextWrapping="Wrap" Foreground="#666" Margin="5,0,0,0"/>
+                                    </StackPanel>
                                 </CheckBox>
                                 <CheckBox x:Name="ProductMainCountCheckBox" Margin="0,5">
                                     <TextBlock Text="Общее количество (не по граммовке, а общее число на весь банкет)" TextWrapping="Wrap"/>

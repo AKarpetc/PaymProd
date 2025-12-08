@@ -7,6 +7,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Navigation;
+using PaymProdNet9.Data;
 
 namespace PaymProdNet9.Pages;
 
@@ -93,6 +94,37 @@ public partial class ProductsPage : Page
         {
             MessageBox.Show($"Ошибка при загрузке продуктов: {ex.Message}",
                 "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    /// <summary>
+    /// Добавить продукт с флагом AutoAdd в открытое меню
+    /// </summary>
+    private void AddAutoProductToOpenMenu(int productId, decimal baseCount, int countPeople, bool mainCount)
+    {
+        try
+        {
+            var menuRepository = new MenuRepository();
+            var openMenu = menuRepository.GetOpenMenu();
+            
+            if (openMenu == null)
+            {
+                Logger.Debug("Нет открытого меню для автоматического добавления продукта");
+                return;
+            }
+
+            Logger.Debug($"Автоматическое добавление продукта ID={productId} в меню ID={openMenu.Id}");
+            
+            // Используем метод MenuRepository для добавления продукта с AutoAdd
+            menuRepository.AddAutoProductToMenu(openMenu.Id, productId, baseCount, openMenu.CountP);
+            
+            Logger.Info($"Продукт ID={productId} автоматически добавлен в меню ID={openMenu.Id}");
+        }
+        catch (Exception ex)
+        {
+            Logger.Error($"Ошибка при автоматическом добавлении продукта в меню", ex);
+            MessageBox.Show($"Продукт сохранен, но не удалось автоматически добавить его в текущее меню: {ex.Message}",
+                "Предупреждение", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
     }
 
@@ -381,6 +413,7 @@ public partial class ProductsPage : Page
             // Используем основную единицу измерения как Ves (если нужно)
             int? vesId = measureId > 0 ? measureId : null;
 
+            int productId;
             if (_currentProductId.HasValue)
             {
                 // Обновление существующего продукта
@@ -400,6 +433,7 @@ public partial class ProductsPage : Page
                 mainCount,
                 price
                 );
+                productId = _currentProductId.Value;
 
                 MessageBox.Show("Продукт обновлен!",
                     "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -408,7 +442,7 @@ public partial class ProductsPage : Page
             {
                 // Создание нового продукта
                 Logger.Debug($"Создание продукта, Fass={fass} (из текста '{ProductFassTextBox.Text}')");
-                _productRepository.AddProduct(
+                productId = _productRepository.AddProduct(
                     ProductNameTextBox.Text,
                     vesId,
                     typeId,
@@ -424,6 +458,13 @@ public partial class ProductsPage : Page
 
                 MessageBox.Show("Продукт создан!",
                     "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+
+            // Если продукт имеет флаг автоматического добавления, добавляем его в открытое меню
+            // В старом приложении продукты с AutoAdd добавлялись автоматически независимо от Priz_menu
+            if (automat)
+            {
+                AddAutoProductToOpenMenu(productId, count, countPeople, mainCount);
             }
 
             LoadProducts();

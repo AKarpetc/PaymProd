@@ -97,12 +97,13 @@ public class MenuRepository
 
         var menuId = Convert.ToInt32(command.ExecuteScalar());
 
-        // Автоматически добавляем продукты с Avtomat = 1 и Priz_menu = 1
+        // Автоматически добавляем продукты с Avtomat = 1
+        // В старом приложении продукты с AutoAdd добавлялись автоматически независимо от Priz_menu
         command = connection.CreateCommand();
         command.CommandText = @"
-            SELECT Prod_ID, COALESCE(Count, 0)
+            SELECT Prod_ID, COALESCE(Count, 0), Priz_menu
             FROM Producrs
-            WHERE Avtomat = 1 AND Priz_menu = 1";
+            WHERE Avtomat = 1";
 
         var autoProducts = new List<AutoProductInfo>();
         using (var reader = command.ExecuteReader())
@@ -112,7 +113,8 @@ public class MenuRepository
                 autoProducts.Add(new AutoProductInfo
                 {
                     ProductId = reader.GetInt32(0),
-                    BaseCount = reader.GetDecimal(1)
+                    BaseCount = reader.GetDecimal(1),
+                    PrizMenu = reader.GetInt32(2)
                 });
                     }
                 }
@@ -333,6 +335,16 @@ public class MenuRepository
             {
                 // Это продукт (отрицательный ID) - получаем из Components1 если есть
                 components = GetProductComponents(connection, menuId, -delId);
+                
+                // Если компонентов нет в Components1, создаем компонент на основе самого продукта
+                // Это нужно для продуктов с AutoAdd, которые должны попадать в отчет
+                if (components.Count == 0)
+                {
+                    Logger.Debug($"Создание компонента для продукта ID={-delId} (отрицательный Del_id={delId})");
+                    components = CreateProductComponentFromProduct(connection, -delId, reader.GetInt32(3));
+                    Logger.Debug($"Создано компонентов для продукта: {components.Count}");
+                }
+                
                 isModified = components.Count > 0; // Если есть в Components1, значит изменен
             }
             else
@@ -688,6 +700,81 @@ public class MenuRepository
         insertCommand.ExecuteNonQueryWithLog();
     }
 
+    /// <summary>
+    /// Добавить продукт с флагом AutoAdd в меню
+    /// </summary>
+    public void AddAutoProductToMenu(int menuId, int productId, decimal baseCount, int countPeople)
+    {
+        AutoAddProductToMenu(menuId, productId, baseCount, countPeople);
+    }
+
+    /// <summary>
+    /// Проверить и добавить недостающие продукты с AutoAdd в меню
+    /// </summary>
+    public void EnsureAutoAddProductsInMenu(int menuId, int countPeople)
+    {
+        Logger.Debug($"EnsureAutoAddProductsInMenu: menuId={menuId}, countPeople={countPeople}");
+        
+        using var connection = DatabaseHelper.GetConnection();
+        connection.Open();
+
+        // Получаем все продукты с AutoAdd
+        var command = connection.CreateCommand();
+        command.CommandText = @"
+            SELECT Prod_ID, COALESCE(Count, 0), Name
+            FROM Producrs
+            WHERE Avtomat = 1";
+
+        var autoProducts = new List<(int ProductId, decimal BaseCount, string Name)>();
+        using (var reader = command.ExecuteReader())
+        {
+            while (reader.Read())
+            {
+                autoProducts.Add((reader.GetInt32(0), reader.GetDecimal(1), reader.GetString(2)));
+            }
+        }
+
+        Logger.Debug($"Найдено продуктов с AutoAdd: {autoProducts.Count}");
+        if (autoProducts.Count == 0) return;
+
+        // Получаем список продуктов, которые уже добавлены в меню
+        command = connection.CreateCommand();
+        command.CommandText = @"
+            SELECT DISTINCT -Id_delic as ProductId
+            FROM Menu_Delicates
+            WHERE Id_men = @menuId AND Id_delic < 0";
+        command.Parameters.AddWithValue("@menuId", menuId);
+
+        var existingProductIds = new HashSet<int>();
+        using (var reader = command.ExecuteReader())
+        {
+            while (reader.Read())
+            {
+                existingProductIds.Add(reader.GetInt32(0));
+            }
+        }
+
+        Logger.Debug($"Уже добавлено продуктов в меню: {existingProductIds.Count}");
+
+        // Добавляем недостающие продукты
+        int addedCount = 0;
+        foreach (var (productId, baseCount, name) in autoProducts)
+        {
+            if (!existingProductIds.Contains(productId))
+            {
+                Logger.Debug($"Добавление продукта с AutoAdd: ID={productId}, Name={name}, BaseCount={baseCount}");
+                AutoAddProductToMenu(menuId, productId, baseCount, countPeople);
+                addedCount++;
+            }
+            else
+            {
+                Logger.Debug($"Продукт уже в меню: ID={productId}, Name={name}");
+            }
+        }
+        
+        Logger.Debug($"Добавлено новых продуктов с AutoAdd: {addedCount}");
+    }
+
     private void AutoAddProductToMenu(int menuId, int productId, decimal baseCount, int countPeople)
     {
         bool isdiap = false;
@@ -757,8 +844,25 @@ public class MenuRepository
 
     private void AddProductDirectlyToMenu(int menuId, int productId, decimal totalCount, bool isdiap, int portions)
     {
+        Logger.Debug($"AddProductDirectlyToMenu: menuId={menuId}, productId={productId}, totalCount={totalCount}, isdiap={isdiap}, portions={portions}");
+        
         using var connection = DatabaseHelper.GetConnection();
         connection.Open();
+
+        // Проверяем, не добавлен ли уже этот продукт
+        var checkCommand = connection.CreateCommand();
+        checkCommand.CommandText = @"
+            SELECT COUNT(*) FROM Menu_Delicates 
+            WHERE Id_men = @menuId AND Id_delic = @delicateId";
+        checkCommand.Parameters.AddWithValue("@menuId", menuId);
+        checkCommand.Parameters.AddWithValue("@delicateId", -productId);
+        var existingCount = Convert.ToInt32(checkCommand.ExecuteScalar());
+        
+        if (existingCount > 0)
+        {
+            Logger.Debug($"Продукт уже добавлен в меню: productId={productId}");
+            return;
+        }
 
         var pragmaOffCommand = connection.CreateCommand();
         pragmaOffCommand.CommandText = "PRAGMA foreign_keys = OFF";
@@ -774,6 +878,8 @@ public class MenuRepository
             command.Parameters.AddWithValue("@delicateId", -productId);
             command.Parameters.AddWithValue("@count", portions);
             command.ExecuteNonQueryWithLog();
+            
+            Logger.Debug($"Продукт успешно добавлен в Menu_Delicates: productId={productId}, Id_delic={-productId}, Delcount={portions}");
 
             CopyProductPriceToMenuInternal(connection, null, menuId, productId);
 
@@ -804,6 +910,7 @@ public class MenuRepository
     {
         public int ProductId { get; set; }
         public decimal BaseCount { get; set; }
+        public int PrizMenu { get; set; }
     }
     
     /// <summary>
@@ -1093,6 +1200,81 @@ public class MenuRepository
                 FassIz = reader.IsDBNull(8) ? "" : reader.GetString(8),
                 Type = reader.GetString(9)
             });
+
+        return components;
+    }
+
+    /// <summary>
+    /// Создать компонент для продукта на основе самого продукта (для продуктов с AutoAdd без Components1)
+    /// </summary>
+    private List<Components> CreateProductComponentFromProduct(SqliteConnection connection, int productId, int countPor)
+    {
+        var components = new List<Components>();
+
+        var command = connection.CreateCommand();
+        command.CommandText = @"
+            SELECT p.Prod_ID, p.Name, 
+                   COALESCE(mVes.Name_Mera, COALESCE(m.Name_Mera, 'шт')) as MeraName,
+                   COALESCE(m.MenuRoundingPrecision, 2) as MenuRoundingPrecision,
+                   CASE WHEN p.Fass = 0 THEN COALESCE(m.Fass_Def, 1) 
+                        ELSE COALESCE(COALESCE(p.Fass, m.Fass_Def), 1) END as Fass,
+                   COALESCE(CASE WHEN p.Izmer = p.Ves THEN m.Fass_Izmer 
+                            ELSE (SELECT m2.Name_Mera FROM Mera m2 WHERE m2.Mera_ID = p.Izmer) END, 
+                           (SELECT m2.Name_Mera FROM Mera m2 WHERE m2.Mera_ID = p.Izmer), 'шт') as FassIzmer,
+                   pt.Type_Opis,
+                   COALESCE(p.Count, 0) as ProductCount,
+                   p.Isdiap
+            FROM Producrs p
+            LEFT JOIN Mera m ON m.Mera_ID = p.Izmer
+            LEFT JOIN Mera mVes ON mVes.Mera_ID = p.Ves
+            INNER JOIN Produkt_Type pt ON p.Type = pt.TypeProdId
+            WHERE p.Prod_ID = @productId";
+
+        command.Parameters.AddWithValue("@productId", productId);
+
+        using var reader = command.ExecuteReader();
+        if (reader.Read())
+        {
+            // Индексы колонок: 0=Prod_ID, 1=Name, 2=MeraName, 3=MenuRoundingPrecision, 4=Fass, 5=FassIzmer, 6=Type_Opis, 7=ProductCount, 8=Isdiap
+            var productCount = reader.GetDecimal(7); // ProductCount
+            var isdiap = reader.GetInt32(8) == 1; // Isdiap
+            
+            // Определяем вес компонента
+            // Если Isdiap = 1 (общее количество), используем Count из продукта
+            // Иначе используем количество порций (countPor)
+            decimal ves;
+            if (isdiap && productCount > 0)
+            {
+                ves = productCount;
+            }
+            else if (productCount > 0)
+            {
+                // Если Count указан, используем его умноженный на количество порций
+                ves = productCount * countPor;
+            }
+            else
+            {
+                ves = countPor;
+            }
+
+            // Получаем единицу измерения из Ves (основная единица), а не из Izmer
+            // Используем данные из уже выполненного запроса (mVes.Name_Mera)
+            var meraName = reader.IsDBNull(2) ? "шт" : reader.GetString(2);
+
+            components.Add(new Components
+            {
+                Id = 0, // Временный ID, так как нет записи в Components1
+                Delid = -productId, // Отрицательный ID для продукта
+                Prodid = reader.GetInt32(0),
+                Ves = ves,
+                NameT = reader.GetString(1),
+                Mera = meraName,
+                MenuRoundingPrecision = reader.GetInt32(3),
+                Fass = reader.GetDecimal(4),
+                FassIz = reader.IsDBNull(5) ? "шт" : reader.GetString(5),
+                Type = reader.GetString(6)
+            });
+        }
 
         return components;
     }
