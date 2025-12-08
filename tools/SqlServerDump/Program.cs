@@ -12,9 +12,8 @@ if (!File.Exists(mdfPath))
 
 var query = args.Length > 1 ? string.Join(" ", args.Skip(1)) : "SELECT TOP 5 * FROM Producrs";
 
-var tempDbName = "MenuCalcDump_" + Guid.NewGuid().ToString("N");
 var connectionString =
-    $"Data Source=(LocalDB)\\MSSQLLocalDB;Initial Catalog={tempDbName};AttachDbFilename={mdfPath};Integrated Security=True;Connect Timeout=30";
+    $"Data Source=(LocalDB)\\MSSQLLocalDB;Initial Catalog=master;AttachDbFilename={mdfPath};Integrated Security=True;Connect Timeout=30";
 
 try
 {

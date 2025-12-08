@@ -405,16 +405,24 @@ public partial class ProductsReportPage : Page
         if (string.IsNullOrWhiteSpace(measureUnit))
             return null;
 
+        static Measure? PickPreferred(IEnumerable<Measure> candidates) =>
+            candidates
+                .OrderByDescending(m => m.Fass > 1 ? 1 : 0)
+                .ThenBy(m => m.Id)
+                .FirstOrDefault();
+
         var lower = measureUnit.ToLower().Trim();
 
-        var exact = measures.FirstOrDefault(m =>
+        var exactMatches = measures.Where(m =>
             m.Name.Equals(measureUnit, StringComparison.OrdinalIgnoreCase));
+        var exact = PickPreferred(exactMatches);
         if (exact != null)
             return exact;
 
-        return measures.FirstOrDefault(m =>
+        var partialMatches = measures.Where(m =>
             lower.Contains(m.Name.ToLower().Trim()) ||
             m.Name.ToLower().Trim().Contains(lower));
+        return PickPreferred(partialMatches);
     }
 
     /// <summary>
@@ -582,6 +590,19 @@ public partial class ProductsReportPage : Page
         var displayUnit = originalUnit;
         var currentMeasure = measure;
         const int maxUnitHops = 10;
+
+        if (product.Fass > 0 && !string.IsNullOrWhiteSpace(product.FassIz))
+        {
+            totalValue /= (double)product.Fass;
+            displayUnit = product.FassIz;
+            normalizedUnit = NormalizeUnit(displayUnit);
+
+            currentMeasure = FindMeasure(measures, product.FassIz) ?? currentMeasure;
+            if (currentMeasure != null)
+            {
+                roundingPrecision = currentMeasure.RoundingPrecision;
+            }
+        }
 
         if (currentMeasure != null)
         {

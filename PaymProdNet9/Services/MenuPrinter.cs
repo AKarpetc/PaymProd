@@ -352,9 +352,15 @@ public class MenuPrinter
             // Получаем все меры для определения округления
             var measures = _productRepository.GetMeasures();
             // Обрабатываем дубликаты - берем первую меру с таким названием
+            static Measure PickPreferred(IEnumerable<Measure> candidates) =>
+                candidates
+                    .OrderByDescending(m => m.Fass > 1 ? 1 : 0)
+                    .ThenBy(m => m.Id)
+                    .First();
+
             var measuresDict = measures
                 .GroupBy(m => m.Name.ToLower().Trim())
-                .ToDictionary(g => g.Key, g => g.First());
+                .ToDictionary(g => g.Key, PickPreferred);
 
             // Функция для поиска меры по имени (с учетом вариаций)
             Measure? FindMeasure(string? measureName)
@@ -366,9 +372,11 @@ public class MenuPrinter
                 if (measuresDict.ContainsKey(lowerName))
                     return measuresDict[lowerName];
 
-                foreach (var measure in measures)
-                    if (lowerName.Contains(measure.Name.ToLower()) || measure.Name.ToLower().Contains(lowerName))
-                        return measure;
+                var partial = measures.Where(m =>
+                    lowerName.Contains(m.Name.ToLower().Trim()) ||
+                    m.Name.ToLower().Trim().Contains(lowerName));
+                if (partial.Any())
+                    return PickPreferred(partial);
 
                 return null;
             }
@@ -640,6 +648,23 @@ public class MenuPrinter
                     var displayUnit = originalUnit;
                     var currentMeasure = measure;
                     const int maxUnitHops = 10;
+
+                    var baseUnitNormalized = normalizedUnit;
+
+                    if (product.Fass > 0 && !string.IsNullOrWhiteSpace(product.FassIz) &&
+                        NormalizeUnit(product.FassIz) != baseUnitNormalized &&
+                        totalValue >= (double)product.Fass)
+                    {
+                        totalValue /= (double)product.Fass;
+                        displayUnit = product.FassIz;
+                        normalizedUnit = NormalizeUnit(displayUnit);
+
+                        currentMeasure = FindMeasure(product.FassIz) ?? currentMeasure;
+                        if (currentMeasure != null)
+                        {
+                            roundingPrecision = currentMeasure.RoundingPrecision;
+                        }
+                    }
 
                     if (currentMeasure != null)
                     {
