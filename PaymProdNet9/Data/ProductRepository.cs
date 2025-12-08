@@ -517,7 +517,7 @@ public class ProductRepository
         var packagingFass = product.Fass;
         var packagingName = product.IzName;
 
-        if (product.Iz == 0 || product.Iz == product.VID)
+        if (product.Iz == 0)
         {
             // НЕ перезаписываем Fass, если оно уже установлено (больше 0)
             // Используем baseFassDef только если Fass продукта не установлен (равен 0)
@@ -533,9 +533,11 @@ public class ProductRepository
             if (packFassDef > 0 && product.Fass == 0)
                 packagingFass = packFassDef;
 
-            packagingName = !string.IsNullOrWhiteSpace(packFassIzmer)
-                ? packFassIzmer
-                : (string.IsNullOrWhiteSpace(baseFassIzmer) ? product.Ves : baseFassIzmer);
+            packagingName = !string.IsNullOrWhiteSpace(product.IzName)
+                ? product.IzName
+                : (!string.IsNullOrWhiteSpace(packFassIzmer)
+                    ? packFassIzmer
+                    : (string.IsNullOrWhiteSpace(baseFassIzmer) ? product.Ves : baseFassIzmer));
         }
 
         // НЕ устанавливаем значение по умолчанию 1, если Fass продукта уже установлено
