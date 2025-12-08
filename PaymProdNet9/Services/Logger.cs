@@ -1,4 +1,5 @@
 using System;
+using System.Configuration;
 using System.IO;
 using System.Text;
 using System.Threading;
@@ -14,6 +15,7 @@ public static class Logger
     private static string? _logDirectory;
     private static string? _logFileName;
     private static bool _isInitialized = false;
+    private static LogLevel _minLogLevel = LogLevel.Debug;
 
     /// <summary>
     /// Инициализация логгера
@@ -26,6 +28,9 @@ public static class Logger
         lock (_lockObject)
         {
             if (_isInitialized) return;
+
+            // Загружаем уровень логирования из конфигурации
+            LoadLogLevelFromConfig();
 
             // Определяем директорию для логов
             if (string.IsNullOrEmpty(logDirectory))
@@ -53,7 +58,37 @@ public static class Logger
             CleanOldLogs();
 
             _isInitialized = true;
-            Info("Logger initialized");
+            Info($"Logger initialized with log level: {_minLogLevel}");
+        }
+    }
+
+    /// <summary>
+    /// Загружает уровень логирования из app.config
+    /// </summary>
+    private static void LoadLogLevelFromConfig()
+    {
+        try
+        {
+            var logLevelConfig = ConfigurationManager.AppSettings["LogLevel"];
+            if (!string.IsNullOrEmpty(logLevelConfig))
+            {
+                if (Enum.TryParse<LogLevel>(logLevelConfig, ignoreCase: true, out var parsedLevel))
+                {
+                    _minLogLevel = parsedLevel;
+                }
+                else
+                {
+                    // Если значение не распознано, используем по умолчанию Info
+                    _minLogLevel = LogLevel.Info;
+                    Console.WriteLine($"[Logger] Неизвестный уровень логирования '{logLevelConfig}', используется по умолчанию: Info");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            // Если не удалось загрузить конфигурацию, используем по умолчанию
+            _minLogLevel = LogLevel.Info;
+            Console.WriteLine($"[Logger] Ошибка при загрузке уровня логирования из конфигурации: {ex.Message}. Используется по умолчанию: Info");
         }
     }
 
@@ -170,19 +205,25 @@ public static class Logger
     /// </summary>
     private static void WriteLog(LogLevel level, string message)
     {
-        // В Release сборке пропускаем Debug логи
-#if !DEBUG
-        if (level == LogLevel.Debug)
-        {
-            return;
-        }
-#endif
-
         if (!_isInitialized)
         {
             // Если логгер не инициализирован, инициализируем с настройками по умолчанию
             Initialize();
         }
+
+        // Фильтруем логи по минимальному уровню
+        if (level < _minLogLevel)
+        {
+            return;
+        }
+
+        // В Release сборке пропускаем Debug логи (если они не включены через конфигурацию)
+#if !DEBUG
+        if (level == LogLevel.Debug && _minLogLevel > LogLevel.Debug)
+        {
+            return;
+        }
+#endif
 
         var timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
         var logMessage = $"[{timestamp}] [{level}] {message}";
@@ -258,10 +299,10 @@ public static class Logger
     /// </summary>
     private enum LogLevel
     {
-        Debug,
-        Info,
-        Warning,
-        Error
+        Debug = 0,
+        Info = 1,
+        Warning = 2,
+        Error = 3
     }
 }
 
