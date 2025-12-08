@@ -1,5 +1,6 @@
 using System.Windows;
 using PaymProdNet9.Services;
+using PaymProdNet9.Windows;
 
 namespace PaymProdNet9;
 
@@ -22,6 +23,14 @@ public partial class App : Application
             // Игнорируем ошибки настройки консоли
         }
 
+        // Показываем splash screen
+        var splashScreen = new PaymProdNet9.Windows.SplashScreen();
+        splashScreen.Show();
+        splashScreen.UpdateStatus("Инициализация...");
+        
+        // Обновляем UI для отображения splash screen
+        await System.Threading.Tasks.Task.Delay(50);
+        
         // Инициализируем логгер в самом начале
         Logger.Initialize();
         Logger.Info("Приложение запущено");
@@ -64,6 +73,7 @@ public partial class App : Application
         };
 
         // Проверяем наличие базы данных в AppData (созданной инструментом миграции)
+        splashScreen.UpdateStatus("Проверка базы данных...");
         var appDataPath = System.IO.Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "PaymProdNet9", "MenuCalc.db");
@@ -81,11 +91,13 @@ public partial class App : Application
 
         if (!System.IO.File.Exists(dbPath))
         {
+            splashScreen.UpdateStatus("Загрузка базы данных...");
             await UpdateService.TryDownloadStartDatabaseAsync(dbPath, null, replaceExisting: false, silentSuccess: true);
         }
 
         try
         {
+            splashScreen.UpdateStatus("Инициализация базы данных...");
             Logger.Debug($"Инициализация базы данных: {dbPath}");
             Data.DatabaseHelper.InitializeDatabase(dbPath);
             Logger.Info("База данных успешно инициализирована");
@@ -93,6 +105,7 @@ public partial class App : Application
         catch (Exception ex)
         {
             Logger.Error("Ошибка при инициализации базы данных", ex);
+            splashScreen.Close();
             MessageBox.Show($"Критическая ошибка при инициализации базы данных:\n{ex.Message}", 
                 "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
             Shutdown();
@@ -101,16 +114,21 @@ public partial class App : Application
 
         try
         {
+            splashScreen.UpdateStatus("Загрузка интерфейса...");
             var mainWindow = new MainNavigationWindow();
             MainWindow = mainWindow;
             mainWindow.Show();
             Logger.Debug("Главное окно отображено");
+
+            // Закрываем splash screen
+            splashScreen.Close();
 
             await UpdateService.CheckForUpdatesAsync(mainWindow);
         }
         catch (Exception ex)
         {
             Logger.Error("Ошибка при запуске приложения", ex);
+            splashScreen.Close();
             MessageBox.Show($"Ошибка при запуске приложения:\n{ex.Message}", 
                 "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
             Shutdown();

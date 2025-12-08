@@ -342,7 +342,29 @@
             <Frame x:Name="MainFrame"
                    Grid.Row="1"
                    NavigationUIVisibility="Hidden"
-                   Navigated="MainFrame_Navigated" />
+                   Navigated="MainFrame_Navigated"
+                   Navigating="MainFrame_Navigating" />
+
+            <!-- Overlay с индикатором загрузки -->
+            <Border x:Name="LoadingOverlay"
+                    Grid.Row="1"
+                    Background="#80000000"
+                    Visibility="Collapsed"
+                    Panel.ZIndex="1000">
+                <StackPanel VerticalAlignment="Center"
+                            HorizontalAlignment="Center">
+                    <ProgressBar Style="{StaticResource MaterialDesignCircularProgressBar}"
+                                 Value="0"
+                                 IsIndeterminate="True"
+                                 Width="60"
+                                 Height="60"
+                                 Margin="0,0,0,20" />
+                    <TextBlock Text="Загрузка..."
+                               Foreground="White"
+                               FontSize="16"
+                               HorizontalAlignment="Center" />
+                </StackPanel>
+            </Border>
         </Grid>
     </Grid>
 </Window>

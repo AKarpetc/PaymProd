@@ -10,6 +10,7 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
+using System.Windows.Threading;
 
 namespace PaymProdNet9;
 
@@ -30,76 +31,101 @@ public partial class MainNavigationWindow : Window
 
     private void Window_Loaded(object sender, RoutedEventArgs e)
     {
-        // По умолчанию открываем текущее меню
-        NavigateToCurrentMenu_Click(CurrentMenuButton, e);
+        // Показываем загрузчик при загрузке окна
+        LoadingOverlay.Visibility = Visibility.Visible;
+        
+        // Даем UI время для отображения загрузчика перед навигацией
+        Application.Current.Dispatcher.BeginInvoke(new Action(() =>
+        {
+            // По умолчанию открываем текущее меню
+            NavigateToCurrentMenu_Click(CurrentMenuButton, e);
+        }), DispatcherPriority.Loaded);
     }
 
     private void NavigateToCurrentMenu_Click(object sender, RoutedEventArgs e)
     {
         SetActiveButton(sender as Button);
         PageTitle.Text = "Текущее меню - Составление банкета";
-        NavigationService.Instance.NavigateTo<CurrentMenuPage>();
+        ShowLoadingAndNavigate(() => NavigationService.Instance.NavigateTo<CurrentMenuPage>());
     }
 
     private void NavigateToSavedMenus_Click(object sender, RoutedEventArgs e)
     {
         SetActiveButton(sender as Button);
         PageTitle.Text = "Сохраненные меню - Все банкеты";
-        NavigationService.Instance.NavigateTo<SavedMenusPage>();
+        ShowLoadingAndNavigate(() => NavigationService.Instance.NavigateTo<SavedMenusPage>());
     }
 
     private void NavigateToDelicates_Click(object sender, RoutedEventArgs e)
     {
         SetActiveButton(sender as Button);
         PageTitle.Text = "Справочник блюд";
-        NavigationService.Instance.NavigateTo<DelicatesPage>();
+        ShowLoadingAndNavigate(() => NavigationService.Instance.NavigateTo<DelicatesPage>());
     }
 
     private void NavigateToProducts_Click(object sender, RoutedEventArgs e)
     {
         SetActiveButton(sender as Button);
         PageTitle.Text = "Справочник продуктов";
-        NavigationService.Instance.NavigateTo<ProductsPage>();
+        ShowLoadingAndNavigate(() => NavigationService.Instance.NavigateTo<ProductsPage>());
     }
 
     private void NavigateToProductPrices_Click(object sender, RoutedEventArgs e)
     {
         SetActiveButton(sender as Button);
         PageTitle.Text = "Общая цена продуктов";
-        NavigationService.Instance.NavigateTo(new ProductPricesPage());
+        ShowLoadingAndNavigate(() => NavigationService.Instance.NavigateTo(new ProductPricesPage()));
     }
 
     private void NavigateToMeasures_Click(object sender, RoutedEventArgs e)
     {
         SetActiveButton(sender as Button);
         PageTitle.Text = "Единицы измерения";
-        NavigationService.Instance.NavigateTo<MeasuresPage>();
+        ShowLoadingAndNavigate(() => NavigationService.Instance.NavigateTo<MeasuresPage>());
     }
 
     private void NavigateToProductTypes_Click(object sender, RoutedEventArgs e)
     {
         SetActiveButton(sender as Button);
         PageTitle.Text = "Типы продуктов";
-        NavigationService.Instance.NavigateTo<ProductTypesPage>();
+        ShowLoadingAndNavigate(() => NavigationService.Instance.NavigateTo<ProductTypesPage>());
     }
 
     private void NavigateToDelicateTypes_Click(object sender, RoutedEventArgs e)
     {
         SetActiveButton(sender as Button);
         PageTitle.Text = "Типы блюд";
-        NavigationService.Instance.NavigateTo<DelicateTypesPage>();
+        ShowLoadingAndNavigate(() => NavigationService.Instance.NavigateTo<DelicateTypesPage>());
     }
 
     private void NavigateToDatabase_Click(object sender, RoutedEventArgs e)
     {
         SetActiveButton(sender as Button);
         PageTitle.Text = "Управление базой данных";
-        NavigationService.Instance.NavigateTo<DatabaseManagerPage>();
+        ShowLoadingAndNavigate(() => NavigationService.Instance.NavigateTo<DatabaseManagerPage>());
+    }
+
+    /// <summary>
+    /// Показать загрузчик и выполнить навигацию
+    /// </summary>
+    private void ShowLoadingAndNavigate(Action navigateAction)
+    {
+        // Показываем загрузчик сразу
+        LoadingOverlay.Visibility = Visibility.Visible;
+        
+        // Принудительно обновляем UI
+        Application.Current.Dispatcher.Invoke(() => { }, DispatcherPriority.Render);
+        
+        // Выполняем навигацию асинхронно, чтобы UI успел обновиться
+        Application.Current.Dispatcher.BeginInvoke(new Action(() =>
+        {
+            navigateAction();
+        }), DispatcherPriority.Normal);
     }
 
     private void GoBack_Click(object sender, RoutedEventArgs e)
     {
-        NavigationService.Instance.GoBack();
+        ShowLoadingAndNavigate(() => NavigationService.Instance.GoBack());
     }
 
     private void Exit_Click(object sender, RoutedEventArgs e)
@@ -113,8 +139,20 @@ public partial class MainNavigationWindow : Window
         if (result == MessageBoxResult.Yes) Application.Current.Shutdown();
     }
 
+    private void MainFrame_Navigating(object sender, System.Windows.Navigation.NavigatingCancelEventArgs e)
+    {
+        // Показываем индикатор сразу при начале навигации
+        LoadingOverlay.Visibility = Visibility.Visible;
+        
+        // Принудительно обновляем UI
+        Application.Current.Dispatcher.Invoke(() => { }, DispatcherPriority.Render);
+    }
+
     private void MainFrame_Navigated(object sender, System.Windows.Navigation.NavigationEventArgs e)
     {
+        // Скрываем индикатор загрузки после завершения навигации
+        LoadingOverlay.Visibility = Visibility.Collapsed;
+
         // Обновляем видимость кнопки "Назад"
         BackButton.Visibility = NavigationService.Instance.CanGoBack
             ? Visibility.Visible
@@ -233,7 +271,7 @@ public partial class MainNavigationWindow : Window
             };
 
             // Навигируем к странице отчета
-            NavigationService.Instance.NavigateTo(productsReportPage);
+            ShowLoadingAndNavigate(() => NavigationService.Instance.NavigateTo(productsReportPage));
         }
         catch (Exception ex)
         {
@@ -265,7 +303,7 @@ public partial class MainNavigationWindow : Window
             };
 
             // Навигируем к странице сводной таблицы
-            NavigationService.Instance.NavigateTo(summaryTablePage);
+            ShowLoadingAndNavigate(() => NavigationService.Instance.NavigateTo(summaryTablePage));
         }
         catch (Exception ex)
         {
@@ -314,7 +352,7 @@ public partial class MainNavigationWindow : Window
                 MenuId = menuId
             };
 
-            NavigationService.Instance.NavigateTo(printMenuPage);
+            ShowLoadingAndNavigate(() => NavigationService.Instance.NavigateTo(printMenuPage));
         }
         catch (Exception ex)
         {
