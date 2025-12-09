@@ -532,7 +532,10 @@ public partial class MenuPage : Page
         try
         {
             var menuPrinter = new MenuPrinter();
-            var allDelicates = _delicateRepository.GetAllDelicates().ToList();
+            var allDelicates = _delicateRepository
+                .GetAllDelicates()
+                .Where(d => !d.HideInMenu)
+                .ToList();
 
             if (!allDelicates.Any())
             {
@@ -568,12 +571,15 @@ public partial class MenuPage : Page
             var menuName =
                 $"{BanquetNameTextBox.Text}, {PeopleCountTextBox.Text} человек, {BanquetDatePicker.SelectedDate?.ToShortDateString()}";
 
-            var delicatesToPrint = _currentMenuDelicates.Select(md => new DelicatesColl
-            {
-                Name = md.Del,
-                Count = md.Countpor,
-                Lcomp = md.Lcomp
-            }).ToList();
+            var delicatesToPrint = _currentMenuDelicates
+                .Where(md => !md.HideInMenu)
+                .Select(md => new DelicatesColl
+                {
+                    Name = md.Del,
+                    Count = md.Countpor,
+                    Lcomp = md.Lcomp
+                })
+                .ToList();
 
             menuPrinter.PrintMenu(delicatesToPrint, menuName);
         }

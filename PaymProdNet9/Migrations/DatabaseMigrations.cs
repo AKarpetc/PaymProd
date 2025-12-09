@@ -44,7 +44,8 @@ public static class MigrationRunner
         // Список миграций приложения. Важно: порядок по Version.
         var migrations = new IDatabaseMigration[]
         {
-            new AddAutoAddToDelicatesMigration()
+            new AddAutoAddToDelicatesMigration(),
+            new AddHideInMenuFlagsMigration()
         }.OrderBy(m => m.Version);
 
         foreach (var migration in migrations)
@@ -150,4 +151,54 @@ internal sealed class AddAutoAddToDelicatesMigration : IDatabaseMigration
     }
 }
 
+/// <summary>
+/// Миграция №2: добавление флага HideInMenu для типов продуктов, продуктов и блюд.
+/// </summary>
+internal sealed class AddHideInMenuFlagsMigration : IDatabaseMigration
+{
+    public int Version => 2;
+    public string Name => "Add HideInMenu flags to Produkt_Type, Producrs, Delicates";
+
+    public void Apply(SqliteConnection connection)
+    {
+        AddColumnIfNotExists(connection, "Produkt_Type", "HideInMenu", "INTEGER DEFAULT 0");
+        AddColumnIfNotExists(connection, "Producrs", "HideInMenu", "INTEGER DEFAULT 0");
+        AddColumnIfNotExists(connection, "Delicates", "HideInMenu", "INTEGER DEFAULT 0");
+    }
+
+    private static void AddColumnIfNotExists(SqliteConnection connection, string tableName, string columnName, string columnDefinition)
+    {
+        using (var checkCmd = connection.CreateCommand())
+        {
+            checkCmd.CommandText = $"PRAGMA table_info({tableName})";
+
+            using var reader = checkCmd.ExecuteReader();
+            var hasColumn = false;
+
+            while (reader.Read())
+            {
+                var existingName = reader.GetString(1);
+                if (string.Equals(existingName, columnName, StringComparison.OrdinalIgnoreCase))
+                {
+                    hasColumn = true;
+                    break;
+                }
+            }
+
+            if (hasColumn)
+            {
+                Services.Logger.Debug($"Миграция AddHideInMenuFlags: колонка {columnName} уже существует в {tableName}, пропускаем.");
+                return;
+            }
+        }
+
+        using (var alterCmd = connection.CreateCommand())
+        {
+            alterCmd.CommandText = $"ALTER TABLE {tableName} ADD COLUMN {columnName} {columnDefinition}";
+            alterCmd.ExecuteNonQuery();
+        }
+
+        Services.Logger.Info($"Миграция AddHideInMenuFlags: колонка {columnName} добавлена в таблицу {tableName}.");
+    }
+}
 

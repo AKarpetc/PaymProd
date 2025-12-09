@@ -107,7 +107,8 @@ public static class DatabaseHelper
             CREATE TABLE IF NOT EXISTS Produkt_Type (
                 TypeProdId INTEGER PRIMARY KEY AUTOINCREMENT,
                 Type_Opis TEXT NOT NULL,
-                SortOrder INTEGER DEFAULT 0
+                SortOrder INTEGER DEFAULT 0,
+                HideInMenu INTEGER DEFAULT 0
             );";
         command.ExecuteNonQuery();
 
@@ -137,6 +138,7 @@ public static class DatabaseHelper
                 Chel INTEGER DEFAULT 0,
                 Isdiap INTEGER DEFAULT 0,
                 Price REAL DEFAULT 0,
+                HideInMenu INTEGER DEFAULT 0,
                 FOREIGN KEY (Type) REFERENCES Produkt_Type(TypeProdId),
                 FOREIGN KEY (Ves) REFERENCES Mera(Mera_ID),
                 FOREIGN KEY (Izmer) REFERENCES Mera(Mera_ID)
@@ -199,6 +201,7 @@ public static class DatabaseHelper
                 Datew TEXT,
                 LinkedProductId INTEGER,
                 AutoAdd INTEGER DEFAULT 0,
+                HideInMenu INTEGER DEFAULT 0,
                 FOREIGN KEY (Del_Type) REFERENCES Type_Del(Type_Del_ID)
             );";
         command.ExecuteNonQuery();

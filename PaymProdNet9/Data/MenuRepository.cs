@@ -354,22 +354,46 @@ public class MenuRepository
 
             List<Components> components;
             bool isModified = false;
+            bool hideInMenu = false;
 
             if (isProduct)
             {
                 // Это продукт (отрицательный ID) - получаем из Components1 если есть
-                components = GetProductComponents(connection, menuId, -delId);
+                var productId = -delId;
+                components = GetProductComponents(connection, menuId, productId);
                 
                 // Если компонентов нет в Components1, создаем компонент на основе самого продукта
                 // Это нужно для продуктов с AutoAdd, которые должны попадать в отчет
                 if (components.Count == 0)
                 {
-                    Logger.Debug($"Создание компонента для продукта ID={-delId} (отрицательный Del_id={delId})");
-                    components = CreateProductComponentFromProduct(connection, -delId, reader.GetInt32(3));
+                    Logger.Debug($"Создание компонента для продукта ID={productId} (отрицательный Del_id={delId})");
+                    components = CreateProductComponentFromProduct(connection, productId, reader.GetInt32(3));
                     Logger.Debug($"Создано компонентов для продукта: {components.Count}");
                 }
                 
                 isModified = components.Count > 0; // Если есть в Components1, значит изменен
+
+                // Определяем, нужно ли скрывать этот продукт в меню.
+                // Скрываем, если либо сам продукт, либо его тип помечены как HideInMenu.
+                var hideCmd = connection.CreateCommand();
+                hideCmd.CommandText = @"
+                    SELECT 
+                        COALESCE(p.HideInMenu, 0) AS ProductHide,
+                        COALESCE(pt.HideInMenu, 0) AS TypeHide
+                    FROM Producrs p
+                    INNER JOIN Produkt_Type pt ON p.Type = pt.TypeProdId
+                    WHERE p.Prod_ID = @productId";
+                hideCmd.Parameters.AddWithValue("@productId", productId);
+
+                using (var hideReader = hideCmd.ExecuteReader())
+                {
+                    if (hideReader.Read())
+                    {
+                        var productHide = hideReader.GetInt32(0) == 1;
+                        var typeHide = hideReader.GetInt32(1) == 1;
+                        hideInMenu = productHide || typeHide;
+                    }
+                }
             }
             else
             {
@@ -398,6 +422,20 @@ public class MenuRepository
 
                 // Используем измененные компоненты, если они есть, иначе стандартные
                 components = customComponents.Count > 0 ? customComponents : standardComponents;
+
+                // Для блюд используем собственный флаг HideInMenu
+                var hideCmd = connection.CreateCommand();
+                hideCmd.CommandText = @"
+                    SELECT COALESCE(HideInMenu, 0)
+                    FROM Delicates
+                    WHERE Del_id = @delicateId";
+                hideCmd.Parameters.AddWithValue("@delicateId", delId);
+
+                var hideResult = hideCmd.ExecuteScalar();
+                if (hideResult != null && hideResult != DBNull.Value)
+                {
+                    hideInMenu = Convert.ToInt32(hideResult) == 1;
+                }
             }
 
             var menuDel = new MenuDel_act
@@ -407,7 +445,8 @@ public class MenuRepository
                 Countpor = reader.GetInt32(3),
                 Del = delName,
                 Lcomp = components,
-                IsModified = isModified
+                IsModified = isModified,
+                HideInMenu = hideInMenu
             };
 
             // Формируем состав

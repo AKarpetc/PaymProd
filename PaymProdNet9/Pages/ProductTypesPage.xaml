@@ -108,6 +108,18 @@
 
                             <DataGridTextColumn Header="Название типа" Binding="{Binding Name}" Width="2*" />
                             <DataGridTextColumn Header="Порядок сортировки" Binding="{Binding SortOrder}" Width="*" />
+                            <DataGridTemplateColumn Header="Не показывать в меню" Width="*">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <materialDesign:PackIcon Kind="EyeOff"
+                                                                 Width="18"
+                                                                 Height="18"
+                                                                 Foreground="#F44336"
+                                                                 Visibility="{Binding HideInMenu, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                                                 ToolTip="Продукты этого типа не отображаются в меню" />
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
                         </DataGrid.Columns>
                     </DataGrid>
                 </Grid>
@@ -149,6 +161,11 @@
                                      materialDesign:HintAssist.Hint="Число для сортировки (меньше = выше в списке)"
                                      Style="{StaticResource MaterialDesignOutlinedTextBox}"
                                      PreviewTextInput="NumericOnly_PreviewTextInput" />
+
+                            <CheckBox x:Name="ProductTypeHideInMenuCheckBox" Margin="0,15,0,0">
+                                <TextBlock Text="Не показывать продукты этого типа в меню (только в отчете по продуктам)"
+                                           TextWrapping="Wrap" />
+                            </CheckBox>
                         </StackPanel>
                     </StackPanel>
                 </materialDesign:Card>

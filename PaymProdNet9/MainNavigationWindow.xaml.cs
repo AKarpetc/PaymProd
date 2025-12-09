@@ -331,7 +331,7 @@ public partial class MainNavigationWindow : Window
 
             var delicateRepository = new DelicateRepository();
             var delicatesToPrint = new List<DelicatesColl>();
-            foreach (var md in menuDelicates)
+            foreach (var md in menuDelicates.Where(m => !m.HideInMenu))
             {
                 // Получаем тип блюда из справочника
                 var delicate = delicateRepository.GetDelicateById(md.Del_id);

@@ -28,7 +28,8 @@ public class DelicateRepository
             SELECT d.Del_id, d.Del_Name, COALESCE(d.Del_opis, ''), 
                    COALESCE(d.Del_count, 0), COALESCE(d.Del_Ves, 0), 
                    COALESCE(td.Type_del_opis, ''), td.Type_Del_ID, COALESCE(td.SortOrder, 0),
-                   d.LinkedProductId, COALESCE(d.AutoAdd, 0)
+                   d.LinkedProductId, COALESCE(d.AutoAdd, 0),
+                   COALESCE(d.HideInMenu, 0)
             FROM Delicates d
             LEFT JOIN Type_Del td ON td.Type_Del_ID = d.Del_Type
             ORDER BY COALESCE(td.SortOrder, 0), td.Type_del_opis, d.Del_Name";
@@ -50,6 +51,7 @@ public class DelicateRepository
                 TypeSortOrder = reader.GetInt32(7),
                 LinkedProductId = reader.IsDBNull(8) ? null : reader.GetInt32(8),
                 AutoAdd = !reader.IsDBNull(9) && reader.GetInt32(9) == 1,
+                HideInMenu = !reader.IsDBNull(10) && reader.GetInt32(10) == 1,
                 Lcomp = allComponents.Where(c => c.Delid == delId).ToList()
             };
 
@@ -110,7 +112,8 @@ public class DelicateRepository
             SELECT d.Del_id, d.Del_Name, COALESCE(d.Del_opis, ''), 
                    COALESCE(d.Del_count, 0), COALESCE(d.Del_Ves, 0), 
                    COALESCE(td.Type_del_opis, ''), td.Type_Del_ID, COALESCE(td.SortOrder, 0),
-                   d.LinkedProductId, COALESCE(d.AutoAdd, 0)
+                   d.LinkedProductId, COALESCE(d.AutoAdd, 0),
+                   COALESCE(d.HideInMenu, 0)
             FROM Delicates d
             LEFT JOIN Type_Del td ON td.Type_Del_ID = d.Del_Type
             WHERE d.Del_id = @id";
@@ -131,6 +134,7 @@ public class DelicateRepository
                 IDType = reader.IsDBNull(6) ? null : reader.GetInt32(6),
                 LinkedProductId = reader.IsDBNull(8) ? null : reader.GetInt32(8),
                 AutoAdd = !reader.IsDBNull(9) && reader.GetInt32(9) == 1,
+                HideInMenu = !reader.IsDBNull(10) && reader.GetInt32(10) == 1,
                 Lcomp = components
             };
 
@@ -188,15 +192,15 @@ public class DelicateRepository
     /// <summary>
     /// Добавить блюдо
     /// </summary>
-    public int AddDelicate(int typeId, string name, decimal ves, decimal count, bool autoAdd)
+    public int AddDelicate(int typeId, string name, decimal ves, decimal count, bool autoAdd, bool hideInMenu = false)
     {
         using var connection = DatabaseHelper.GetConnection();
         connection.Open();
 
         var command = connection.CreateCommand();
         command.CommandText = @"
-            INSERT INTO Delicates (Del_Type, Del_Name, Del_Ves, Del_count, Datew, AutoAdd) 
-            VALUES (@type, @name, @ves, @count, datetime('now'), @autoAdd);
+            INSERT INTO Delicates (Del_Type, Del_Name, Del_Ves, Del_count, Datew, AutoAdd, HideInMenu) 
+            VALUES (@type, @name, @ves, @count, datetime('now'), @autoAdd, @hideInMenu);
             SELECT last_insert_rowid();";
 
         command.Parameters.AddWithValue("@type", typeId);
@@ -204,6 +208,7 @@ public class DelicateRepository
         command.Parameters.AddWithValue("@ves", (double)ves);
         command.Parameters.AddWithValue("@count", (double)count);
         command.Parameters.AddWithValue("@autoAdd", autoAdd ? 1 : 0);
+        command.Parameters.AddWithValue("@hideInMenu", hideInMenu ? 1 : 0);
 
         return Convert.ToInt32(command.ExecuteScalar());
     }
@@ -211,7 +216,7 @@ public class DelicateRepository
     /// <summary>
     /// Обновить блюдо
     /// </summary>
-    public void UpdateDelicate(int id, int typeId, string name, decimal ves, decimal count, bool autoAdd)
+    public void UpdateDelicate(int id, int typeId, string name, decimal ves, decimal count, bool autoAdd, bool hideInMenu = false)
     {
         using var connection = DatabaseHelper.GetConnection();
         connection.Open();
@@ -220,7 +225,7 @@ public class DelicateRepository
         command.CommandText = @"
             UPDATE Delicates 
             SET Del_Name = @name, Del_Type = @type, Del_Ves = @ves, Del_count = @count, Datew = datetime('now'),
-                AutoAdd = @autoAdd
+                AutoAdd = @autoAdd, HideInMenu = @hideInMenu
             WHERE Del_id = @id";
 
         command.Parameters.AddWithValue("@id", id);
@@ -229,6 +234,7 @@ public class DelicateRepository
         command.Parameters.AddWithValue("@ves", (double)ves);
         command.Parameters.AddWithValue("@count", (double)count);
         command.Parameters.AddWithValue("@autoAdd", autoAdd ? 1 : 0);
+        command.Parameters.AddWithValue("@hideInMenu", hideInMenu ? 1 : 0);
 
         command.ExecuteNonQuery();
     }
@@ -420,7 +426,7 @@ public class DelicateRepository
         var sql = @"
             SELECT d.Del_id, d.Del_Name, COALESCE(d.Del_Ves, 0), 
                    COALESCE(d.Del_count, 0), td.Type_del_opis, td.Type_Del_ID, COALESCE(td.SortOrder, 0),
-                   d.LinkedProductId
+                   d.LinkedProductId, COALESCE(d.HideInMenu, 0)
             FROM Delicates d
             INNER JOIN Type_Del td ON td.Type_Del_ID = d.Del_Type
             WHERE d.Del_Type != -1";
@@ -437,7 +443,7 @@ public class DelicateRepository
 
         using (var reader = command.ExecuteReader())
         {
-            while (reader.Read())
+                while (reader.Read())
                 delicates.Add(new DelicatesColl
                 {
                     Id = reader.GetInt32(0),
@@ -447,7 +453,8 @@ public class DelicateRepository
                     Type = reader.GetString(4),
                     IDType = reader.GetInt32(5),
                     TypeSortOrder = reader.GetInt32(6),
-                    LinkedProductId = reader.IsDBNull(7) ? null : reader.GetInt32(7)
+                    LinkedProductId = reader.IsDBNull(7) ? null : reader.GetInt32(7),
+                    HideInMenu = !reader.IsDBNull(8) && reader.GetInt32(8) == 1
                 });
         }
 

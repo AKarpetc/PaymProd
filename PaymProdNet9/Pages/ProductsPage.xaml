@@ -175,6 +175,19 @@
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
+
+                            <DataGridTemplateColumn Header="Не показывать в меню" Width="*">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <materialDesign:PackIcon Kind="EyeOff"
+                                                                 Width="18"
+                                                                 Height="18"
+                                                                 Foreground="#F44336"
+                                                                 Visibility="{Binding HideInMenu, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                                                 ToolTip="Продукт будет отображаться только в отчете по продуктам, но не в отчете меню" />
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
                         </DataGrid.Columns>
                     </DataGrid>
                 </Grid>
@@ -314,6 +327,10 @@
                                 </CheckBox>
                                 <CheckBox x:Name="ProductMainCountCheckBox" Margin="0,5">
                                     <TextBlock Text="Общее количество (не по граммовке, а общее число на весь банкет)" TextWrapping="Wrap"/>
+                                </CheckBox>
+                                <CheckBox x:Name="ProductHideInMenuCheckBox" Margin="0,5"
+                                          ToolTip="Если отмечено, продукт не выводится в отчете меню, но учитывается в отчете по продуктам">
+                                    <TextBlock Text="Не показывать этот продукт в меню (только в отчете по продуктам)" TextWrapping="Wrap"/>
                                 </CheckBox>
                             </StackPanel>
                         </Grid>

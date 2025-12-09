@@ -121,6 +121,18 @@
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Header="Не показывать в меню" Width="*">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <materialDesign:PackIcon Kind="EyeOff"
+                                                                 Width="18"
+                                                                 Height="18"
+                                                                 Foreground="#F44336"
+                                                                 Visibility="{Binding HideInMenu, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                                                 ToolTip="Блюдо будет отображаться только в отчете по продуктам, но не в отчете меню" />
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
                         </DataGrid.Columns>
                     </DataGrid>
                 </Grid>
@@ -210,11 +222,15 @@
                                          PreviewTextInput="NumericOnly_PreviewTextInput" />
                             </StackPanel>
 
-                            <!-- Автодобавление в меню -->
+                            <!-- Автодобавление и скрытие в меню -->
                             <StackPanel Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" Margin="0,5,0,0">
                                 <CheckBox x:Name="DelicateAutoAddCheckBox" Margin="0,5"
                                           ToolTip="Если отмечено, блюдо будет автоматически добавляться в новое меню с количеством, равным числу гостей.">
                                     <TextBlock Text="Автоматически добавлять в новое меню (количество = число гостей)" TextWrapping="Wrap"/>
+                                </CheckBox>
+                                <CheckBox x:Name="DelicateHideInMenuCheckBox" Margin="0,5"
+                                          ToolTip="Если отмечено, блюдо не выводится в отчете меню, но учитывается в отчете по продуктам.">
+                                    <TextBlock Text="Не показывать это блюдо в меню (только в отчете по продуктам)" TextWrapping="Wrap"/>
                                 </CheckBox>
                             </StackPanel>
                         </Grid>

@@ -221,8 +221,9 @@ public partial class DictionariesPage : Page
             var count = decimal.TryParse(DelicateCountTextBox.Text, out var c) ? c : 0;
 
             // В справочнике по умолчанию не используем автодобавление в меню (autoAdd = false)
+            // и не скрываем блюда в меню (hideInMenu = false)
             _currentDelicateId = _delicateRepository.AddDelicate(
-                typeId, DelicateNameTextBox.Text, ves, count, false);
+                typeId, DelicateNameTextBox.Text, ves, count, false, false);
 
             LoadDelicates();
             DelicateEditPanel.IsEnabled = true;

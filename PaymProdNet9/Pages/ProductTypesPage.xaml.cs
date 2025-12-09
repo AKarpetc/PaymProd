@@ -117,6 +117,7 @@ public partial class ProductTypesPage : Page
 
         ProductTypeNameTextBox.Text = productType.Name;
         ProductTypeSortOrderTextBox.Text = productType.SortOrder.ToString();
+        ProductTypeHideInMenuCheckBox.IsChecked = productType.HideInMenu;
 
         ShowEditView(true);
     }
@@ -127,6 +128,7 @@ public partial class ProductTypesPage : Page
 
         ProductTypeNameTextBox.Clear();
         ProductTypeSortOrderTextBox.Text = "0";
+        ProductTypeHideInMenuCheckBox.IsChecked = false;
 
         ShowEditView(false);
         ProductTypeNameTextBox.Focus();
@@ -174,20 +176,22 @@ public partial class ProductTypesPage : Page
             }
 
             if (!int.TryParse(ProductTypeSortOrderTextBox.Text, out var sortOrder)) sortOrder = 0;
+            var hideInMenu = ProductTypeHideInMenuCheckBox.IsChecked == true;
 
             if (_currentProductTypeId.HasValue)
             {
                 _productRepository.UpdateProductType(
                     _currentProductTypeId.Value,
                     ProductTypeNameTextBox.Text,
-                    sortOrder);
+                    sortOrder,
+                    hideInMenu);
 
                 MessageBox.Show("Тип продукта обновлен!",
                     "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             else
             {
-                _productRepository.AddProductType(ProductTypeNameTextBox.Text, sortOrder);
+                _productRepository.AddProductType(ProductTypeNameTextBox.Text, sortOrder, hideInMenu);
 
                 MessageBox.Show("Тип продукта создан!",
                     "Успех", MessageBoxButton.OK, MessageBoxImage.Information);

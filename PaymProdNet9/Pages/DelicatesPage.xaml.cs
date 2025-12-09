@@ -208,6 +208,7 @@ public partial class DelicatesPage : Page
         DelicateTypeComboBox.SelectedIndex = -1;
         _currentDelicateComponents.Clear();
         DelicateAutoAddCheckBox.IsChecked = false;
+        DelicateHideInMenuCheckBox.IsChecked = false;
 
         // Продукты с флагом "автоматически добавлять" добавляются только в меню, а не в блюда
         // LoadAutoAddProducts(); // Убрано - продукты с AutoAdd не должны добавляться в блюда
@@ -280,6 +281,7 @@ public partial class DelicatesPage : Page
             DelicateWeightTextBox.Text = delicate.Ves.ToString();
             DelicateCountTextBox.Text = delicate.Count.ToString();
             DelicateAutoAddCheckBox.IsChecked = delicate.AutoAdd;
+            DelicateHideInMenuCheckBox.IsChecked = delicate.HideInMenu;
 
             // Устанавливаем тип
             var types = _delicateRepository.GetDelicateTypes();
@@ -346,12 +348,13 @@ public partial class DelicatesPage : Page
             var ves = decimal.TryParse(DelicateWeightTextBox.Text, out var w) ? w : 0;
             var count = decimal.TryParse(DelicateCountTextBox.Text, out var c) ? c : 1;
             var autoAdd = DelicateAutoAddCheckBox.IsChecked == true;
+            var hideInMenu = DelicateHideInMenuCheckBox.IsChecked == true;
 
             if (_isEditMode && _currentDelicateId.HasValue)
             {
                 // Обновление существующего блюда
                 _delicateRepository.UpdateDelicate(
-                    _currentDelicateId.Value, typeId, DelicateNameTextBox.Text, ves, count, autoAdd);
+                    _currentDelicateId.Value, typeId, DelicateNameTextBox.Text, ves, count, autoAdd, hideInMenu);
 
                 // Сохранение компонентов
                 SaveDelicateComponents(_currentDelicateId.Value);
@@ -369,7 +372,7 @@ public partial class DelicatesPage : Page
             {
                 // Создание нового блюда
                 Logger.Debug($"Создание нового блюда: {DelicateNameTextBox.Text}, компонентов в списке: {_currentDelicateComponents.Count}");
-                var newId = _delicateRepository.AddDelicate(typeId, DelicateNameTextBox.Text, ves, count, autoAdd);
+                var newId = _delicateRepository.AddDelicate(typeId, DelicateNameTextBox.Text, ves, count, autoAdd, hideInMenu);
                 _currentDelicateId = newId;
                 Logger.Debug($"Блюдо создано с ID: {newId}");
 

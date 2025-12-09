@@ -30,7 +30,8 @@ public class ProductRepository
                    COALESCE(mi.Fass_Izmer, mi.Name_Mera) AS PackFassIzmer,
                    p.Priz_menu, 
                    COALESCE(p.Count, 0), p.Avtomat, p.Chel, p.Isdiap,
-                   COALESCE(p.Price, 0)
+                   COALESCE(p.Price, 0),
+                   COALESCE(p.HideInMenu, 0)
             FROM Producrs p
             INNER JOIN Produkt_Type pt ON p.Type = pt.TypeProdId
             LEFT JOIN Mera m ON m.Mera_ID = p.Ves
@@ -49,15 +50,16 @@ public class ProductRepository
     /// Добавить продукт
     /// </summary>
     public int AddProduct(string name, int? vesId, int typeId, double fass, int izmerId, int prizMenu = 0, 
-        decimal count = 0, bool automat = false, int countPeople = 0, bool mainCount = false, double price = 0)
+        decimal count = 0, bool automat = false, int countPeople = 0, bool mainCount = false, double price = 0,
+        bool hideInMenu = false)
     {
         using var connection = DatabaseHelper.GetConnection();
         connection.Open();
 
         var command = connection.CreateCommand();
         command.CommandText = @"
-            INSERT INTO Producrs (Name, Type, Ves, Fass, Izmer, Priz_menu, Count, Avtomat, Chel, Isdiap, Price) 
-            VALUES (@name, @type, @ves, @fass, @izmer, @prizMenu, @count, @avtomat, @chel, @isdiap, @price);
+            INSERT INTO Producrs (Name, Type, Ves, Fass, Izmer, Priz_menu, Count, Avtomat, Chel, Isdiap, Price, HideInMenu) 
+            VALUES (@name, @type, @ves, @fass, @izmer, @prizMenu, @count, @avtomat, @chel, @isdiap, @price, @hideInMenu);
             SELECT last_insert_rowid();";
 
         command.Parameters.AddWithValue("@name", name);
@@ -72,6 +74,7 @@ public class ProductRepository
         command.Parameters.AddWithValue("@chel", countPeople);
         command.Parameters.AddWithValue("@isdiap", mainCount ? 1 : 0);
         command.Parameters.AddWithValue("@price", price);
+        command.Parameters.AddWithValue("@hideInMenu", hideInMenu ? 1 : 0);
 
         var productId = Convert.ToInt32(command.ExecuteScalar());
 
@@ -87,15 +90,15 @@ public class ProductRepository
     /// Добавить продукт с автодобавлением
     /// </summary>
     public int AddProductWithAutoAdd(string name, int vesId, int typeId, double fass, int izmerId,
-        int prizMenu, decimal count, int avtomat, int chel, int isdiap, double price = 0)
+        int prizMenu, decimal count, int avtomat, int chel, int isdiap, double price = 0, bool hideInMenu = false)
     {
         using var connection = DatabaseHelper.GetConnection();
         connection.Open();
 
         var command = connection.CreateCommand();
         command.CommandText = @"
-            INSERT INTO Producrs (Name, Type, Ves, Fass, Izmer, Priz_menu, Count, Avtomat, Chel, Isdiap, Price) 
-            VALUES (@name, @type, @ves, @fass, @izmer, @prizMenu, @count, @avtomat, @chel, @isdiap, @price);
+            INSERT INTO Producrs (Name, Type, Ves, Fass, Izmer, Priz_menu, Count, Avtomat, Chel, Isdiap, Price, HideInMenu) 
+            VALUES (@name, @type, @ves, @fass, @izmer, @prizMenu, @count, @avtomat, @chel, @isdiap, @price, @hideInMenu);
             SELECT last_insert_rowid();";
 
         command.Parameters.AddWithValue("@name", name);
@@ -109,6 +112,7 @@ public class ProductRepository
         command.Parameters.AddWithValue("@chel", chel);
         command.Parameters.AddWithValue("@isdiap", isdiap);
         command.Parameters.AddWithValue("@price", price);
+        command.Parameters.AddWithValue("@hideInMenu", hideInMenu ? 1 : 0);
 
         return Convert.ToInt32(command.ExecuteScalar());
     }
@@ -117,7 +121,8 @@ public class ProductRepository
     /// Обновить продукт
     /// </summary>
     public void UpdateProduct(int id, string name, int? vesId, int typeId, decimal fass, int izmerId,
-        int prizMenu, decimal count, bool automat, int countPeople, bool mainCount, double price = 0)
+        int prizMenu, decimal count, bool automat, int countPeople, bool mainCount, double price = 0,
+        bool hideInMenu = false)
     {
         using var connection = DatabaseHelper.GetConnection();
         connection.Open();
@@ -127,7 +132,7 @@ public class ProductRepository
             UPDATE Producrs 
             SET Name = @name, Type = @type, Ves = @ves, Fass = @fass, Izmer = @izmer, 
                 Priz_menu = @prizMenu, Count = @count, Avtomat = @avtomat, Chel = @chel, Isdiap = @isdiap,
-                Price = @price
+                Price = @price, HideInMenu = @hideInMenu
             WHERE Prod_ID = @id";
 
         command.Parameters.AddWithValue("@id", id);
@@ -144,6 +149,7 @@ public class ProductRepository
         command.Parameters.AddWithValue("@chel", countPeople);
         command.Parameters.AddWithValue("@isdiap", mainCount ? 1 : 0);
         command.Parameters.AddWithValue("@price", price);
+        command.Parameters.AddWithValue("@hideInMenu", hideInMenu ? 1 : 0);
 
         var rowsAffected = command.ExecuteNonQueryWithLog();
         Logger.Debug($"UpdateProduct: Обновлено строк: {rowsAffected}");
@@ -224,7 +230,8 @@ public class ProductRepository
 
         var command = connection.CreateCommand();
         command.CommandText =
-            "SELECT TypeProdId, Type_Opis, COALESCE(SortOrder, 0) FROM Produkt_Type ORDER BY COALESCE(SortOrder, 0), Type_Opis";
+            "SELECT TypeProdId, Type_Opis, COALESCE(SortOrder, 0), COALESCE(HideInMenu, 0) " +
+            "FROM Produkt_Type ORDER BY COALESCE(SortOrder, 0), Type_Opis";
 
         using var reader = command.ExecuteReader();
         while (reader.Read())
@@ -232,7 +239,8 @@ public class ProductRepository
             {
                 Id = reader.GetInt32(0),
                 Name = reader.GetString(1),
-                SortOrder = reader.GetInt32(2)
+                SortOrder = reader.GetInt32(2),
+                HideInMenu = reader.GetInt32(3) == 1
             });
 
         return types;
@@ -271,17 +279,19 @@ public class ProductRepository
     /// <summary>
     /// Добавить тип продукта
     /// </summary>
-    public int AddProductType(string name, int sortOrder = 0)
+    public int AddProductType(string name, int sortOrder = 0, bool hideInMenu = false)
     {
         using var connection = DatabaseHelper.GetConnection();
         connection.Open();
 
         var command = connection.CreateCommand();
         command.CommandText = @"
-            INSERT INTO Produkt_Type (Type_Opis, SortOrder) VALUES (@name, @sortOrder);
+            INSERT INTO Produkt_Type (Type_Opis, SortOrder, HideInMenu) 
+            VALUES (@name, @sortOrder, @hideInMenu);
             SELECT last_insert_rowid();";
         command.Parameters.AddWithValue("@name", name);
         command.Parameters.AddWithValue("@sortOrder", sortOrder);
+        command.Parameters.AddWithValue("@hideInMenu", hideInMenu ? 1 : 0);
 
         return Convert.ToInt32(command.ExecuteScalar());
     }
@@ -352,7 +362,7 @@ public class ProductRepository
     /// <summary>
     /// Обновить тип продукта
     /// </summary>
-    public void UpdateProductType(int id, string name, int sortOrder = 0)
+    public void UpdateProductType(int id, string name, int sortOrder = 0, bool hideInMenu = false)
     {
         using var connection = DatabaseHelper.GetConnection();
         connection.Open();
@@ -360,11 +370,12 @@ public class ProductRepository
         var command = connection.CreateCommand();
         command.CommandText = @"
             UPDATE Produkt_Type 
-            SET Type_Opis = @name, SortOrder = @sortOrder
+            SET Type_Opis = @name, SortOrder = @sortOrder, HideInMenu = @hideInMenu
             WHERE TypeProdId = @id";
         command.Parameters.AddWithValue("@id", id);
         command.Parameters.AddWithValue("@name", name);
         command.Parameters.AddWithValue("@sortOrder", sortOrder);
+        command.Parameters.AddWithValue("@hideInMenu", hideInMenu ? 1 : 0);
 
         command.ExecuteNonQuery();
     }
@@ -459,7 +470,8 @@ public class ProductRepository
                        COALESCE(mi.Fass_Izmer, mi.Name_Mera) AS PackFassIzmer,
                        p.Priz_menu, 
                        COALESCE(p.Count, 0), p.Avtomat, p.Chel, p.Isdiap,
-                       COALESCE(p.Price, 0)
+                       COALESCE(p.Price, 0),
+                       COALESCE(p.HideInMenu, 0)
                 FROM Producrs p
                 INNER JOIN Produkt_Type pt ON p.Type = pt.TypeProdId
                 LEFT JOIN Mera m ON m.Mera_ID = p.Ves
@@ -497,7 +509,8 @@ public class ProductRepository
             AutoAdd = reader.GetInt32(15) == 1,
             CountPeople = reader.GetInt32(16),
             MainCount = reader.GetInt32(17) == 1,
-            Price = reader.IsDBNull(18) ? 0 : Convert.ToDecimal(reader.GetDouble(18))
+            Price = reader.IsDBNull(18) ? 0 : Convert.ToDecimal(reader.GetDouble(18)),
+            HideInMenu = reader.GetInt32(19) == 1
         };
 
         var baseFassDef = reader.IsDBNull(9) ? 0 : Convert.ToDecimal(reader.GetDouble(9));

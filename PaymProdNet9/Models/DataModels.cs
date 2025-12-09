@@ -45,6 +45,7 @@ public class MenuDel_act : INotifyPropertyChanged
     private decimal _countpor;
     private List<Components> _lcomp = new();
     private bool _isModified;
+    private bool _hideInMenu;
 
     public int Idmen
     {
@@ -116,6 +117,20 @@ public class MenuDel_act : INotifyPropertyChanged
         }
     }
 
+    /// <summary>
+    /// Флаг "не показывать в меню" для конкретной строки меню (блюдо/продукт).
+    /// Такие позиции могут участвовать только в отчетах по продуктам.
+    /// </summary>
+    public bool HideInMenu
+    {
+        get => _hideInMenu;
+        set
+        {
+            _hideInMenu = value;
+            OnPropertyChanged(nameof(HideInMenu));
+        }
+    }
+
     public event PropertyChangedEventHandler? PropertyChanged;
 
     protected void OnPropertyChanged(string propertyName)
@@ -143,6 +158,11 @@ public class DelicatesColl
     /// Флаг "автоматически добавлять в меню" (при создании нового меню).
     /// </summary>
     public bool AutoAdd { get; set; }
+    /// <summary>
+    /// Флаг "не показывать в меню". Такое блюдо отображается только в отчёте по продуктам,
+    /// но не должно выводиться в отчётах меню (печать меню и т.п.).
+    /// </summary>
+    public bool HideInMenu { get; set; }
     public List<Components> Lcomp { get; set; } = new();
 }
 
@@ -371,6 +391,7 @@ public class ProductView : INotifyPropertyChanged
     private bool _saveToBasePrice = true;
     private bool _isModified;
     private decimal _originalPrice;
+    private bool _hideInMenu;
 
     public string Name
     {
@@ -566,6 +587,20 @@ public class ProductView : INotifyPropertyChanged
     {
         get => _originalPrice;
         set => _originalPrice = value;
+    }
+
+    /// <summary>
+    /// Флаг "не показывать в меню" для продукта.
+    /// Такие продукты остаются в отчете по продуктам, но могут быть скрыты в меню.
+    /// </summary>
+    public bool HideInMenu
+    {
+        get => _hideInMenu;
+        set
+        {
+            _hideInMenu = value;
+            OnPropertyChanged(nameof(HideInMenu));
+        }
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;

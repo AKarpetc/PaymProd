@@ -9,6 +9,7 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Data;
 
 namespace PaymProdNet9.Pages;
 
@@ -31,6 +32,7 @@ public partial class CurrentMenuPage : Page
     private ObservableCollection<ProductView> _editingAvailableProducts;
     private Dictionary<int, ProductView> _productLookup;
     private Dictionary<string, Measure> _measureLookup;
+    private bool _showHiddenItems = true;
 
     public CurrentMenuPage()
     {
@@ -179,6 +181,9 @@ public partial class CurrentMenuPage : Page
             var menuDelicates = _menuRepository.GetMenuDelicates(menuId);
             foreach (var item in menuDelicates) _currentMenuDelicates.Add(item);
 
+            // Применяем фильтр "Показать товары"
+            UpdateMenuFilter();
+
             CurrentMenuInfo.Text = $"Банкет: {menu.Name} - {menu.CountP} человек, дата - {menu.DateBan}";
 
             // Включаем панель добавления блюд
@@ -196,6 +201,33 @@ public partial class CurrentMenuPage : Page
         {
             ShowLoading(false);
         }
+    }
+
+    /// <summary>
+    /// Обновляет фильтр отображения позиций меню в зависимости от флага _showHiddenItems.
+    /// </summary>
+    private void UpdateMenuFilter()
+    {
+        if (MenuDelicatesDataGrid == null || MenuDelicatesDataGrid.ItemsSource == null)
+            return;
+
+        var view = CollectionViewSource.GetDefaultView(MenuDelicatesDataGrid.ItemsSource);
+        if (view == null) return;
+
+        if (_showHiddenItems)
+        {
+            view.Filter = null;
+        }
+        else
+        {
+            view.Filter = item =>
+            {
+                if (item is not MenuDel_act m) return true;
+                return !m.HideInMenu;
+            };
+        }
+
+        view.Refresh();
     }
 
     /// <summary>
@@ -945,6 +977,23 @@ public partial class CurrentMenuPage : Page
         }
 
         if (_currentMenuId.HasValue) LoadMenu(_currentMenuId.Value);
+    }
+
+    /// <summary>
+    /// Обработчик чекбокса "Показать товары" (позиции с флагом "не показывать в меню").
+    /// </summary>
+    private void ShowHiddenItemsCheckBox_Changed(object sender, RoutedEventArgs e)
+    {
+        // Во время InitializeComponent событие может сработать до полной загрузки страницы.
+        // В этом случае просто обновляем внутренний флаг и не трогаем фильтр.
+        if (!IsLoaded || ShowHiddenItemsCheckBox == null)
+        {
+            _showHiddenItems = ShowHiddenItemsCheckBox?.IsChecked == true;
+            return;
+        }
+
+        _showHiddenItems = ShowHiddenItemsCheckBox.IsChecked == true;
+        UpdateMenuFilter();
     }
 
 

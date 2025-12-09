@@ -186,10 +186,21 @@
                         <RowDefinition Height="*" />
                     </Grid.RowDefinitions>
 
-                    <TextBlock Grid.Row="0" x:Name="CurrentMenuInfo"
-                               Text="Выберите или создайте новое меню"
-                               Style="{StaticResource MaterialDesignHeadline6TextBlock}"
-                               Margin="0,0,0,10" />
+                    <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,10">
+                        <TextBlock x:Name="CurrentMenuInfo"
+                                   Text="Выберите или создайте новое меню"
+                                   Style="{StaticResource MaterialDesignHeadline6TextBlock}"
+                                   VerticalAlignment="Center" />
+                        <CheckBox x:Name="ShowHiddenItemsCheckBox"
+                                  Margin="20,0,0,0"
+                                  VerticalAlignment="Center"
+                                  IsChecked="True"
+                                  Checked="ShowHiddenItemsCheckBox_Changed"
+                                  Unchecked="ShowHiddenItemsCheckBox_Changed">
+                            <TextBlock Text="Показать товары (включая позиции &quot;не показывать в меню&quot;)"
+                                       TextWrapping="Wrap" />
+                        </CheckBox>
+                    </StackPanel>
 
                     <DataGrid Grid.Row="1" x:Name="MenuDelicatesDataGrid"
                               AutoGenerateColumns="False"
@@ -198,6 +209,16 @@
                               IsReadOnly="False"
                               materialDesign:DataGridAssist.CellPadding="10"
                               materialDesign:DataGridAssist.ColumnHeaderPadding="10">
+                        <DataGrid.RowStyle>
+                            <Style TargetType="DataGridRow">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding HideInMenu}" Value="True">
+                                        <Setter Property="Background" Value="#FFFFF3E0" />
+                                        <Setter Property="FontStyle" Value="Italic" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </DataGrid.RowStyle>
                         <DataGrid.Columns>
                             <DataGridTemplateColumn Width="50">
                                 <DataGridTemplateColumn.CellTemplate>
