@@ -18,6 +18,8 @@ public partial class DelicatesPage : Page
     private ObservableCollection<DelicatesColl> _allDelicates;
     private ObservableCollection<ProductView> _allProducts;
     private ObservableCollection<Components> _currentDelicateComponents;
+    private List<DelicatesColl> _delicatesCache = new();
+    private List<ProductView> _productsCache = new();
 
     private int? _currentDelicateId;
     private bool _isEditMode; // true = редактирование, false = создание
@@ -82,11 +84,13 @@ public partial class DelicatesPage : Page
     {
         try
         {
-            _allDelicates.Clear();
             var delicates = _delicateRepository.GetAllDelicates()
                 .OrderByDescending(d => d.Id) // Новые блюда вверху
                 .ToList();
 
+            _delicatesCache = delicates;
+
+            _allDelicates.Clear();
             foreach (var delicate in delicates) _allDelicates.Add(delicate);
 
             DelicatesDataGrid.ItemsSource = _allDelicates;
@@ -104,15 +108,16 @@ public partial class DelicatesPage : Page
 
         if (string.IsNullOrWhiteSpace(searchText))
         {
-            LoadDelicates();
+            // Возвращаем полный список из кэша, не обращаясь к базе
+            _allDelicates.Clear();
+            foreach (var d in _delicatesCache) _allDelicates.Add(d);
             return;
         }
 
         try
         {
             _allDelicates.Clear();
-            var allDelicates = _delicateRepository.GetAllDelicates();
-            var filtered = allDelicates.Where(d =>
+            var filtered = _delicatesCache.Where(d =>
                 d.Name.ToLower().Contains(searchText) ||
                 (d.Type != null && d.Type.ToLower().Contains(searchText))
             ).OrderByDescending(d => d.Id);
@@ -130,9 +135,11 @@ public partial class DelicatesPage : Page
     {
         try
         {
-            _allProducts.Clear();
             var products = _productRepository.GetAllProducts();
-            foreach (var product in products) _allProducts.Add(product);
+            _productsCache = products.ToList();
+
+            _allProducts.Clear();
+            foreach (var product in _productsCache) _allProducts.Add(product);
             AvailableProductsList.ItemsSource = _allProducts;
         }
         catch (Exception ex)

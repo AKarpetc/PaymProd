@@ -754,6 +754,24 @@ public class MenuRepository
             }
         }
 
+        // А также продукты, добавленные через связанные блюда (Delicates.LinkedProductId)
+        command = connection.CreateCommand();
+        command.CommandText = @"
+            SELECT DISTINCT d.LinkedProductId
+            FROM Menu_Delicates md
+            INNER JOIN Delicates d ON md.Id_delic = d.Del_id
+            WHERE md.Id_men = @menuId AND d.LinkedProductId IS NOT NULL";
+        command.Parameters.AddWithValue("@menuId", menuId);
+
+        using (var reader = command.ExecuteReader())
+        {
+            while (reader.Read())
+            {
+                var linkedProductId = reader.GetInt32(0);
+                existingProductIds.Add(linkedProductId);
+            }
+        }
+
         Logger.Debug($"Уже добавлено продуктов в меню: {existingProductIds.Count}");
 
         // Добавляем недостающие продукты

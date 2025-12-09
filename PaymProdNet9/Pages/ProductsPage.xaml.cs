@@ -16,6 +16,7 @@ public partial class ProductsPage : Page
     private readonly ProductRepository _productRepository;
 
     private ObservableCollection<ProductView> _allProducts;
+    private List<ProductView> _productsCache = new();
     private int? _currentProductId;
 
     public ProductsPage()
@@ -86,9 +87,11 @@ public partial class ProductsPage : Page
     {
         try
         {
-            _allProducts.Clear();
             var products = _productRepository.GetAllProducts();
-            foreach (var product in products) _allProducts.Add(product);
+            _productsCache = products.ToList();
+
+            _allProducts.Clear();
+            foreach (var product in _productsCache) _allProducts.Add(product);
         }
         catch (Exception ex)
         {
@@ -134,15 +137,16 @@ public partial class ProductsPage : Page
 
         if (string.IsNullOrWhiteSpace(searchText))
         {
-            LoadProducts();
+            // Возвращаем полный список из кэша, не обращаясь к базе
+            _allProducts.Clear();
+            foreach (var product in _productsCache) _allProducts.Add(product);
             return;
         }
 
         try
         {
             _allProducts.Clear();
-            var allProducts = _productRepository.GetAllProducts();
-            var filtered = allProducts.Where(p =>
+            var filtered = _productsCache.Where(p =>
                 p.Name.ToLower().Contains(searchText) ||
                 (p.Type != null && p.Type.ToLower().Contains(searchText)) ||
                 (p.IzName != null && p.IzName.ToLower().Contains(searchText))
