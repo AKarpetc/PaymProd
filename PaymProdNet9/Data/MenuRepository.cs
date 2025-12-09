@@ -516,7 +516,8 @@ public class MenuRepository
     /// <summary>
     /// Добавить блюдо в меню
     /// </summary>
-    public void AddDelicateToMenu(int menuId, int delicateId, int count)
+    /// <returns>ID добавленной записи Menu_Delicates</returns>
+    public int AddDelicateToMenu(int menuId, int delicateId, int count)
     {
         using var connection = DatabaseHelper.GetConnection();
         connection.Open();
@@ -556,6 +557,7 @@ public class MenuRepository
             }
         }
 
+        int insertedId = 0;
         try
         {
             using var transaction = connection.BeginTransaction();
@@ -566,13 +568,14 @@ public class MenuRepository
                 command.Transaction = transaction;
         command.CommandText = @"
             INSERT INTO Menu_Delicates (Id_men, Id_delic, Delcount) 
-            VALUES (@menuId, @delicateId, @count)";
+            VALUES (@menuId, @delicateId, @count);
+            SELECT last_insert_rowid();";
 
         command.Parameters.AddWithValue("@menuId", menuId);
         command.Parameters.AddWithValue("@delicateId", delicateId); // Сохраняем отрицательный ID для продуктов
         command.Parameters.AddWithValue("@count", count);
 
-                command.ExecuteNonQueryWithLog();
+                insertedId = Convert.ToInt32(command.ExecuteScalarWithLog());
         
         // Получаем количество людей в меню
         command = connection.CreateCommand();
@@ -720,21 +723,138 @@ public class MenuRepository
         }
         finally
         {
-            // Включаем обратно проверку внешних ключей (если была отключена)
+            // Включаем обратно проверку внешних ключей для продуктов
             if (isProduct)
             {
-                try
+                var pragmaCommand = connection.CreateCommand();
+                pragmaCommand.CommandText = "PRAGMA foreign_keys = ON";
+                pragmaCommand.ExecuteNonQueryWithLog();
+            }
+        }
+
+        return insertedId;
+    }
+
+    /// <summary>
+    /// Получить одно блюдо из меню по ID записи Menu_Delicates
+    /// </summary>
+    public MenuDel_act? GetMenuDelicateById(int menuDelicateId, int menuId)
+    {
+        using var connection = DatabaseHelper.GetConnection();
+        connection.Open();
+
+        var command = connection.CreateCommand();
+        command.CommandText = @"
+            SELECT md.Id, md.Id_men, md.Id_delic, md.Delcount,
+                   CASE 
+                       WHEN md.Id_delic < 0 THEN p.Name
+                       ELSE d.Del_Name
+                   END as Del_Name
+            FROM Menu_Delicates md
+            LEFT JOIN Delicates d ON d.Del_id = md.Id_delic AND md.Id_delic > 0
+            LEFT JOIN Producrs p ON p.Prod_ID = -md.Id_delic AND md.Id_delic < 0
+            WHERE md.Id = @menuDelicateId AND md.Id_men = @menuId";
+
+        command.Parameters.AddWithValue("@menuDelicateId", menuDelicateId);
+        command.Parameters.AddWithValue("@menuId", menuId);
+
+        using var reader = command.ExecuteReader();
+        if (!reader.Read())
+            return null;
+
+        var delId = reader.GetInt32(2);
+        var delName = reader.IsDBNull(4) ? $"Блюдо #{delId}" : reader.GetString(4);
+        bool isProduct = delId < 0;
+
+        List<Components> components;
+        bool isModified = false;
+        bool hideInMenu = false;
+
+        if (isProduct)
+        {
+            // Это продукт (отрицательный ID) - получаем из Components1 если есть
+            var productId = -delId;
+            components = GetProductComponents(connection, menuId, productId);
+            
+            // Если компонентов нет в Components1, создаем компонент на основе самого продукта
+            if (components.Count == 0)
+            {
+                components = CreateProductComponentFromProduct(connection, productId, reader.GetInt32(3));
+            }
+            
+            isModified = components.Count > 0;
+
+            // Определяем, нужно ли скрывать этот продукт в меню
+            var hideCmd = connection.CreateCommand();
+            hideCmd.CommandText = @"
+                SELECT 
+                    COALESCE(p.HideInMenu, 0) AS ProductHide,
+                    COALESCE(pt.HideInMenu, 0) AS TypeHide
+                FROM Producrs p
+                INNER JOIN Produkt_Type pt ON p.Type = pt.TypeProdId
+                WHERE p.Prod_ID = @productId";
+            hideCmd.Parameters.AddWithValue("@productId", productId);
+
+            using (var hideReader = hideCmd.ExecuteReader())
+            {
+                if (hideReader.Read())
                 {
-                    var pragmaCommand = connection.CreateCommand();
-                    pragmaCommand.CommandText = "PRAGMA foreign_keys = ON";
-                    pragmaCommand.ExecuteNonQueryWithLog();
-                }
-                catch (Exception ex)
-                {
-                    Logger.Error("Ошибка при включении проверки внешних ключей", ex);
+                    var productHide = hideReader.GetInt32(0) == 1;
+                    var typeHide = hideReader.GetInt32(1) == 1;
+                    hideInMenu = productHide || typeHide;
                 }
             }
         }
+        else
+        {
+            // Это обычное блюдо
+            var customComponents = GetCustomComponents(connection, menuId, delId);
+            var standardComponents = GetStandardComponents(connection, delId);
+
+            // Определяем, изменено ли блюдо
+            if (customComponents.Count > 0)
+            {
+                isModified = !AreComponentsEqual(customComponents, standardComponents);
+                components = customComponents;
+            }
+            else
+            {
+                components = standardComponents;
+            }
+
+            // Проверяем HideInMenu для блюда
+            var hideCmd = connection.CreateCommand();
+            hideCmd.CommandText = @"
+                SELECT COALESCE(HideInMenu, 0)
+                FROM Delicates
+                WHERE Del_id = @delicateId";
+            hideCmd.Parameters.AddWithValue("@delicateId", delId);
+
+            var hideResult = hideCmd.ExecuteScalar();
+            if (hideResult != null && hideResult != DBNull.Value)
+            {
+                hideInMenu = Convert.ToInt32(hideResult) == 1;
+            }
+        }
+
+        var menuDel = new MenuDel_act
+        {
+            Idmen = reader.GetInt32(0),
+            Del_id = delId,
+            Countpor = reader.GetInt32(3),
+            Del = delName,
+            Lcomp = components,
+            IsModified = isModified,
+            HideInMenu = hideInMenu
+        };
+
+        // Формируем состав
+        if (components.Count > 0)
+            menuDel.Sost = string.Join(", ", components.Select(c => c.NameT));
+        else if (isProduct)
+            menuDel.Sost = "Продукт";
+
+        return menuDel;
     }
     
     /// <summary>

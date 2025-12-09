@@ -390,19 +390,54 @@ public partial class CurrentMenuPage : Page
             // Добавляем блюдо в меню
             var delicateId = (int)data.DelicateId;
             Services.Logger.Debug($"Попытка добавить блюдо в меню: MenuId={_currentMenuId.Value}, DelicateId={delicateId}, Count={count}");
-            _menuRepository.AddDelicateToMenu(_currentMenuId.Value, delicateId, count);
-            Services.Logger.Debug($"Блюдо успешно добавлено в меню: DelicateId={delicateId}");
+            
+            // Показываем лоадер
+            ShowLoading(true);
+            
+            try
+            {
+                // Сохраняем в БД и получаем ID добавленной записи
+                var menuDelicateId = _menuRepository.AddDelicateToMenu(_currentMenuId.Value, delicateId, count);
+                Services.Logger.Debug($"Блюдо успешно добавлено в меню: DelicateId={delicateId}, MenuDelicateId={menuDelicateId}");
 
-            // Удаляем блюдо из списка доступных
-            var itemToRemove = _availableDelicates.FirstOrDefault(d => (int)d.DelicateId == delicateId);
-            if (itemToRemove != null) _availableDelicates.Remove(itemToRemove);
+                // Загружаем только что добавленное блюдо и добавляем в коллекцию в памяти
+                var newDelicate = _menuRepository.GetMenuDelicateById(menuDelicateId, _currentMenuId.Value);
+                if (newDelicate != null)
+                {
+                    // Добавляем в коллекцию с учетом сортировки (скрытые в конце)
+                    var insertIndex = _currentMenuDelicates.Count;
+                    for (int i = 0; i < _currentMenuDelicates.Count; i++)
+                    {
+                        if (_currentMenuDelicates[i].HideInMenu && !newDelicate.HideInMenu)
+                        {
+                            insertIndex = i;
+                            break;
+                        }
+                        if (!_currentMenuDelicates[i].HideInMenu && newDelicate.HideInMenu)
+                        {
+                            insertIndex = i;
+                            break;
+                        }
+                    }
+                    _currentMenuDelicates.Insert(insertIndex, newDelicate);
+                    
+                    // Применяем фильтр
+                    UpdateMenuFilter();
+                }
 
-            // Очищаем поле количества
-            textBox.Clear();
+                // Удаляем блюдо из списка доступных
+                var itemToRemove = _availableDelicates.FirstOrDefault(d => (int)d.DelicateId == delicateId);
+                if (itemToRemove != null) _availableDelicates.Remove(itemToRemove);
 
-            // Обновляем список меню
-            LoadMenu(_currentMenuId.Value);
-            _isDataChanged = true;
+                // Очищаем поле количества
+                textBox.Clear();
+
+                _isDataChanged = true;
+            }
+            finally
+            {
+                ShowLoading(false);
+            }
         }
         catch (Exception ex)
         {
@@ -531,19 +566,54 @@ public partial class CurrentMenuPage : Page
 
             // Добавляем блюдо в меню
             var delicateId = (int)data.DelicateId;
-            _menuRepository.AddDelicateToMenu(_currentMenuId.Value, delicateId, count);
+            
+            // Показываем лоадер
+            ShowLoading(true);
+            
+            try
+            {
+                // Сохраняем в БД и получаем ID добавленной записи
+                var menuDelicateId = _menuRepository.AddDelicateToMenu(_currentMenuId.Value, delicateId, count);
 
-            // Удаляем блюдо из списка доступных
-            var itemToRemove = _availableDelicates.FirstOrDefault(d => (int)d.DelicateId == delicateId);
-            if (itemToRemove != null) _availableDelicates.Remove(itemToRemove);
+                // Загружаем только что добавленное блюдо и добавляем в коллекцию в памяти
+                var newDelicate = _menuRepository.GetMenuDelicateById(menuDelicateId, _currentMenuId.Value);
+                if (newDelicate != null)
+                {
+                    // Добавляем в коллекцию с учетом сортировки (скрытые в конце)
+                    var insertIndex = _currentMenuDelicates.Count;
+                    for (int i = 0; i < _currentMenuDelicates.Count; i++)
+                    {
+                        if (_currentMenuDelicates[i].HideInMenu && !newDelicate.HideInMenu)
+                        {
+                            insertIndex = i;
+                            break;
+                        }
+                        if (!_currentMenuDelicates[i].HideInMenu && newDelicate.HideInMenu)
+                        {
+                            insertIndex = i;
+                            break;
+                        }
+                    }
+                    _currentMenuDelicates.Insert(insertIndex, newDelicate);
+                    
+                    // Применяем фильтр
+                    UpdateMenuFilter();
+                }
 
-            // Очищаем поле количества
-            textBox.Clear();
-            button.IsEnabled = false;
+                // Удаляем блюдо из списка доступных
+                var itemToRemove = _availableDelicates.FirstOrDefault(d => (int)d.DelicateId == delicateId);
+                if (itemToRemove != null) _availableDelicates.Remove(itemToRemove);
 
-            // Обновляем список меню
-            LoadMenu(_currentMenuId.Value);
-            _isDataChanged = true;
+                // Очищаем поле количества
+                textBox.Clear();
+                button.IsEnabled = false;
+
+                _isDataChanged = true;
+            }
+            finally
+            {
+                ShowLoading(false);
+            }
         }
         catch (Exception ex)
         {
