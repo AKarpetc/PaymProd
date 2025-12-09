@@ -1,0 +1,7 @@
+{
+  "Endpoint": "https://storage.yandexcloud.kz",
+  "AccessKey": "YOUR_ACCESS_KEY_HERE",
+  "SecretKey": "YOUR_SECRET_KEY_HERE",
+  "BucketName": "your-bucket-name"
+}
+

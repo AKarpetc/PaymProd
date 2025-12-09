@@ -23,7 +23,7 @@ public static class UpdateService
     ///     Замените ID на свой при публикации.
     /// </summary>
     private const string UpdateInfoUrl =
-        "https://drive.usercontent.google.com/download?id=1hYG95uNWXmRveYMkROKTUA3c-ytYtgMR&export=download&authuser=0&confirm=t&uuid=b4a6a6f8-d4ee-4744-b3ff-2ca6ed16e4d2&at=ALWLOp7xc-Qwoq6XLX7sx1eiI4_7:1763457785182";
+        "https://storage.yandexcloud.kz/menu-instaler/auto_update_files/update-info.example.json";
 
     private static readonly HttpClient HttpClient = new();
     private static UpdateInfo? _cachedUpdateInfo;

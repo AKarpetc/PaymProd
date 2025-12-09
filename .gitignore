@@ -262,3 +262,4 @@ __pycache__/
 
 # Локальный конфиг с ключами S3 (для отладки, не коммитим)
 PaymProdNet9/s3settings.local.json
+S3UploadTool/s3config.json

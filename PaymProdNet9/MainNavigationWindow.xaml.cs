@@ -37,8 +37,8 @@ public partial class MainNavigationWindow : Window
         // Даем UI время для отображения загрузчика перед навигацией
         Application.Current.Dispatcher.BeginInvoke(new Action(() =>
         {
-            // По умолчанию открываем раздел "База данных"
-            NavigateToDatabase_Click(DatabaseButton, e);
+            // По умолчанию открываем окно "Текущее меню"
+            NavigateToCurrentMenu_Click(CurrentMenuButton, e);
         }), DispatcherPriority.Loaded);
     }
 
