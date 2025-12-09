@@ -47,6 +47,24 @@ public static class DatabaseHelper
             using var connection = new SqliteConnection(_connectionString);
             connection.Open();
 
+            // Включаем более быстрый режим работы SQLite для локальной базы:
+            // - WAL улучшает параллелизм и уменьшает блокировки
+            // - synchronous=NORMAL уменьшает количество fsync при сохранении
+            try
+            {
+                var pragmaJournal = connection.CreateCommand();
+                pragmaJournal.CommandText = "PRAGMA journal_mode=WAL";
+                pragmaJournal.ExecuteNonQuery();
+
+                var pragmaSync = connection.CreateCommand();
+                pragmaSync.CommandText = "PRAGMA synchronous=NORMAL";
+                pragmaSync.ExecuteNonQuery();
+            }
+            catch
+            {
+                // Если по какой-то причине PRAGMA не применились, просто продолжаем с настройками по умолчанию
+            }
+
         var command = connection.CreateCommand();
 
         // Создание таблицы мер

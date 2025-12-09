@@ -104,7 +104,6 @@ public partial class CurrentMenuPage : Page
     {
         try
         {
-            RefreshLookups(true);
             LoadDelicateTypes();
 
             // Проверяем открытое меню
