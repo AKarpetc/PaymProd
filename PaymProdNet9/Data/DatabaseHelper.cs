@@ -260,6 +260,20 @@ public static class DatabaseHelper
             );";
         command.ExecuteNonQuery();
 
+        // Создание таблицы для отключения авто-добавления продуктов в конкретных меню
+        // Если пользователь вручную удалил продукт с флагом AutoAdd из меню,
+        // запись в этой таблице предотвращает его последующее автоматическое добавление
+        command.CommandText = @"
+            CREATE TABLE IF NOT EXISTS Menu_AutoProduct_Ignore (
+                Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                Id_men INTEGER NOT NULL,
+                ProductID INTEGER NOT NULL,
+                FOREIGN KEY (Id_men) REFERENCES Menus(Id),
+                FOREIGN KEY (ProductID) REFERENCES Producrs(Prod_ID),
+                UNIQUE(Id_men, ProductID)
+            );";
+        command.ExecuteNonQuery();
+
         // Миграция: добавляем Menu_Product_Prices, если её нет
         try
         {

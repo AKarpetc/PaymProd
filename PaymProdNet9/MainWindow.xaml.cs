@@ -124,9 +124,6 @@ public partial class MainWindow : Window
 
             if (DateTime.TryParse(menu.DateBan, out var date)) BanquetDatePicker.SelectedDate = date;
 
-            // Проверяем и добавляем недостающие продукты с AutoAdd
-            _menuRepository.EnsureAutoAddProductsInMenu(menuId, menu.CountP);
-
             // Загружаем блюда меню
             _currentMenuDelicates.Clear();
             var menuDelicates = _menuRepository.GetMenuDelicates(menuId);
@@ -324,6 +321,13 @@ public partial class MainWindow : Window
 
             if (result == MessageBoxResult.Yes)
             {
+                // Если это блюдо или продукт, связанный с авто-добавляемым продуктом (AutoAdd),
+                // запоминаем факт ручного удаления, чтобы больше не добавлять его автоматически в это меню.
+                if (_currentMenuId.HasValue)
+                {
+                    _menuRepository.RegisterAutoProductManualRemoval(_currentMenuId.Value, delicate.Del_id);
+                }
+
                 _menuRepository.RemoveDelicateFromMenu(delicate.Idmen);
                 _currentMenuDelicates.Remove(delicate);
                 _isDataChanged = true;

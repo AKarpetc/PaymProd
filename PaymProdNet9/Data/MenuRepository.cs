@@ -803,6 +803,27 @@ public class MenuRepository
         {
             connection.Open();
 
+            // Проверяем, не был ли этот продукт вручную удален из данного меню.
+            // Если да, то больше автоматически его не добавляем.
+            var ignoreCommand = connection.CreateCommand();
+            ignoreCommand.CommandText = @"
+                SELECT COUNT(*)
+                FROM Menu_AutoProduct_Ignore
+                WHERE Id_men = @menuId AND ProductID = @productId";
+            ignoreCommand.Parameters.AddWithValue("@menuId", menuId);
+            ignoreCommand.Parameters.AddWithValue("@productId", productId);
+
+            var ignoreCountObj = ignoreCommand.ExecuteScalar();
+            var ignoreCount = ignoreCountObj == null || ignoreCountObj == DBNull.Value
+                ? 0
+                : Convert.ToInt32(ignoreCountObj);
+
+            if (ignoreCount > 0)
+            {
+                Logger.Debug($"Продукт с AutoAdd пропущен для меню Id={menuId}: ProductID={productId} ранее был удален вручную.");
+                return;
+            }
+
             var command = connection.CreateCommand();
             command.CommandText = @"
                 SELECT Isdiap, COALESCE(Count, 0)
@@ -922,6 +943,81 @@ public class MenuRepository
         }
 
         Logger.Debug($"Автоматически добавлен продукт напрямую: ProductID={productId}, Portions={portions}, TotalVes={totalCount}, Isdiap={isdiap}");
+    }
+
+    /// <summary>
+    /// Зарегистрировать ручное удаление блюда/продукта, связанного с авто-добавляемым продуктом.
+    /// Это нужно, чтобы больше не добавлять этот продукт автоматически в данное меню.
+    /// </summary>
+    /// <param name="menuId">Id меню</param>
+    /// <param name="delicateId">
+    /// Id блюда из Menu_Delicates (положительный для обычных блюд, отрицательный для продуктов,
+    /// добавленных напрямую как Id_delic = -ProductID).
+    /// </param>
+    public void RegisterAutoProductManualRemoval(int menuId, int delicateId)
+    {
+        using var connection = DatabaseHelper.GetConnection();
+        connection.Open();
+
+        int? productId = null;
+
+        // Если Id блюда отрицательный, это "виртуальное" блюдо-продукт: Id_delic = -Prod_ID
+        if (delicateId < 0)
+        {
+            productId = -delicateId;
+        }
+        else
+        {
+            // Иначе это обычное блюдо. Проверяем, связано ли оно с продуктом через LinkedProductId.
+            var cmd = connection.CreateCommand();
+            cmd.CommandText = @"
+                SELECT LinkedProductId
+                FROM Delicates
+                WHERE Del_id = @delicateId";
+            cmd.Parameters.AddWithValue("@delicateId", delicateId);
+
+            var linkedProductObj = cmd.ExecuteScalar();
+            if (linkedProductObj != null && linkedProductObj != DBNull.Value)
+                productId = Convert.ToInt32(linkedProductObj);
+        }
+
+        if (!productId.HasValue)
+        {
+            // Блюдо не связано с авто-добавляемым продуктом
+            return;
+        }
+
+        // Убеждаемся, что продукт действительно помечен как AutoAdd (Avtomat = 1)
+        var checkCmd = connection.CreateCommand();
+        checkCmd.CommandText = @"
+            SELECT Avtomat
+            FROM Producrs
+            WHERE Prod_ID = @productId";
+        checkCmd.Parameters.AddWithValue("@productId", productId.Value);
+
+        var avtomatObj = checkCmd.ExecuteScalar();
+        var avtomat = avtomatObj == null || avtomatObj == DBNull.Value
+            ? 0
+            : Convert.ToInt32(avtomatObj);
+
+        if (avtomat != 1)
+        {
+            // Это не авто-добавляемый продукт — ничего не запоминаем
+            return;
+        }
+
+        // Записываем факт ручного удаления продукта из меню.
+        // Используем UNIQUE(Id_men, ProductID) и INSERT OR IGNORE, чтобы не плодить дубликаты.
+        var insertCmd = connection.CreateCommand();
+        insertCmd.CommandText = @"
+            INSERT OR IGNORE INTO Menu_AutoProduct_Ignore (Id_men, ProductID)
+            VALUES (@menuId, @productId)";
+        insertCmd.Parameters.AddWithValue("@menuId", menuId);
+        insertCmd.Parameters.AddWithValue("@productId", productId.Value);
+
+        insertCmd.ExecuteNonQuery();
+
+        Logger.Debug($"Зарегистрировано ручное удаление авто-продукта ProductID={productId.Value} из меню Id={menuId}");
     }
 
     private class AutoProductInfo
