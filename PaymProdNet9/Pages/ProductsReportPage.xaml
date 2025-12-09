@@ -56,7 +56,7 @@
             </Button>
         </StackPanel>
 
-        <!-- Отчет по продуктам -->
+        <!-- Отчет по товарам -->
         <materialDesign:Card Grid.Row="1" Margin="10" Padding="20">
             <FlowDocumentScrollViewer>
                 <FlowDocument x:Name="ReportDocument" />

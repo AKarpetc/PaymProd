@@ -207,69 +207,13 @@ public partial class DatabaseManagerPage : Page
 
     private async void ShareToGoogleDriveButton_Click(object sender, RoutedEventArgs e)
     {
-        try
-        {
-            // Получаем путь к текущей базе данных
-            var appDataPath = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                "PaymProdNet9", "MenuCalc.db");
-
-            var binPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "MenuCalc.db");
-            var currentDbPath = File.Exists(appDataPath) ? appDataPath : binPath;
-
-            if (!File.Exists(currentDbPath))
-            {
-                MessageBox.Show("База данных не найдена!",
-                    "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
-
-            // Отключаем кнопку на время загрузки
-            ShareToGoogleDriveButton.IsEnabled = false;
-            ShareToGoogleDriveButton.Content = "⏳ Подготовка...";
-
-            // Загружаем на Google Drive
-            var window = Window.GetWindow(this);
-            await GoogleDriveService.UploadDatabaseToGoogleDriveAsync(currentDbPath, window);
-
-            // Восстанавливаем кнопку
-            ShareToGoogleDriveButton.IsEnabled = true;
-            ShareToGoogleDriveButton.Content = "☁️ Поделиться БД (Google Drive)";
-        }
-        catch (Exception ex)
-        {
-            MessageBox.Show($"Ошибка при загрузке на Google Drive:\n{ex.Message}",
-                "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
-
-            ShareToGoogleDriveButton.IsEnabled = true;
-            ShareToGoogleDriveButton.Content = "☁️ Поделиться БД (Google Drive)";
-        }
+        // Функциональность обмена базой данных через Google Drive отключена.
+        await Task.CompletedTask;
     }
 
     private void ConfigureGoogleDriveButton_Click(object sender, RoutedEventArgs e)
     {
-        try
-        {
-            var window = Window.GetWindow(this);
-            var authWindow = new GoogleDriveAuthWindow
-            {
-                Owner = window
-            };
-
-            if (authWindow.ShowDialog() == true)
-            {
-                MessageBox.Show("Настройки сохранены!\n\n" +
-                               "Теперь загрузка на Google Drive будет автоматической.",
-                    "Успех",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Information);
-            }
-        }
-        catch (Exception ex)
-        {
-            MessageBox.Show($"Ошибка при настройке:\n{ex.Message}",
-                "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
-        }
+        // Функциональность настройки автозагрузки на Google Drive отключена.
     }
 
     private void ResetDbButton_Click(object sender, RoutedEventArgs e)

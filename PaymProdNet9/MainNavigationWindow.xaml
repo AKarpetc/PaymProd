@@ -211,7 +211,7 @@
                                                          Height="24"
                                                          VerticalAlignment="Center"
                                                          Margin="0,0,15,0" />
-                                <TextBlock Text="Отчет по продуктам" VerticalAlignment="Center" />
+                                <TextBlock Text="Отчет по товарам" VerticalAlignment="Center" />
                             </StackPanel>
                         </Button>
 

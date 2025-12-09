@@ -37,8 +37,8 @@ public partial class MainNavigationWindow : Window
         // Даем UI время для отображения загрузчика перед навигацией
         Application.Current.Dispatcher.BeginInvoke(new Action(() =>
         {
-            // По умолчанию открываем текущее меню
-            NavigateToCurrentMenu_Click(CurrentMenuButton, e);
+            // По умолчанию открываем раздел "База данных"
+            NavigateToDatabase_Click(DatabaseButton, e);
         }), DispatcherPriority.Loaded);
     }
 
@@ -183,7 +183,7 @@ public partial class MainNavigationWindow : Window
             nameof(ProductTypesPage) => "Типы продуктов",
             nameof(DelicateTypesPage) => "Типы блюд",
             nameof(DatabaseManagerPage) => "Управление базой данных",
-            nameof(ProductsReportPage) => "Отчет по продуктам",
+            nameof(ProductsReportPage) => "Отчет по товарам",
             nameof(SummaryTablePage) => "Сводная таблица",
             nameof(PrintMenuPage) => "Отчет по меню",
             nameof(MenuPage) => "Текущее меню - Составление банкета",
@@ -248,14 +248,14 @@ public partial class MainNavigationWindow : Window
 
 
     /// <summary>
-    /// Навигация к отчету по продуктам
+    /// Навигация к отчету по товарам
     /// </summary>
     private void NavigateToProductsReport_Click(object sender, RoutedEventArgs e)
     {
         try
         {
             SetActiveButton(sender as Button);
-            PageTitle.Text = "Отчет по продуктам";
+            PageTitle.Text = "Отчет по товарам";
 
             var menuData = GetCurrentMenuData();
             if (menuData == null) return;

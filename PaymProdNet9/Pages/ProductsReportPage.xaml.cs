@@ -68,7 +68,7 @@ public partial class ProductsReportPage : Page
     }
 
     /// <summary>
-    /// Генерация отчета по продуктам
+    /// Генерация отчета по товарам
     /// </summary>
     private void GenerateReport(bool includePrices)
     {
@@ -77,7 +77,7 @@ public partial class ProductsReportPage : Page
             ReportDocument.Blocks.Clear();
 
             var headerParagraph = new Paragraph();
-            headerParagraph.Inlines.Add(new Run("Отчет по продуктам")
+            headerParagraph.Inlines.Add(new Run("Отчет по товарам")
             {
                 FontSize = 18,
                 FontWeight = FontWeights.Bold

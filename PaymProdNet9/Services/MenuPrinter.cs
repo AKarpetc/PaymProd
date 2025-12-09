@@ -409,7 +409,7 @@ public class MenuPrinter
                 var titleParagraph = body.AppendChild(new Paragraph(
                     new ParagraphProperties(new Justification { Val = JustificationValues.Center }),
                     new Run(new RunProperties(new Bold(), new FontSize { Val = "32" }),
-                        new Text("Отчет по продуктам"))
+                        new Text("Отчет по товарам"))
                 ));
 
                 var infoParagraph = body.AppendChild(new Paragraph(

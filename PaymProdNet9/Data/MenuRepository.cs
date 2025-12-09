@@ -458,7 +458,14 @@ public class MenuRepository
             menuDelicates.Add(menuDel);
         }
 
-        return menuDelicates;
+        // Сортируем так, чтобы позиции с флагом "Не показывать в меню" шли в конце списка.
+        // Сначала обычные блюда/товары, затем скрытые, внутри группируем по названию.
+        var ordered = menuDelicates
+            .OrderBy(m => m.HideInMenu ? 1 : 0)
+            .ThenBy(m => m.Del)
+            .ToList();
+
+        return new ObservableCollection<MenuDel_act>(ordered);
     }
 
     /// <summary>

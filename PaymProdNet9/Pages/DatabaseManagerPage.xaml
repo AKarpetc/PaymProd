@@ -94,18 +94,6 @@
                             Click="AutoBackupButton_Click"
                             ToolTip="Создать автоматическую резервную копию" />
 
-                    <Button Name="ShareToGoogleDriveButton"
-                            Content="☁️ Поделиться БД (Google Drive)"
-                            Style="{StaticResource InfoButton}"
-                            Click="ShareToGoogleDriveButton_Click"
-                            ToolTip="Загрузить базу данных на Google Drive" />
-
-                    <Button Name="ConfigureGoogleDriveButton"
-                            Content="⚙️ Настроить автозагрузку"
-                            Style="{StaticResource InfoButton}"
-                            Click="ConfigureGoogleDriveButton_Click"
-                            ToolTip="Настроить OAuth токен для автоматической загрузки" />
-
                     <Button Name="ResetDbButton"
                             Content="🆕 Начать с новой базы"
                             Style="{StaticResource DangerButton}"
