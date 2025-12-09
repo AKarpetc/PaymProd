@@ -14,6 +14,7 @@ public partial class DelicatesPage : Page
 {
     private readonly DelicateRepository _delicateRepository;
     private readonly ProductRepository _productRepository;
+    private readonly MenuRepository _menuRepository;
 
     private ObservableCollection<DelicatesColl> _allDelicates;
     private ObservableCollection<ProductView> _allProducts;
@@ -30,6 +31,7 @@ public partial class DelicatesPage : Page
 
         _delicateRepository = new DelicateRepository();
         _productRepository = new ProductRepository();
+        _menuRepository = new MenuRepository();
 
         _allDelicates = new ObservableCollection<DelicatesColl>();
         _allProducts = new ObservableCollection<ProductView>();
@@ -205,6 +207,7 @@ public partial class DelicatesPage : Page
         DelicateCountTextBox.Clear();
         DelicateTypeComboBox.SelectedIndex = -1;
         _currentDelicateComponents.Clear();
+        DelicateAutoAddCheckBox.IsChecked = false;
 
         // Продукты с флагом "автоматически добавлять" добавляются только в меню, а не в блюда
         // LoadAutoAddProducts(); // Убрано - продукты с AutoAdd не должны добавляться в блюда
@@ -276,6 +279,7 @@ public partial class DelicatesPage : Page
             DelicateNameTextBox.Text = delicate.Name;
             DelicateWeightTextBox.Text = delicate.Ves.ToString();
             DelicateCountTextBox.Text = delicate.Count.ToString();
+            DelicateAutoAddCheckBox.IsChecked = delicate.AutoAdd;
 
             // Устанавливаем тип
             var types = _delicateRepository.GetDelicateTypes();
@@ -341,24 +345,31 @@ public partial class DelicatesPage : Page
             var typeId = (int)DelicateTypeComboBox.SelectedValue;
             var ves = decimal.TryParse(DelicateWeightTextBox.Text, out var w) ? w : 0;
             var count = decimal.TryParse(DelicateCountTextBox.Text, out var c) ? c : 1;
+            var autoAdd = DelicateAutoAddCheckBox.IsChecked == true;
 
             if (_isEditMode && _currentDelicateId.HasValue)
             {
                 // Обновление существующего блюда
                 _delicateRepository.UpdateDelicate(
-                    _currentDelicateId.Value, typeId, DelicateNameTextBox.Text, ves, count);
+                    _currentDelicateId.Value, typeId, DelicateNameTextBox.Text, ves, count, autoAdd);
 
                 // Сохранение компонентов
                 SaveDelicateComponents(_currentDelicateId.Value);
 
                 MessageBox.Show("Блюдо успешно обновлено!",
                     "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
+
+                // Если включен флаг автодобавления, пробуем добавить блюдо в текущее открытое меню
+                if (autoAdd)
+                {
+                    TryAutoAddDelicateToOpenMenu(_currentDelicateId.Value);
+                }
             }
             else
             {
                 // Создание нового блюда
                 Logger.Debug($"Создание нового блюда: {DelicateNameTextBox.Text}, компонентов в списке: {_currentDelicateComponents.Count}");
-                var newId = _delicateRepository.AddDelicate(typeId, DelicateNameTextBox.Text, ves, count);
+                var newId = _delicateRepository.AddDelicate(typeId, DelicateNameTextBox.Text, ves, count, autoAdd);
                 _currentDelicateId = newId;
                 Logger.Debug($"Блюдо создано с ID: {newId}");
 
@@ -367,6 +378,12 @@ public partial class DelicatesPage : Page
 
                 MessageBox.Show("Блюдо успешно создано!",
                     "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
+
+                // Если включен флаг автодобавления, пробуем добавить блюдо в текущее открытое меню
+                if (autoAdd)
+                {
+                    TryAutoAddDelicateToOpenMenu(newId);
+                }
             }
 
             LoadDelicates();
@@ -545,5 +562,38 @@ public partial class DelicatesPage : Page
     private static bool IsTextNumeric(string text)
     {
         return text.All(c => char.IsDigit(c) || c == ',' || c == '.');
+    }
+
+    /// <summary>
+    /// Попробовать автоматически добавить блюдо в текущее открытое меню
+    /// (используется при сохранении блюда с флагом AutoAdd).
+    /// Количество порций берётся равным количеству гостей в меню.
+    /// </summary>
+    private void TryAutoAddDelicateToOpenMenu(int delicateId)
+    {
+        try
+        {
+            var openMenu = _menuRepository.GetOpenMenu();
+            if (openMenu == null)
+            {
+                // Нет открытого меню — просто выходим
+                return;
+            }
+
+            // Проверяем, нет ли уже такого блюда в меню
+            var menuDelicates = _menuRepository.GetMenuDelicates(openMenu.Id);
+            if (menuDelicates.Any(md => md.Del_id == delicateId))
+            {
+                return;
+            }
+
+            Logger.Debug($"Автоматическое добавление блюда ID={delicateId} в открытое меню ID={openMenu.Id}");
+            _menuRepository.AddDelicateToMenu(openMenu.Id, delicateId, openMenu.CountP);
+        }
+        catch (Exception ex)
+        {
+            Logger.Error("Ошибка при автоматическом добавлении блюда в открытое меню", ex);
+            // Пользователю можно не показывать сообщение, чтобы не мешать сохранению блюда
+        }
     }
 }

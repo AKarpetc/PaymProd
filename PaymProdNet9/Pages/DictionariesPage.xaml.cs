@@ -220,8 +220,9 @@ public partial class DictionariesPage : Page
             var ves = decimal.TryParse(DelicateWeightTextBox.Text, out var w) ? w : 0;
             var count = decimal.TryParse(DelicateCountTextBox.Text, out var c) ? c : 0;
 
+            // В справочнике по умолчанию не используем автодобавление в меню (autoAdd = false)
             _currentDelicateId = _delicateRepository.AddDelicate(
-                typeId, DelicateNameTextBox.Text, ves, count);
+                typeId, DelicateNameTextBox.Text, ves, count, false);
 
             LoadDelicates();
             DelicateEditPanel.IsEnabled = true;
@@ -279,17 +280,17 @@ public partial class DictionariesPage : Page
 
             if (_currentDelicateId.HasValue)
             {
-                // Обновляем существующее блюдо
+                // Обновляем существующее блюдо (autoAdd = false по умолчанию в этом окне)
                 _delicateRepository.UpdateDelicate(
-                    _currentDelicateId.Value, typeId, DelicateNameTextBox.Text, ves, count);
+                    _currentDelicateId.Value, typeId, DelicateNameTextBox.Text, ves, count, false);
 
                 MessageBox.Show("Блюдо обновлено!",
                     "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             else
             {
-                // Создаем новое блюдо
-                var newId = _delicateRepository.AddDelicate(typeId, DelicateNameTextBox.Text, ves, count);
+                // Создаем новое блюдо (autoAdd = false)
+                var newId = _delicateRepository.AddDelicate(typeId, DelicateNameTextBox.Text, ves, count, false);
                 _currentDelicateId = newId;
 
                 MessageBox.Show("Блюдо создано! Теперь можно добавить продукты в его состав.",

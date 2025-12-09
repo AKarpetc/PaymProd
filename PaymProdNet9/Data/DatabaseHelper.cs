@@ -1,4 +1,5 @@
 using Microsoft.Data.Sqlite;
+using PaymProdNet9.Migrations;
 using System.IO;
 
 namespace PaymProdNet9.Data;
@@ -197,6 +198,7 @@ public static class DatabaseHelper
                 Del_count REAL DEFAULT 0,
                 Datew TEXT,
                 LinkedProductId INTEGER,
+                AutoAdd INTEGER DEFAULT 0,
                 FOREIGN KEY (Del_Type) REFERENCES Type_Del(Type_Del_ID)
             );";
         command.ExecuteNonQuery();
@@ -311,6 +313,9 @@ public static class DatabaseHelper
         {
             // Таблица уже существует, игнорируем ошибку
         }
+
+        // Запускаем миграции (поддержка старых форматов базы данных)
+        MigrationRunner.RunAllMigrations(connection);
 
         // Инициализация базовых данных
         InitializeDefaultData(connection);

@@ -110,6 +110,17 @@
                             <DataGridTextColumn Header="Тип" Binding="{Binding Type}" Width="*" />
                             <DataGridTextColumn Header="Вес" Binding="{Binding Ves}" Width="*" />
                             <DataGridTextColumn Header="Количество" Binding="{Binding Count}" Width="*" />
+                            <DataGridTemplateColumn Header="Авто в меню" Width="*">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <materialDesign:PackIcon Kind="CheckCircle"
+                                                                 Width="18"
+                                                                 Height="18"
+                                                                 Foreground="#4CAF50"
+                                                                 Visibility="{Binding AutoAdd, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
                         </DataGrid.Columns>
                     </DataGrid>
                 </Grid>
@@ -146,6 +157,7 @@
 
                         <Grid>
                             <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
                                 <RowDefinition Height="Auto" />
                                 <RowDefinition Height="Auto" />
                             </Grid.RowDefinitions>
@@ -196,6 +208,14 @@
                                          materialDesign:HintAssist.Hint="По умолчанию: 1"
                                          Style="{StaticResource MaterialDesignOutlinedTextBox}"
                                          PreviewTextInput="NumericOnly_PreviewTextInput" />
+                            </StackPanel>
+
+                            <!-- Автодобавление в меню -->
+                            <StackPanel Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" Margin="0,5,0,0">
+                                <CheckBox x:Name="DelicateAutoAddCheckBox" Margin="0,5"
+                                          ToolTip="Если отмечено, блюдо будет автоматически добавляться в новое меню с количеством, равным числу гостей.">
+                                    <TextBlock Text="Автоматически добавлять в новое меню (количество = число гостей)" TextWrapping="Wrap"/>
+                                </CheckBox>
                             </StackPanel>
                         </Grid>
 

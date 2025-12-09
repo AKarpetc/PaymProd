@@ -108,22 +108,46 @@ public class MenuRepository
         var autoProducts = new List<AutoProductInfo>();
         using (var reader = command.ExecuteReader())
         {
-        while (reader.Read())
-        {
+            while (reader.Read())
+            {
                 autoProducts.Add(new AutoProductInfo
                 {
                     ProductId = reader.GetInt32(0),
                     BaseCount = reader.GetDecimal(1),
                     PrizMenu = reader.GetInt32(2)
                 });
-                    }
-                }
+            }
+        }
+
+        // Получаем блюда с авто-добавлением (AutoAdd = 1)
+        var autoDelicates = new List<int>();
+        command = connection.CreateCommand();
+        command.CommandText = @"
+            SELECT Del_id
+            FROM Delicates
+            WHERE COALESCE(AutoAdd, 0) = 1";
+
+        using (var reader = command.ExecuteReader())
+        {
+            while (reader.Read())
+            {
+                autoDelicates.Add(reader.GetInt32(0));
+            }
+        }
 
         connection.Close();
         
+        // Сначала добавляем продукты с AutoAdd
         foreach (var autoProduct in autoProducts)
         {
             AutoAddProductToMenu(menuId, autoProduct.ProductId, autoProduct.BaseCount, countPeople);
+        }
+
+        // Затем добавляем блюда с AutoAdd с количеством, равным числу гостей
+        foreach (var delicateId in autoDelicates)
+        {
+            Logger.Debug($"Автоматическое добавление блюда с AutoAdd: DelicateId={delicateId}, MenuId={menuId}, CountPeople={countPeople}");
+            AddDelicateToMenu(menuId, delicateId, countPeople);
         }
 
         return menuId;

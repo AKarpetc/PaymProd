@@ -139,6 +139,10 @@ public class DelicatesColl
     public int TypeSortOrder { get; set; }
     public int? LinkedProductId { get; set; }
     public decimal? LinkedProductDefaultCount { get; set; }
+    /// <summary>
+    /// Флаг "автоматически добавлять в меню" (при создании нового меню).
+    /// </summary>
+    public bool AutoAdd { get; set; }
     public List<Components> Lcomp { get; set; } = new();
 }
 
