@@ -55,7 +55,8 @@
                               IsReadOnly="False"
                               CanUserAddRows="False"
                               AutoGeneratingColumn="ProductsGrid_AutoGeneratingColumn"
-                              RowEditEnding="ProductsGrid_RowEditEnding"/>
+                              RowEditEnding="ProductsGrid_RowEditEnding"
+                              CellEditEnding="ProductsGrid_CellEditEnding"/>
                 </Grid>
             </TabItem>
 

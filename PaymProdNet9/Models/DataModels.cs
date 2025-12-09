@@ -13,6 +13,24 @@ public class Menus
     public int CountP { get; set; }
     public string DateBan { get; set; } = string.Empty;
     public string Detail { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Вспомогательное поле для корректной сортировки по дате в таблицах (SavedMenusPage и др.).
+    /// Хранит распарсенное значение DateBan как DateTime, если это возможно.
+    /// </summary>
+    public DateTime? DateBanParsed
+    {
+        get
+        {
+            if (string.IsNullOrWhiteSpace(DateBan))
+                return null;
+
+            if (DateTime.TryParse(DateBan, out var dt))
+                return dt;
+
+            return null;
+        }
+    }
 }
 
 /// <summary>

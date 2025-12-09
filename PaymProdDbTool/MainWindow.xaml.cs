@@ -285,6 +285,8 @@ public partial class MainWindow : Window
 
         try
         {
+            Logger.Info($"DBTool: ReloadTableAsync start. DbPath={_dbPath}, Table={tableName}");
+
             ProductsGrid.ItemsSource = null;
             _currentTableName = tableName;
             _currentTable = null;
@@ -304,10 +306,14 @@ public partial class MainWindow : Window
 
             _currentTable = table;
             ProductsGrid.ItemsSource = table.DefaultView;
+
+            Logger.Info(
+                $"DBTool: ReloadTableAsync done. Table={tableName}, Rows={table.Rows.Count}, Cols={table.Columns.Count}");
         }
         catch (Exception ex)
         {
             MessageBox.Show($"Ошибка при загрузке данных таблицы '{tableName}':\n{ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+            Logger.Error($"DBTool: ReloadTableAsync error for table '{tableName}'", ex);
         }
     }
 
@@ -321,72 +327,90 @@ public partial class MainWindow : Window
 
     private async void ProductsGrid_RowEditEnding(object sender, System.Windows.Controls.DataGridRowEditEndingEventArgs e)
     {
-        if (e.EditAction != System.Windows.Controls.DataGridEditAction.Commit)
-            return;
+        // Больше ничего не делаем здесь, чтобы избежать рекурсии CommitEdit;
+        // фактическое сохранение переносим в CellEditEnding.
+        await Task.CompletedTask;
+    }
 
+    private async void ProductsGrid_CellEditEnding(object sender, System.Windows.Controls.DataGridCellEditEndingEventArgs e)
+    {
         if (_currentTable is null || string.IsNullOrWhiteSpace(_currentTableName))
             return;
 
-        // После завершения редактирования коммитим изменения и сохраняем строку в базу
-        await Dispatcher.InvokeAsync(async () =>
+        if (e.Row.Item is not System.Data.DataRowView rowView)
+            return;
+
+        var row = rowView.Row;
+        if (!_currentTable.Columns.Contains(RowIdColumnName))
+            return;
+
+        var rowId = row[RowIdColumnName];
+        if (rowId == DBNull.Value)
+            return;
+
+        // Определяем имя колонки
+        string? columnName = null;
+        if (e.Column is System.Windows.Controls.DataGridBoundColumn bound
+            && bound.Binding is System.Windows.Data.Binding binding
+            && binding.Path != null)
         {
-            if (e.Row.Item is not System.Data.DataRowView rowView)
-                return;
+            columnName = binding.Path.Path;
+        }
 
-            var row = rowView.Row;
-            if (!_currentTable.Columns.Contains(RowIdColumnName))
-                return;
+        if (string.IsNullOrWhiteSpace(columnName) || columnName == RowIdColumnName)
+            return;
 
-            var rowId = row[RowIdColumnName];
-            if (rowId == DBNull.Value)
-                return;
+        // Получаем новое значение из UI-элемента
+        object? newValue = null;
+        if (e.EditingElement is System.Windows.Controls.TextBox tb)
+        {
+            newValue = string.IsNullOrWhiteSpace(tb.Text) ? DBNull.Value : tb.Text;
+        }
+        else if (e.EditingElement is System.Windows.Controls.CheckBox cb)
+        {
+            newValue = cb.IsChecked == true ? 1 : 0;
+        }
+        else
+        {
+            newValue = row[columnName] ?? DBNull.Value;
+        }
 
-            try
+        try
+        {
+            Logger.Info($"DBTool: CellEditEnding. Table={_currentTableName}, RowId={rowId}, Column={columnName}, NewValue={newValue}");
+
+            using var connection = CreateConnection();
+            await connection.OpenAsync();
+
+            var cmd = connection.CreateCommand();
+
+            // Специальный случай для Produkt_Type.SortOrder: обновляем по PK TypeProdId
+            if (string.Equals(_currentTableName, "Produkt_Type", StringComparison.OrdinalIgnoreCase)
+                && string.Equals(columnName, "SortOrder", StringComparison.OrdinalIgnoreCase)
+                && _currentTable.Columns.Contains("TypeProdId"))
             {
-                using var connection = CreateConnection();
-                await connection.OpenAsync();
+                var id = row["TypeProdId"];
+                Logger.Info($"DBTool: Produkt_Type direct cell update. TypeProdId={id}, SortOrder={newValue}");
 
-                var cmd = connection.CreateCommand();
-
+                cmd.CommandText = "UPDATE Produkt_Type SET SortOrder = @val WHERE TypeProdId = @id";
+                cmd.Parameters.AddWithValue("@val", newValue ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("@id", id ?? DBNull.Value);
+            }
+            else
+            {
                 var safeName = _currentTableName.Replace("\"", string.Empty);
-
-                // формируем список изменённых колонок (кроме rowid)
-                var setClauses = new List<string>();
+                cmd.CommandText = $"UPDATE \"{safeName}\" SET \"{columnName}\" = @val WHERE rowid = @rowid";
+                cmd.Parameters.AddWithValue("@val", newValue ?? DBNull.Value);
                 cmd.Parameters.AddWithValue("@rowid", rowId);
-
-                foreach (DataColumn col in _currentTable.Columns)
-                {
-                    if (col.ColumnName == RowIdColumnName)
-                        continue;
-
-                    var current = row[col, DataRowVersion.Current];
-                    object? original = row.HasVersion(DataRowVersion.Original)
-                        ? row[col, DataRowVersion.Original]
-                        : current;
-
-                    bool changed = (original == DBNull.Value && current != DBNull.Value)
-                                   || (original != DBNull.Value && current == DBNull.Value)
-                                   || (!Equals(original, current) && original is not DBNull && current is not DBNull);
-
-                    if (!changed)
-                        continue;
-
-                    var paramName = "@p_" + col.ColumnName;
-                    setClauses.Add($"\"{col.ColumnName}\" = {paramName}");
-                    cmd.Parameters.AddWithValue(paramName, current ?? DBNull.Value);
-                }
-
-                if (setClauses.Count == 0)
-                    return; // нечего сохранять
-
-                cmd.CommandText = $"UPDATE \"{safeName}\" SET {string.Join(", ", setClauses)} WHERE rowid = @rowid";
-
-                await cmd.ExecuteNonQueryAsync();
             }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Ошибка при сохранении изменений:\n{ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        });
+
+            var affected = await cmd.ExecuteNonQueryAsync();
+            Logger.Info($"DBTool: Cell UPDATE affected={affected}");
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Ошибка при сохранении значения:\n{ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+            Logger.Error($"DBTool: CellEditEnding save error. Table={_currentTableName}, RowId={rowId}, Column={columnName}", ex);
+        }
     }
 }
