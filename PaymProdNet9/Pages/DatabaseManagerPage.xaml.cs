@@ -4,6 +4,7 @@ using PaymProdNet9.Windows;
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -304,6 +305,76 @@ public partial class DatabaseManagerPage : Page
         finally
         {
             DownloadStartDbButton.IsEnabled = true;
+        }
+    }
+
+    /// <summary>
+    /// Загрузка последнего лог-файла в S3 (logs/{username}/...).
+    /// </summary>
+    private async void ShareLogsToS3Button_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var logsDir = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "PaymProdNet9", "Logs");
+
+            if (!Directory.Exists(logsDir))
+            {
+                MessageBox.Show("Папка с логами не найдена.", "Ошибка",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            var files = Directory.GetFiles(logsDir, "PaymProd_*.log");
+            if (files.Length == 0)
+            {
+                MessageBox.Show("Лог-файлы не найдены.", "Ошибка",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            var latestLog = files
+                .OrderByDescending(f => File.GetLastWriteTime(f))
+                .First();
+
+            var key = await S3UploadService.UploadFileAsync(latestLog, "logs");
+
+            MessageBox.Show($"Журнал ошибок отправлен.\n\nОбъект: {key}",
+                "Готово", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Ошибка при загрузке журнала ошибок:\n{ex.Message}",
+                "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    /// <summary>
+    /// Загрузка текущей базы данных в S3 (database/{username}/...).
+    /// </summary>
+    private async void ShareDbToS3Button_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            // Сначала создаем резервную копию (это снимает блокировки и копирует актуальную БД)
+            var backupPath = DatabaseBackupHelper.CreateAutoBackup();
+            if (!File.Exists(backupPath))
+            {
+                MessageBox.Show("Не удалось создать резервную копию базы данных.", "Ошибка",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            var key = await S3UploadService.UploadFileAsync(backupPath, "database");
+
+            MessageBox.Show($"База данных отправлена.\n\nОбъект: {key}",
+                "Готово", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Ошибка при загрузке базы данных:\n{ex.Message}",
+                "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
 }

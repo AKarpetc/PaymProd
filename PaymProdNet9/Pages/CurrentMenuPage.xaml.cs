@@ -135,7 +135,14 @@ public partial class CurrentMenuPage : Page
                 .Where(c => c != AllTypesButton).ToList();
             foreach (var button in buttonsToRemove) panel.Children.Remove(button);
 
-            var types = _delicateRepository.GetDelicateTypes();
+            // Берем типы блюд без дубликатов по названию
+            var types = _delicateRepository.GetDelicateTypes()
+                .GroupBy(t => (t.Name ?? string.Empty).Trim(), StringComparer.OrdinalIgnoreCase)
+                .Select(g => g.First())
+                .OrderBy(t => t.SortOrder)
+                .ThenBy(t => t.Name)
+                .ToList();
+
             foreach (var type in types)
             {
                 var button = new Button

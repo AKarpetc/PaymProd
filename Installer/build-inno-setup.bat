@@ -34,9 +34,21 @@ cd ..
 REM Переход в папку установщика
 cd Installer
 
+REM Подготовка параметров для передачи ключей S3 в Inno Setup
+set "INNO_FLAGS="
+if defined PAYMPROD_S3_ENDPOINT (
+    set "INNO_FLAGS=%INNO_FLAGS% /DS3Endpoint=%PAYMPROD_S3_ENDPOINT%"
+)
+if defined PAYMPROD_S3_ACCESS_KEY (
+    set "INNO_FLAGS=%INNO_FLAGS% /DS3AccessKey=%PAYMPROD_S3_ACCESS_KEY%"
+)
+if defined PAYMPROD_S3_SECRET_KEY (
+    set "INNO_FLAGS=%INNO_FLAGS% /DS3SecretKey=%PAYMPROD_S3_SECRET_KEY%"
+)
+
 REM Компиляция установщика
 echo [2/3] Компиляция установщика Inno Setup...
-"%ISCC_PATH%" PaymProdNet9.iss
+"%ISCC_PATH%" PaymProdNet9.iss %INNO_FLAGS%
 if %ERRORLEVEL% NEQ 0 (
     echo [ОШИБКА] Ошибка при компиляции установщика!
     pause

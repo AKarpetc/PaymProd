@@ -64,6 +64,7 @@ public partial class ProductsPage : Page
     private void Page_Loaded(object sender, RoutedEventArgs e)
     {
         LoadProducts();
+        ApplyProductFilter();
         LoadProductTypes();
         LoadMeasures();
         ShowListView(); // Start in list view
@@ -133,19 +134,36 @@ public partial class ProductsPage : Page
 
     private void ProductSearch_TextChanged(object sender, TextChangedEventArgs e)
     {
-        var searchText = ProductSearchBox.Text.ToLower();
+        if (ProductSearchClearButton != null)
+            ProductSearchClearButton.Visibility =
+                string.IsNullOrWhiteSpace(ProductSearchBox.Text)
+                    ? Visibility.Collapsed
+                    : Visibility.Visible;
+
+        ApplyProductFilter();
+    }
+
+    /// <summary>
+    /// Применяет фильтр поиска к списку продуктов на основе текста в ProductSearchBox.
+    /// </summary>
+    private void ApplyProductFilter()
+    {
+        if (_productsCache == null || _allProducts == null)
+            return;
+
+        var searchText = (ProductSearchBox.Text ?? string.Empty).ToLower();
+
+        _allProducts.Clear();
 
         if (string.IsNullOrWhiteSpace(searchText))
         {
             // Возвращаем полный список из кэша, не обращаясь к базе
-            _allProducts.Clear();
             foreach (var product in _productsCache) _allProducts.Add(product);
             return;
         }
 
         try
         {
-            _allProducts.Clear();
             var filtered = _productsCache.Where(p =>
                 p.Name.ToLower().Contains(searchText) ||
                 (p.Type != null && p.Type.ToLower().Contains(searchText)) ||
@@ -159,6 +177,11 @@ public partial class ProductsPage : Page
             MessageBox.Show($"Ошибка при поиске продуктов: {ex.Message}",
                 "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
         }
+    }
+
+    private void ProductSearchClearButton_Click(object sender, RoutedEventArgs e)
+    {
+        ProductSearchBox.Text = string.Empty; // TextChanged вызовет ApplyProductFilter
     }
 
     private void LoadProductTypes()
@@ -487,6 +510,11 @@ public partial class ProductsPage : Page
                     Logger.Debug($"SaveProduct: После LoadProducts продукт ID={_currentProductId.Value}, Fass={loadedProduct.Fass}");
                 }
             }
+
+            // Обновляем список и сохраняем текущий фильтр поиска
+            LoadProducts();
+            ApplyProductFilter();
+
             ShowListView(); // Return to list view
         }
         catch (Exception ex)

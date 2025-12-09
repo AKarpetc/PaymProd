@@ -259,3 +259,6 @@ paket-files/
 # Python Tools for Visual Studio (PTVS)
 __pycache__/
 *.pyc
+
+# Локальный конфиг с ключами S3 (для отладки, не коммитим)
+PaymProdNet9/s3settings.local.json

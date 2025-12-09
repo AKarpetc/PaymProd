@@ -9,6 +9,19 @@
 #define MyAppExeName "PaymProdNet9.exe"
 #define MyAppId "A1B2C3D4-E5F6-4A7B-8C9D-0E1F2A3B4C5D"
 
+; Параметры для ключей S3 (передаются из build-inno-setup.bat через /D...)
+#ifndef S3Endpoint
+  #define S3Endpoint ""
+#endif
+
+#ifndef S3AccessKey
+  #define S3AccessKey ""
+#endif
+
+#ifndef S3SecretKey
+  #define S3SecretKey ""
+#endif
+
 [Setup]
 ; Основные настройки
 AppId={#MyAppId}
@@ -54,6 +67,19 @@ Name: "{userappdata}\Microsoft\Internet Explorer\Quick Launch\{#MyAppName}"; Fil
 
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
+
+[Registry]
+; Устанавливаем переменные окружения для клиента S3.
+; Если значения пустые (ключи не переданы при сборке установщика), записи будут пустыми.
+Root: HKLM; Subkey: "SYSTEM\CurrentControlSet\Control\Session Manager\Environment"; \
+    ValueType: expandsz; ValueName: "PAYMPROD_S3_ENDPOINT"; ValueData: "{#S3Endpoint}"; \
+    Flags: preservestringtype;
+Root: HKLM; Subkey: "SYSTEM\CurrentControlSet\Control\Session Manager\Environment"; \
+    ValueType: expandsz; ValueName: "PAYMPROD_S3_ACCESS_KEY"; ValueData: "{#S3AccessKey}"; \
+    Flags: preservestringtype;
+Root: HKLM; Subkey: "SYSTEM\CurrentControlSet\Control\Session Manager\Environment"; \
+    ValueType: expandsz; ValueName: "PAYMPROD_S3_SECRET_KEY"; ValueData: "{#S3SecretKey}"; \
+    Flags: preservestringtype;
 
 [Code]
 // Проверка наличия .NET 9.0 Runtime (если приложение не self-contained)

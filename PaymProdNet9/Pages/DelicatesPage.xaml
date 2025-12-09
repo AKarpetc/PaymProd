@@ -40,14 +40,33 @@
                         </Button.Effect>
                     </Button>
 
-                    <TextBox Grid.Column="1"
-                             x:Name="DelicateSearchBox"
-                             materialDesign:HintAssist.Hint="Поиск..."
-                             Style="{StaticResource MaterialDesignOutlinedTextBox}"
-                             VerticalAlignment="Center"
-                             FontSize="14"
-                             TextChanged="DelicateSearch_TextChanged"
-                             HorizontalAlignment="Stretch" />
+                    <!-- Поиск с кнопкой очистки -->
+                    <Grid Grid.Column="1">
+                        <TextBox x:Name="DelicateSearchBox"
+                                 materialDesign:HintAssist.Hint="Поиск..."
+                                 Style="{StaticResource MaterialDesignOutlinedTextBox}"
+                                 VerticalAlignment="Center"
+                                 FontSize="14"
+                                 TextChanged="DelicateSearch_TextChanged"
+                                 HorizontalAlignment="Stretch"
+                                 Margin="0,0,30,0" />
+
+                        <Button x:Name="DelicateSearchClearButton"
+                                Width="22"
+                                Height="22"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Center"
+                                Margin="0,0,4,0"
+                                Style="{StaticResource MaterialDesignIconButton}"
+                                Click="DelicateSearchClearButton_Click"
+                                Visibility="Collapsed"
+                                ToolTip="Очистить поиск">
+                            <materialDesign:PackIcon Kind="CloseCircle"
+                                                     Width="16"
+                                                     Height="16"
+                                                     Foreground="#B0BEC5" />
+                        </Button>
+                    </Grid>
                 </Grid>
             </materialDesign:Card>
 

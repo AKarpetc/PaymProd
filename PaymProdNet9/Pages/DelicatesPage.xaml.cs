@@ -92,8 +92,7 @@ public partial class DelicatesPage : Page
 
             _delicatesCache = delicates;
 
-            _allDelicates.Clear();
-            foreach (var delicate in delicates) _allDelicates.Add(delicate);
+            ApplyDelicateFilter();
 
             DelicatesDataGrid.ItemsSource = _allDelicates;
         }
@@ -106,19 +105,36 @@ public partial class DelicatesPage : Page
 
     private void DelicateSearch_TextChanged(object sender, TextChangedEventArgs e)
     {
-        var searchText = DelicateSearchBox.Text.ToLower();
+        if (DelicateSearchClearButton != null)
+            DelicateSearchClearButton.Visibility =
+                string.IsNullOrWhiteSpace(DelicateSearchBox.Text)
+                    ? Visibility.Collapsed
+                    : Visibility.Visible;
+
+        ApplyDelicateFilter();
+    }
+
+    /// <summary>
+    /// Применяет фильтр поиска к списку блюд на основе текста в DelicateSearchBox.
+    /// </summary>
+    private void ApplyDelicateFilter()
+    {
+        if (_delicatesCache == null || _allDelicates == null)
+            return;
+
+        var searchText = (DelicateSearchBox.Text ?? string.Empty).ToLower();
+
+        _allDelicates.Clear();
 
         if (string.IsNullOrWhiteSpace(searchText))
         {
             // Возвращаем полный список из кэша, не обращаясь к базе
-            _allDelicates.Clear();
             foreach (var d in _delicatesCache) _allDelicates.Add(d);
             return;
         }
 
         try
         {
-            _allDelicates.Clear();
             var filtered = _delicatesCache.Where(d =>
                 d.Name.ToLower().Contains(searchText) ||
                 (d.Type != null && d.Type.ToLower().Contains(searchText))
@@ -131,6 +147,11 @@ public partial class DelicatesPage : Page
             MessageBox.Show($"Ошибка при поиске блюд: {ex.Message}",
                 "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
         }
+    }
+
+    private void DelicateSearchClearButton_Click(object sender, RoutedEventArgs e)
+    {
+        DelicateSearchBox.Text = string.Empty; // TextChanged вызовет ApplyDelicateFilter
     }
 
     private void LoadProducts()
@@ -389,7 +410,9 @@ public partial class DelicatesPage : Page
                 }
             }
 
+            // Перечитываем список и сохраняем фильтр поиска
             LoadDelicates();
+            ApplyDelicateFilter();
             ShowListView();
         }
         catch (Exception ex)

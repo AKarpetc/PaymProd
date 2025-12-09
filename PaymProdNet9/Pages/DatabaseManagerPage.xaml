@@ -94,6 +94,18 @@
                             Click="AutoBackupButton_Click"
                             ToolTip="Создать автоматическую резервную копию" />
 
+                    <Button Name="ShareLogsToS3Button"
+                            Content="☁️ Поделиться журналом ошибок"
+                            Style="{StaticResource InfoButton}"
+                            Click="ShareLogsToS3Button_Click"
+                            ToolTip="Загрузить последний лог-файл в облачное хранилище" />
+
+                    <Button Name="ShareDbToS3Button"
+                            Content="☁️ Поделиться базой данных"
+                            Style="{StaticResource InfoButton}"
+                            Click="ShareDbToS3Button_Click"
+                            ToolTip="Загрузить текущую базу данных в облачное хранилище" />
+
                     <Button Name="ResetDbButton"
                             Content="🆕 Начать с новой базы"
                             Style="{StaticResource DangerButton}"
