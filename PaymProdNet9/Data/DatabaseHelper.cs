@@ -17,17 +17,27 @@ public static class DatabaseHelper
         {
             if (string.IsNullOrEmpty(_connectionString))
             {
-                // First try user AppData location (where migration tool puts it)
-                var appDataPath = Path.Combine(
+                // Всегда используем AppData для базы данных (там есть права на запись)
+                // Это важно для установленных приложений в Program Files
+                var appDataDir = Path.Combine(
                     Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                    "PaymProdNet9", "MenuCalc.db");
+                    "PaymProdNet9");
+                
+                // Убедимся что директория существует
+                if (!Directory.Exists(appDataDir))
+                {
+                    try
+                    {
+                        Directory.CreateDirectory(appDataDir);
+                    }
+                    catch (Exception ex)
+                    {
+                        Services.Logger.Error($"Не удалось создать директорию для базы данных: {appDataDir}", ex);
+                        throw;
+                    }
+                }
 
-                // Then try application directory
-                var binPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "MenuCalc.db");
-
-                // Use AppData if it exists, otherwise use bin directory
-                var dbPath = File.Exists(appDataPath) ? appDataPath : binPath;
-
+                var dbPath = Path.Combine(appDataDir, "MenuCalc.db");
                 _connectionString = $"Data Source={dbPath}";
             }
 

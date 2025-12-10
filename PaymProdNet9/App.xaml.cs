@@ -90,20 +90,29 @@ public partial class App : Application
 
         // Проверяем наличие базы данных в AppData (созданной инструментом миграции)
         splashScreen.UpdateStatus("Проверка базы данных...");
-        var appDataPath = System.IO.Path.Combine(
+        var appDataDir = System.IO.Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "PaymProdNet9", "MenuCalc.db");
+            "PaymProdNet9");
+        var dbPath = System.IO.Path.Combine(appDataDir, "MenuCalc.db");
 
-        // Если база существует в AppData, используем её
-        // Иначе создаём в директории приложения
-        var dbPath = System.IO.File.Exists(appDataPath)
-            ? appDataPath
-            : System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "MenuCalc.db");
-
+        // Всегда используем AppData для базы данных (там есть права на запись)
         // Убедимся что директория существует
-        var directory = System.IO.Path.GetDirectoryName(dbPath);
-        if (!string.IsNullOrEmpty(directory) && !System.IO.Directory.Exists(directory))
-            System.IO.Directory.CreateDirectory(directory);
+        if (!System.IO.Directory.Exists(appDataDir))
+        {
+            try
+            {
+                System.IO.Directory.CreateDirectory(appDataDir);
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"Не удалось создать директорию для базы данных: {appDataDir}", ex);
+                splashScreen.Close();
+                MessageBox.Show($"Не удалось создать директорию для базы данных:\n{appDataDir}\n\nОшибка: {ex.Message}", 
+                    "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                Shutdown();
+                return;
+            }
+        }
 
         if (!System.IO.File.Exists(dbPath))
         {
