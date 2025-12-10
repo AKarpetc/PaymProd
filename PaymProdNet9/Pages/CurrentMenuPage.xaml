@@ -15,29 +15,80 @@
 
         <!-- Панель быстрых действий -->
         <materialDesign:Card Grid.Row="0" Margin="10" Padding="10">
-            <WrapPanel HorizontalAlignment="Center">
-                <Button Style="{StaticResource MaterialDesignRaisedButton}"
-                        Click="SaveMenuChanges_Click" Margin="5">
-                    <StackPanel Orientation="Horizontal">
-                        <materialDesign:PackIcon Kind="ContentSave" VerticalAlignment="Center" Margin="0,0,5,0" />
-                        <TextBlock Text="Сохранить изменения" VerticalAlignment="Center" />
-                    </StackPanel>
-                </Button>
-                <Button Style="{StaticResource MaterialDesignRaisedButton}"
-                        Click="RefreshMenu_Click" Margin="5">
-                    <StackPanel Orientation="Horizontal">
-                        <materialDesign:PackIcon Kind="Refresh" VerticalAlignment="Center" Margin="0,0,5,0" />
-                        <TextBlock Text="Обновить" VerticalAlignment="Center" />
-                    </StackPanel>
-                </Button>
-                <Button Style="{StaticResource MaterialDesignRaisedButton}"
-                        Click="EnterMenuPrices_Click" Margin="5">
-                    <StackPanel Orientation="Horizontal">
-                        <materialDesign:PackIcon Kind="CurrencyUsd" VerticalAlignment="Center" Margin="0,0,5,0" />
-                        <TextBlock Text="Ввести цены для меню" VerticalAlignment="Center" />
-                    </StackPanel>
-                </Button>
-            </WrapPanel>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                
+                <!-- Кнопки действий -->
+                <WrapPanel Grid.Column="0" HorizontalAlignment="Left" Margin="0,0,15,0">
+                    <Button Style="{StaticResource MaterialDesignRaisedButton}"
+                            Click="SaveMenuChanges_Click" Margin="5">
+                        <StackPanel Orientation="Horizontal">
+                            <materialDesign:PackIcon Kind="ContentSave" VerticalAlignment="Center" Margin="0,0,5,0" />
+                            <TextBlock Text="Сохранить изменения" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+                    <Button Style="{StaticResource MaterialDesignRaisedButton}"
+                            Click="RefreshMenu_Click" Margin="5">
+                        <StackPanel Orientation="Horizontal">
+                            <materialDesign:PackIcon Kind="Refresh" VerticalAlignment="Center" Margin="0,0,5,0" />
+                            <TextBlock Text="Обновить" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+                    <Button Style="{StaticResource MaterialDesignRaisedButton}"
+                            Click="EnterMenuPrices_Click" Margin="5">
+                        <StackPanel Orientation="Horizontal">
+                            <materialDesign:PackIcon Kind="CurrencyUsd" VerticalAlignment="Center" Margin="0,0,5,0" />
+                            <TextBlock Text="Ввести цены для меню" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+                </WrapPanel>
+                
+                <!-- Поле поиска по блюдам -->
+                <Grid Grid.Column="1">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    
+                    <TextBox Grid.Column="0" x:Name="DelicateSearchBox"
+                             materialDesign:HintAssist.Hint="Поиск по названию блюда..."
+                             Style="{StaticResource MaterialDesignOutlinedTextBox}"
+                             VerticalAlignment="Center"
+                             FontSize="14"
+                             HorizontalAlignment="Stretch"
+                             Margin="0,0,5,0"
+                             KeyDown="DelicateSearchBox_KeyDown" />
+                    
+                    <Button Grid.Column="1" x:Name="DelicateSearchButton"
+                            Style="{StaticResource MaterialDesignRaisedButton}"
+                            Click="DelicateSearchButton_Click"
+                            Margin="0,0,5,0"
+                            ToolTip="Найти блюдо">
+                        <StackPanel Orientation="Horizontal">
+                            <materialDesign:PackIcon Kind="Magnify" VerticalAlignment="Center" Margin="0,0,5,0" />
+                            <TextBlock Text="Поиск" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+                    
+                    <Button Grid.Column="2" x:Name="DelicateSearchClearButton"
+                            Width="22"
+                            Height="22"
+                            VerticalAlignment="Center"
+                            Style="{StaticResource MaterialDesignIconButton}"
+                            Click="DelicateSearchClearButton_Click"
+                            Visibility="Collapsed"
+                            ToolTip="Очистить поиск">
+                        <materialDesign:PackIcon Kind="CloseCircle"
+                                                 Width="16"
+                                                 Height="16"
+                                                 Foreground="#B0BEC5" />
+                    </Button>
+                </Grid>
+            </Grid>
         </materialDesign:Card>
 
         <!-- Основной контент -->

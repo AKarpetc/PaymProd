@@ -22,7 +22,9 @@ public partial class CurrentMenuPage : Page
     private int? _currentMenuId;
     private ObservableCollection<MenuDel_act> _currentMenuDelicates;
     private ObservableCollection<dynamic> _availableDelicates;
+    private List<dynamic> _allAvailableDelicates; // Все доступные блюда без фильтрации
     private string _currentTypeFilter = "%";
+    private string _currentSearchText = "";
     private bool _isDataChanged = false;
 
     // Для редактирования блюда в меню
@@ -44,6 +46,7 @@ public partial class CurrentMenuPage : Page
 
         _currentMenuDelicates = new ObservableCollection<MenuDel_act>();
         _availableDelicates = new ObservableCollection<dynamic>();
+        _allAvailableDelicates = new List<dynamic>();
         _editingDelicateComponents = new ObservableCollection<Components>();
         _editingAvailableProducts = new ObservableCollection<ProductView>();
         _productLookup = new Dictionary<int, ProductView>();
@@ -258,7 +261,6 @@ public partial class CurrentMenuPage : Page
             var availableDelicates = delicates.Where(d => !addedDelicateIds.Contains(d.Id)).ToList();
 
             // Конвертируем в формат для отображения
-            _availableDelicates.Clear();
             var displayDelicates = availableDelicates.Select(d => new
             {
                 Del = d.Name,
@@ -272,13 +274,52 @@ public partial class CurrentMenuPage : Page
                     : PeopleCountTextBox.Text
             }).ToList();
 
-            foreach (var item in displayDelicates) _availableDelicates.Add(item);
+            // Сохраняем все доступные блюда
+            _allAvailableDelicates.Clear();
+            _allAvailableDelicates.AddRange(displayDelicates);
+
+            // Применяем фильтры (поиск и тип)
+            ApplyDelicateFilters();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Ошибка при загрузке блюд: {ex.Message}",
+                "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    /// <summary>
+    /// Применение фильтров к списку доступных блюд (поиск и тип)
+    /// </summary>
+    private void ApplyDelicateFilters()
+    {
+        try
+        {
+            var filtered = _allAvailableDelicates.AsEnumerable();
+
+            // Применяем фильтр поиска только по названию блюда
+            if (!string.IsNullOrWhiteSpace(_currentSearchText))
+            {
+                var searchLower = _currentSearchText.ToLower().Trim();
+                filtered = filtered.Where(d =>
+                {
+                    var del = d.Del?.ToString() ?? "";
+                    return del.ToLower().Contains(searchLower);
+                });
+            }
+
+            // Обновляем коллекцию для отображения
+            _availableDelicates.Clear();
+            foreach (var item in filtered)
+            {
+                _availableDelicates.Add(item);
+            }
 
             AvailableDelicatesPanel.ItemsSource = _availableDelicates;
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Ошибка при загрузке блюд: {ex.Message}",
+            MessageBox.Show($"Ошибка при применении фильтров: {ex.Message}",
                 "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
@@ -293,6 +334,53 @@ public partial class CurrentMenuPage : Page
 
         _currentTypeFilter = button.Tag.ToString() ?? "%";
         LoadAvailableDelicates(_currentTypeFilter);
+    }
+
+    /// <summary>
+    /// Кнопка поиска по блюдам
+    /// </summary>
+    private void DelicateSearchButton_Click(object sender, RoutedEventArgs e)
+    {
+        PerformSearch();
+    }
+
+    /// <summary>
+    /// Поиск по нажатию Enter в поле поиска
+    /// </summary>
+    private void DelicateSearchBox_KeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Enter)
+        {
+            PerformSearch();
+            e.Handled = true;
+        }
+    }
+
+    /// <summary>
+    /// Выполнение поиска
+    /// </summary>
+    private void PerformSearch()
+    {
+        _currentSearchText = DelicateSearchBox.Text ?? "";
+        
+        // Показываем/скрываем кнопку очистки
+        DelicateSearchClearButton.Visibility = string.IsNullOrWhiteSpace(_currentSearchText)
+            ? Visibility.Collapsed
+            : Visibility.Visible;
+
+        // Применяем фильтр поиска
+        ApplyDelicateFilters();
+    }
+
+    /// <summary>
+    /// Очистка поля поиска
+    /// </summary>
+    private void DelicateSearchClearButton_Click(object sender, RoutedEventArgs e)
+    {
+        DelicateSearchBox.Clear();
+        _currentSearchText = "";
+        DelicateSearchClearButton.Visibility = Visibility.Collapsed;
+        ApplyDelicateFilters();
     }
 
     /// <summary>
@@ -426,8 +514,12 @@ public partial class CurrentMenuPage : Page
                 }
 
                 // Удаляем блюдо из списка доступных
-                var itemToRemove = _availableDelicates.FirstOrDefault(d => (int)d.DelicateId == delicateId);
-                if (itemToRemove != null) _availableDelicates.Remove(itemToRemove);
+                var itemToRemove = _allAvailableDelicates.FirstOrDefault(d => (int)d.DelicateId == delicateId);
+                if (itemToRemove != null)
+                {
+                    _allAvailableDelicates.Remove(itemToRemove);
+                    ApplyDelicateFilters();
+                }
 
                 // Очищаем поле количества
                 textBox.Clear();
@@ -601,8 +693,12 @@ public partial class CurrentMenuPage : Page
                 }
 
                 // Удаляем блюдо из списка доступных
-                var itemToRemove = _availableDelicates.FirstOrDefault(d => (int)d.DelicateId == delicateId);
-                if (itemToRemove != null) _availableDelicates.Remove(itemToRemove);
+                var itemToRemove = _allAvailableDelicates.FirstOrDefault(d => (int)d.DelicateId == delicateId);
+                if (itemToRemove != null)
+                {
+                    _allAvailableDelicates.Remove(itemToRemove);
+                    ApplyDelicateFilters();
+                }
 
                 // Очищаем поле количества
                 textBox.Clear();
@@ -670,8 +766,8 @@ public partial class CurrentMenuPage : Page
     {
         try
         {
-            // Проверяем, не добавлено ли уже это блюдо
-            var exists = _availableDelicates.Any(d => (int)d.DelicateId == delicateId);
+            // Проверяем, не добавлено ли уже это блюдо в полный список
+            var exists = _allAvailableDelicates.Any(d => (int)d.DelicateId == delicateId);
             if (exists) return;
 
             // Получаем информацию о блюде
@@ -681,7 +777,7 @@ public partial class CurrentMenuPage : Page
             // Получаем текущий фильтр типа
             var currentFilter = GetCurrentTypeFilter();
 
-            // Проверяем, соответствует ли блюдо текущему фильтру
+            // Проверяем, соответствует ли блюдо текущему фильтру типа
             if (!string.IsNullOrEmpty(currentFilter) && currentFilter != "%")
             {
                 if (delicate.IDType.HasValue)
@@ -711,7 +807,9 @@ public partial class CurrentMenuPage : Page
                     : PeopleCountTextBox.Text
             };
 
-            _availableDelicates.Add(displayDelicate);
+            // Добавляем в полный список и применяем фильтры
+            _allAvailableDelicates.Add(displayDelicate);
+            ApplyDelicateFilters();
         }
         catch (Exception ex)
         {
