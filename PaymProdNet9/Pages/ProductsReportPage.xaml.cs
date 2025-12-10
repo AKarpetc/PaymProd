@@ -253,8 +253,11 @@ public partial class ProductsReportPage : Page
 
             foreach (var product in groupedProducts)
             {
-                var (amountText, unitText) = FormatAmount(product, measures);
-                var priceText = FormatPrice(product.TotalPrice);
+                var (amountText, unitText, roundedAmount) = FormatAmountWithRoundedValue(product, measures);
+                
+                // Пересчитываем цену на основе округленного количества
+                var recalculatedPrice = RecalculatePrice(product, roundedAmount, measures);
+                var priceText = FormatPrice(recalculatedPrice);
 
                 var dataRow = new TableRow();
                 dataRow.Cells.Add(CreateValueCell(product.Name));
@@ -539,6 +542,20 @@ public partial class ProductsReportPage : Page
             .OrderBy(p => p.Name);
     }
 
+    private (string amount, string unit, double roundedAmount) FormatAmountWithRoundedValue(GroupedProduct product, List<Measure> measures)
+    {
+        var defaultUnit = !string.IsNullOrEmpty(product.Mera) ? product.Mera : "шт";
+        var normalizedUnit = NormalizeUnit(defaultUnit);
+        var measure = FindMeasure(measures, defaultUnit);
+
+        if (!IsDiscreteUnit(normalizedUnit))
+        {
+            return FormatContinuousAmountWithRoundedValue(product, defaultUnit, normalizedUnit, measure, measures);
+        }
+
+        return FormatDiscreteAmountWithRoundedValue(product, defaultUnit, measure);
+    }
+
     private (string amount, string unit) FormatAmount(GroupedProduct product, List<Measure> measures)
     {
         var defaultUnit = !string.IsNullOrEmpty(product.Mera) ? product.Mera : "шт";
@@ -579,6 +596,17 @@ public partial class ProductsReportPage : Page
     }
 
     private (string amount, string unit) FormatContinuousAmount(
+        GroupedProduct product,
+        string originalUnit,
+        string normalizedUnit,
+        Measure? measure,
+        List<Measure> measures)
+    {
+        var (formatted, displayUnit, _) = FormatContinuousAmountWithRoundedValue(product, originalUnit, normalizedUnit, measure, measures);
+        return (formatted, displayUnit);
+    }
+
+    private (string amount, string unit, double roundedAmount) FormatContinuousAmountWithRoundedValue(
         GroupedProduct product,
         string originalUnit,
         string normalizedUnit,
@@ -675,10 +703,19 @@ public partial class ProductsReportPage : Page
             ? ((int)roundedValue).ToString(CultureInfo.CurrentCulture)
             : roundedValue.ToString($"F{roundingPrecision}", CultureInfo.CurrentCulture);
 
-        return (formatted, displayUnit);
+        return (formatted, displayUnit, roundedValue);
     }
 
     private (string amount, string unit) FormatDiscreteAmount(
+        GroupedProduct product,
+        string defaultUnit,
+        Measure? measure)
+    {
+        var (formatted, unitText, _) = FormatDiscreteAmountWithRoundedValue(product, defaultUnit, measure);
+        return (formatted, unitText);
+    }
+
+    private (string amount, string unit, double roundedAmount) FormatDiscreteAmountWithRoundedValue(
         GroupedProduct product,
         string defaultUnit,
         Measure? measure)
@@ -717,7 +754,64 @@ public partial class ProductsReportPage : Page
             ? product.FassIz
             : defaultUnit;
 
-        return (formatted, unitText);
+        return (formatted, unitText, roundedValue);
+    }
+
+    /// <summary>
+    /// Пересчитывает цену на основе округленного количества
+    /// </summary>
+    private decimal RecalculatePrice(GroupedProduct product, double roundedAmount, List<Measure> measures)
+    {
+        if (product.TotalPrice <= 0 || roundedAmount <= 0)
+            return product.TotalPrice;
+
+        // Определяем исходное количество для расчета единичной цены
+        // Используем ту же логику, что и в FormatAmount для определения исходного количества
+        double originalAmount;
+        var defaultUnit = !string.IsNullOrEmpty(product.Mera) ? product.Mera : "шт";
+        var normalizedUnit = NormalizeUnit(defaultUnit);
+        var measure = FindMeasure(measures, defaultUnit);
+
+        if (!IsDiscreteUnit(normalizedUnit))
+        {
+            // Для непрерывных единиц: если есть фасовка, используем TotalPackages, иначе TotalWeight
+            // Это соответствует логике в FormatContinuousAmount
+            if (product.Fass > 0 && !string.IsNullOrWhiteSpace(product.FassIz))
+            {
+                // Исходное количество в единицах фасовки (до округления)
+                originalAmount = (double)product.TotalPackages;
+            }
+            else
+            {
+                // Исходное количество в базовых единицах
+                originalAmount = (double)product.TotalWeight;
+            }
+        }
+        else
+        {
+            // Для дискретных единиц: используем TotalPackages или TotalWeight / Fass
+            // Это соответствует логике в FormatDiscreteAmount
+            var effectivePackSize = product.Fass > 0
+                ? (double)product.Fass
+                : measure?.Fass > 0
+                    ? measure.Fass
+                    : 1d;
+
+            originalAmount = product.TotalPackages > 0
+                ? (double)product.TotalPackages
+                : effectivePackSize > 0
+                    ? (double)(product.TotalWeight / (decimal)effectivePackSize)
+                    : (double)product.TotalWeight;
+        }
+
+        if (originalAmount <= 0)
+            return product.TotalPrice;
+
+        // Вычисляем единичную цену на основе исходного количества
+        var unitPrice = product.TotalPrice / (decimal)originalAmount;
+
+        // Пересчитываем цену на основе округленного количества
+        return decimal.Round(unitPrice * (decimal)roundedAmount, 2, MidpointRounding.AwayFromZero);
     }
 
 
