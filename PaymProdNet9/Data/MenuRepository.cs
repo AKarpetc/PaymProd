@@ -1392,7 +1392,7 @@ public class MenuRepository
                        pt.Type_Opis
                 FROM Components c
                 INNER JOIN Producrs p ON p.Prod_ID = c.ProductID
-                LEFT JOIN Mera m ON m.Mera_ID = p.Izmer
+                LEFT JOIN Mera m ON m.Mera_ID = p.Ves
                 INNER JOIN Produkt_Type pt ON p.Type = pt.TypeProdId
                 WHERE c.Delic_id = @delicateId";
 
@@ -1436,7 +1436,7 @@ public class MenuRepository
                    pt.Type_Opis
             FROM Components1 c1
             INNER JOIN Producrs p ON p.Prod_ID = c1.ProductID
-            LEFT JOIN Mera m ON m.Mera_ID = p.Izmer
+            LEFT JOIN Mera m ON m.Mera_ID = p.Ves
             INNER JOIN Produkt_Type pt ON p.Type = pt.TypeProdId
             WHERE c1.Idmen = @menuId AND c1.Delic_id = @delicateId";
 
@@ -1482,7 +1482,7 @@ public class MenuRepository
                    pt.Type_Opis
             FROM Components1 c1
             INNER JOIN Producrs p ON p.Prod_ID = c1.ProductID
-            LEFT JOIN Mera m ON m.Mera_ID = p.Izmer
+            LEFT JOIN Mera m ON m.Mera_ID = p.Ves
             INNER JOIN Produkt_Type pt ON p.Type = pt.TypeProdId
             WHERE c1.Idmen = @menuId AND c1.Delic_id = -@productId AND c1.ProductID = @productId";
 
@@ -1604,7 +1604,7 @@ public class MenuRepository
                    pt.Type_Opis
             FROM Components c
             INNER JOIN Producrs p ON p.Prod_ID = c.ProductID
-            LEFT JOIN Mera m ON m.Mera_ID = p.Izmer
+            LEFT JOIN Mera m ON m.Mera_ID = p.Ves
             INNER JOIN Produkt_Type pt ON p.Type = pt.TypeProdId
             WHERE c.Delic_id = @delicateId";
 

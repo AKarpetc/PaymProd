@@ -236,35 +236,34 @@ public partial class PrintMenuPage : Page
             var baseUnit = !string.IsNullOrWhiteSpace(component.Mera) ? component.Mera : "г";
             var count = delicate.Count > 0 ? delicate.Count : 1;
             
-            // Логика из старого приложения (PaymProd/Class/Menus.cs)
+            // Логика как в отчете по товарам: показываем основную единицу, если нет перерасчета в фасовку
             decimal displayValue;
             string displayUnit;
+            var totalWeight = component.Ves * count;
             
-            if (component.Fass > 0)
+            // Локальная функция для нормализации единиц
+            string NormalizeUnitLocal(string unit) => unit?.Trim().ToLowerInvariant() ?? string.Empty;
+            
+            // Нормализуем единицы для сравнения (как в отчете по товарам)
+            var baseUnitNormalized = NormalizeUnitLocal(baseUnit);
+            var fassIzNormalized = NormalizeUnitLocal(component.FassIz ?? string.Empty);
+            
+            // Проверяем, нужно ли пересчитывать в фасовку (как в отчете по товарам)
+            // Пересчитываем только если: есть фасовка, единица фасовки отличается от базовой, и вес >= фасовка
+            if (component.Fass > 0 && 
+                !string.IsNullOrWhiteSpace(component.FassIz) && 
+                fassIzNormalized != baseUnitNormalized &&
+                totalWeight >= component.Fass)
             {
-                // Расчёт количества упаковок: (вес * количество порций) / фасовка
-                var packageCount = (component.Ves * count) / component.Fass;
-                
-                // Если количество упаковок <= 1, устанавливаем 0 (будем показывать в базовых единицах)
-                var fass = packageCount <= 1 ? 0 : Math.Round(packageCount, 2, MidpointRounding.AwayFromZero);
-                
-                if (fass < 1)
-                {
-                    // Показываем в базовых единицах (как в старом коде)
-                    displayValue = Math.Round(component.Ves * count, 2, MidpointRounding.AwayFromZero);
-                    displayUnit = baseUnit;
-                }
-                else
-                {
-                    // Показываем в упаковках
-                    displayValue = fass;
-                    displayUnit = !string.IsNullOrWhiteSpace(component.FassIz) ? component.FassIz : baseUnit;
-                }
+                // Есть перерасчет в фасовку - показываем в фасовке
+                var packageCount = totalWeight / component.Fass;
+                displayValue = Math.Round(packageCount, 2, MidpointRounding.AwayFromZero);
+                displayUnit = !string.IsNullOrWhiteSpace(component.FassIz) ? component.FassIz : baseUnit;
             }
             else
             {
-                // Без фасовки - показываем общий вес
-                displayValue = Math.Round(component.Ves * count, 2, MidpointRounding.AwayFromZero);
+                // Нет перерасчета в фасовку - показываем в основных единицах
+                displayValue = Math.Round(totalWeight, 2, MidpointRounding.AwayFromZero);
                 displayUnit = baseUnit;
             }
             
