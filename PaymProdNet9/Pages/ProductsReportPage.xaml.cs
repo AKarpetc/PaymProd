@@ -493,7 +493,23 @@ public partial class ProductsReportPage : Page
         foreach (var delicate in _menuDelicates.Where(d => d.Lcomp != null && d.Lcomp.Any()))
         foreach (var component in delicate.Lcomp)
         {
-            var totalWeight = component.Ves * delicate.Countpor;
+            // Для продуктов, добавленных напрямую (отрицательный Del_id), component.Ves уже содержит итоговое количество на банкет
+            // Для компонентов блюд нужно умножать на количество порций
+            decimal totalWeight;
+            decimal dishCountForPrice;
+            
+            if (delicate.Del_id < 0)
+            {
+                // Это продукт, добавленный напрямую - используем component.Ves как есть
+                totalWeight = component.Ves;
+                dishCountForPrice = 1; // Для расчета цены используем 1, так как Ves уже содержит итоговое количество
+            }
+            else
+            {
+                // Это компонент блюда - умножаем на количество порций
+                totalWeight = component.Ves * delicate.Countpor;
+                dishCountForPrice = delicate.Countpor;
+            }
 
             var item = new DelicatesCollForSvod
             {
@@ -515,8 +531,29 @@ public partial class ProductsReportPage : Page
 
             if (MenuId > 0)
             {
-                var priceInfo = _menuPriceService.GetComponentPriceInfo(MenuId, component, delicate.Countpor);
-                item.TotalPrice = priceInfo.TotalPrice;
+                // Для продуктов, добавленных напрямую (отрицательный Del_id), рассчитываем цену на основе итогового количества
+                if (delicate.Del_id < 0)
+                {
+                    // Получаем цену за единицу и умножаем на итоговое количество
+                    var unitPrice = _menuPriceService.GetUnitPrice(MenuId, component.Prodid);
+                    if (component.Fass > 0)
+                    {
+                        // Если есть фасовка, рассчитываем количество упаковок
+                        var packageCount = totalWeight / component.Fass;
+                        item.TotalPrice = decimal.Round(unitPrice * packageCount, 2, MidpointRounding.AwayFromZero);
+                    }
+                    else
+                    {
+                        // Если нет фасовки, рассчитываем по общему весу
+                        item.TotalPrice = decimal.Round(unitPrice * totalWeight, 2, MidpointRounding.AwayFromZero);
+                    }
+                }
+                else
+                {
+                    // Для компонентов блюд используем стандартный расчет
+                    var priceInfo = _menuPriceService.GetComponentPriceInfo(MenuId, component, dishCountForPrice);
+                    item.TotalPrice = priceInfo.TotalPrice;
+                }
             }
 
             summaryData.Add(item);

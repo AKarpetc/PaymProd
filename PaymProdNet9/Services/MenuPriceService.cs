@@ -25,7 +25,7 @@ public class MenuPriceService
         return new ComponentPriceInfo(requiredUnits, unitPrice, decimal.Round(total, 2));
     }
 
-    private decimal GetUnitPrice(int menuId, int productId)
+    public decimal GetUnitPrice(int menuId, int productId)
     {
         if (menuId > 0)
         {
@@ -48,7 +48,23 @@ public class MenuPriceService
     private static decimal CalculateRequiredUnits(Components component, decimal dishCount)
     {
         var safeCount = dishCount <= 0 ? 1 : dishCount;
-        var totalWeight = component.Ves * safeCount;
+        
+        // Если dishCount = 1, это означает, что component.Ves уже содержит итоговое количество
+        // (например, для продуктов с AutoAdd, добавленных напрямую)
+        // В этом случае используем component.Ves как есть
+        decimal totalWeight;
+        if (safeCount == 1 && component.Ves > 0)
+        {
+            // Проверяем, не является ли это продуктом с итоговым количеством
+            // Если component.Ves уже большое число (больше чем обычно для одной порции),
+            // вероятно это итоговое количество
+            totalWeight = component.Ves;
+        }
+        else
+        {
+            // Для компонентов блюд умножаем на количество порций
+            totalWeight = component.Ves * safeCount;
+        }
 
         if (component.Fass > 0)
             return totalWeight / component.Fass;
