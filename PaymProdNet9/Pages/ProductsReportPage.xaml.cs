@@ -86,9 +86,9 @@ public partial class ProductsReportPage : Page
             headerParagraph.Inlines.Add(new Run($"Банкет: {_banquetInfo[0]}"));
             headerParagraph.Inlines.Add(new LineBreak());
             var dateText = DateTime.TryParse(_banquetInfo[2], out var date)
-                ? date.ToString("dd.MM.yyyy")
+                ? date.ToString("dd.MM.yyyy HH:mm")
                 : _banquetInfo[2];
-            headerParagraph.Inlines.Add(new Run($"Дата: {dateText}"));
+            headerParagraph.Inlines.Add(new Run($"Дата, начало: {dateText}"));
             headerParagraph.Inlines.Add(new LineBreak());
             headerParagraph.Inlines.Add(new Run($"Количество гостей: {_banquetInfo[1]} человек"));
             headerParagraph.TextAlignment = TextAlignment.Center;

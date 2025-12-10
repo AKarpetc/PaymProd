@@ -413,7 +413,25 @@ public class MenuPrinter
                 infoParagraph.AppendChild(new Run(new Text($"Банкет: {menuName}")));
                 infoParagraph.AppendChild(new Break());
                 var dateRun = new Run();
-                dateRun.AppendChild(new Text($"Дата: {DateTime.Now:dd.MM.yyyy}"));
+                // Пытаемся извлечь дату из menuName (формат: "название, количество человек, дата")
+                string dateText;
+                if (menuName.Contains(","))
+                {
+                    var parts = menuName.Split(',');
+                    if (parts.Length >= 3 && DateTime.TryParse(parts[2].Trim(), out var banquetDate))
+                    {
+                        dateText = banquetDate.ToString("dd.MM.yyyy HH:mm");
+                    }
+                    else
+                    {
+                        dateText = DateTime.Now.ToString("dd.MM.yyyy HH:mm");
+                    }
+                }
+                else
+                {
+                    dateText = DateTime.Now.ToString("dd.MM.yyyy HH:mm");
+                }
+                dateRun.AppendChild(new Text($"Дата, начало: {dateText}"));
                 infoParagraph.AppendChild(dateRun);
 
                 body.AppendChild(new Paragraph()); // Пустая строка
