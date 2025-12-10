@@ -1,3 +1,5 @@
+using System.Globalization;
+using System.Threading;
 using System.Windows;
 using PaymProdNet9.Services;
 using PaymProdNet9.Windows;
@@ -12,6 +14,20 @@ public partial class App : Application
     protected override async void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
+
+        // Устанавливаем русскую локализацию для приложения
+        try
+        {
+            var culture = new System.Globalization.CultureInfo("ru-RU");
+            System.Globalization.CultureInfo.DefaultThreadCurrentCulture = culture;
+            System.Globalization.CultureInfo.DefaultThreadCurrentUICulture = culture;
+            System.Threading.Thread.CurrentThread.CurrentCulture = culture;
+            System.Threading.Thread.CurrentThread.CurrentUICulture = culture;
+        }
+        catch (Exception ex)
+        {
+            Logger.Error("Ошибка при установке локализации", ex);
+        }
 
         // Настраиваем консоль для правильного отображения UTF-8
         try

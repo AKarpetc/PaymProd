@@ -128,7 +128,7 @@ public partial class MenuPage : Page
             PeopleCountTextBox.Text = menu.CountP.ToString();
             DescriptionTextBox.Text = menu.Detail;
 
-            if (DateTime.TryParse(menu.DateBan, out var date)) BanquetDatePicker.SelectedDate = date;
+            if (DateTime.TryParse(menu.DateBan, out var date)) BanquetDatePicker.SelectedDateTime = date;
 
             // Загружаем блюда меню
             _currentMenuDelicates.Clear();
@@ -225,7 +225,7 @@ public partial class MenuPage : Page
                 BanquetNameTextBox.Text,
                 int.Parse(PeopleCountTextBox.Text),
                 DescriptionTextBox.Text,
-                BanquetDatePicker.SelectedDate?.ToString() ?? DateTime.Now.ToString()
+                BanquetDatePicker.SelectedDateTime?.ToString("yyyy-MM-dd HH:mm") ?? DateTime.Now.ToString("yyyy-MM-dd HH:mm")
             );
 
             LoadMenu(menuId);
@@ -251,7 +251,7 @@ public partial class MenuPage : Page
             BanquetNameTextBox.Clear();
             PeopleCountTextBox.Clear();
             DescriptionTextBox.Clear();
-            BanquetDatePicker.SelectedDate = DateTime.Now;
+            BanquetDatePicker.SelectedDateTime = DateTime.Now;
 
             _currentMenuId = null;
             _currentMenuDelicates.Clear();
@@ -411,11 +411,11 @@ public partial class MenuPage : Page
                 BanquetNameTextBox.Text,
                 int.Parse(PeopleCountTextBox.Text),
                 DescriptionTextBox.Text,
-                BanquetDatePicker.SelectedDate?.ToString() ?? DateTime.Now.ToString()
+                BanquetDatePicker.SelectedDateTime?.ToString("yyyy-MM-dd HH:mm") ?? DateTime.Now.ToString("yyyy-MM-dd HH:mm")
             );
 
             CurrentMenuInfo.Text =
-                $"Банкет: {BanquetNameTextBox.Text} - {PeopleCountTextBox.Text} человек, дата - {BanquetDatePicker.SelectedDate?.ToString() ?? DateTime.Now.ToString()}";
+                $"Банкет: {BanquetNameTextBox.Text} - {PeopleCountTextBox.Text} человек, дата - {BanquetDatePicker.SelectedDateTime?.ToString("dd.MM.yyyy HH:mm") ?? DateTime.Now.ToString("dd.MM.yyyy HH:mm")}";
             LoadSavedMenus();
         }
         catch
@@ -423,9 +423,9 @@ public partial class MenuPage : Page
         }
     }
 
-    private void BanquetInfo_Changed(object sender, SelectionChangedEventArgs e)
+    private void BanquetInfo_Changed(object sender, RoutedEventArgs e)
     {
-        BanquetInfo_LostFocus(sender, e);
+        BanquetInfo_LostFocus(sender, null);
     }
 
     /// <summary>
@@ -510,7 +510,7 @@ public partial class MenuPage : Page
             {
                 BanquetNameTextBox.Text,
                 PeopleCountTextBox.Text,
-                BanquetDatePicker.SelectedDate?.ToString() ?? DateTime.Now.ToString(),
+                BanquetDatePicker.SelectedDateTime?.ToString("yyyy-MM-dd HH:mm") ?? DateTime.Now.ToString("yyyy-MM-dd HH:mm"),
                 DescriptionTextBox.Text
             };
 
@@ -576,7 +576,7 @@ public partial class MenuPage : Page
 
             var menuPrinter = new MenuPrinter();
             var menuName =
-                $"{BanquetNameTextBox.Text}, {PeopleCountTextBox.Text} человек, {BanquetDatePicker.SelectedDate?.ToShortDateString()}";
+                $"{BanquetNameTextBox.Text}, {PeopleCountTextBox.Text} человек, {BanquetDatePicker.SelectedDateTime?.ToString("dd.MM.yyyy HH:mm")}";
 
             var delicatesToPrint = _currentMenuDelicates
                 .Where(md => !md.HideInMenu)
