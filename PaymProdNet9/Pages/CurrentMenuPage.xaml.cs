@@ -194,7 +194,11 @@ public partial class CurrentMenuPage : Page
             // Применяем фильтр "Показать товары"
             UpdateMenuFilter();
 
-            CurrentMenuInfo.Text = $"Банкет: {menu.Name} - {menu.CountP} человек, дата - {menu.DateBan}";
+            // Сворачиваем Expander если название и количество заполнены
+            if (!string.IsNullOrWhiteSpace(menu.Name) && menu.CountP > 0)
+            {
+                BanquetInfoExpander.IsExpanded = false;
+            }
 
             // Включаем панель добавления блюд
             DelicatesPanel.IsEnabled = true;
@@ -439,7 +443,8 @@ public partial class CurrentMenuPage : Page
 
             _currentMenuId = null;
             _currentMenuDelicates.Clear();
-            CurrentMenuInfo.Text = "Выберите или создайте новое меню";
+            BanquetInfoHeader.Text = "";
+            BanquetInfoExpander.IsExpanded = true;
             DelicatesPanel.IsEnabled = false;
         }
         catch (Exception ex)
@@ -1077,8 +1082,12 @@ public partial class CurrentMenuPage : Page
                 BanquetDatePicker.SelectedDateTime?.ToString("yyyy-MM-dd HH:mm") ?? DateTime.Now.ToString("yyyy-MM-dd HH:mm")
             );
 
-            CurrentMenuInfo.Text =
-                $"Банкет: {BanquetNameTextBox.Text} - {PeopleCountTextBox.Text} человек, дата - {BanquetDatePicker.SelectedDateTime?.ToString("dd.MM.yyyy HH:mm") ?? DateTime.Now.ToString("dd.MM.yyyy HH:mm")}";
+            // Сворачиваем Expander если название и количество заполнены
+            if (!string.IsNullOrWhiteSpace(BanquetNameTextBox.Text) && 
+                int.TryParse(PeopleCountTextBox.Text, out var count) && count > 0)
+            {
+                BanquetInfoExpander.IsExpanded = false;
+            }
         }
         catch
         {

@@ -11,7 +11,7 @@
         
         <DatePicker Grid.Column="0" x:Name="DatePickerControl"
                     SelectedDateChanged="DatePicker_SelectedDateChanged"
-                    materialDesign:HintAssist.Hint="Дата" />
+                    materialDesign:HintAssist.Hint="Начала" />
         
         <ComboBox Grid.Column="1" x:Name="HoursComboBox"
                   materialDesign:HintAssist.Hint="Час"

@@ -488,7 +488,8 @@ public class ProductRepository
                        p.Priz_menu, 
                        COALESCE(p.Count, 0), p.Avtomat, p.Chel, p.Isdiap,
                        COALESCE(p.Price, 0),
-                       COALESCE(p.HideInMenu, 0)
+                       COALESCE(p.HideInMenu, 0),
+                       COALESCE(p.IsDeleted, 0)
                 FROM Producrs p
                 INNER JOIN Produkt_Type pt ON p.Type = pt.TypeProdId
                 LEFT JOIN Mera m ON m.Mera_ID = p.Ves

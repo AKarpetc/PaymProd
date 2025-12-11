@@ -381,7 +381,6 @@
                                 <CheckBox x:Name="ProductAutoAddCheckBox" Margin="0,5" ToolTip="Если отмечено, продукт автоматически добавляется в отчет по товарам в раздел 'Хозтовары' при генерации отчета для текущего меню">
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock Text="Автоматически добавлять в отчет" TextWrapping="Wrap" FontWeight="SemiBold"/>
-                                        <TextBlock Text=" (раздел Хозтовары)" TextWrapping="Wrap" Foreground="#666" Margin="5,0,0,0"/>
                                     </StackPanel>
                                 </CheckBox>
                                 <CheckBox x:Name="ProductMainCountCheckBox" Margin="0,5">

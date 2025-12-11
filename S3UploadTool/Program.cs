@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Amazon.Runtime;
@@ -18,11 +20,40 @@ class Program
 
     static async Task Main(string[] args)
     {
+        // Настраиваем кодировку консоли для правильного отображения русского текста
+        try
+        {
+            Console.OutputEncoding = Encoding.UTF8;
+            Console.InputEncoding = Encoding.UTF8;
+        }
+        catch
+        {
+            // Игнорируем ошибки установки кодировки
+        }
+
         Console.WriteLine("=== S3 Upload Tool ===");
         Console.WriteLine();
 
         try
         {
+            // Ask user if they want to build installer
+            Console.Write("Do you want to build installer? (Y/N): ");
+            var buildResponse = Console.ReadLine()?.Trim().ToUpperInvariant();
+            
+            if (buildResponse == "Y" || buildResponse == "YES" || buildResponse == "Д" || buildResponse == "ДА")
+            {
+                // Build installer using Inno Setup script
+                await BuildInstaller();
+            }
+            else
+            {
+                Console.WriteLine("Skipping installer build. Using existing files.");
+                Console.WriteLine();
+            }
+
+            // Check and update installer file before upload
+            CheckAndUpdateInstaller();
+
             // Load configuration
             var config = LoadConfiguration();
             if (config == null)
@@ -148,6 +179,220 @@ class Program
         }
 
         return currentDir;
+    }
+
+    /// <summary>
+    /// Запускает скрипт сборки установщика build-inno-setup.bat из папки Installer
+    /// </summary>
+    private static async Task BuildInstaller()
+    {
+        const string buildScriptPath = @"Installer\build-inno-setup.bat";
+
+        try
+        {
+            var solutionRoot = FindSolutionRoot();
+            var scriptPath = Path.Combine(solutionRoot, buildScriptPath);
+
+            if (!File.Exists(scriptPath))
+            {
+                Console.WriteLine($"INFO: Build script not found: {scriptPath}");
+                Console.WriteLine("Skipping installer build step.");
+                Console.WriteLine();
+                return;
+            }
+
+            Console.WriteLine("Building installer using Inno Setup...");
+            Console.WriteLine($"Running script: {buildScriptPath}");
+            Console.WriteLine();
+
+            var scriptDirectory = Path.GetDirectoryName(scriptPath);
+            if (string.IsNullOrEmpty(scriptDirectory))
+            {
+                Console.WriteLine("ERROR: Cannot determine script directory.");
+                return;
+            }
+
+            var processStartInfo = new ProcessStartInfo
+            {
+                FileName = "cmd.exe",
+                Arguments = $"/c chcp 65001 >nul && \"{scriptPath}\"",
+                WorkingDirectory = scriptDirectory,
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                CreateNoWindow = true,
+                StandardOutputEncoding = Encoding.UTF8,
+                StandardErrorEncoding = Encoding.UTF8
+            };
+
+            using var process = Process.Start(processStartInfo);
+            if (process == null)
+            {
+                Console.WriteLine("ERROR: Failed to start build script.");
+                return;
+            }
+
+            // Читаем вывод процесса асинхронно
+            var outputBuilder = new StringBuilder();
+            var errorBuilder = new StringBuilder();
+
+            process.OutputDataReceived += (sender, e) =>
+            {
+                if (!string.IsNullOrEmpty(e.Data))
+                {
+                    outputBuilder.AppendLine(e.Data);
+                    Console.WriteLine(e.Data);
+                }
+            };
+
+            process.ErrorDataReceived += (sender, e) =>
+            {
+                if (!string.IsNullOrEmpty(e.Data))
+                {
+                    errorBuilder.AppendLine(e.Data);
+                    Console.WriteLine($"ERROR: {e.Data}");
+                }
+            };
+
+            process.BeginOutputReadLine();
+            process.BeginErrorReadLine();
+
+            // Ждем завершения процесса с таймаутом (максимум 15 минут)
+            var completed = process.WaitForExit(900000); // 15 минут в миллисекундах
+
+            if (!completed)
+            {
+                Console.WriteLine();
+                Console.WriteLine("WARNING: Build script timeout (15 minutes exceeded).");
+                Console.WriteLine("Terminating process...");
+                try
+                {
+                    process.Kill();
+                    if (!process.WaitForExit(5000))
+                    {
+                        Console.WriteLine("WARNING: Process did not terminate within 5 seconds.");
+                    }
+                }
+                catch (Exception killEx)
+                {
+                    Console.WriteLine($"Failed to terminate process: {killEx.Message}");
+                }
+                Console.WriteLine();
+                return;
+            }
+
+            // Даем время на завершение асинхронного чтения вывода
+            await Task.Delay(1000); // Даем 1 секунду на завершение асинхронных операций чтения
+
+            if (process.ExitCode == 0)
+            {
+                Console.WriteLine();
+                Console.WriteLine("Installer build completed successfully.");
+                Console.WriteLine();
+            }
+            else
+            {
+                Console.WriteLine();
+                Console.WriteLine($"WARNING: Build script exited with code {process.ExitCode}.");
+                Console.WriteLine("Continuing with upload process...");
+                Console.WriteLine();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"WARNING: Failed to run build script: {ex.Message}");
+            Console.WriteLine("Continuing with upload process...");
+            Console.WriteLine();
+        }
+    }
+
+    /// <summary>
+    /// Проверяет файл установщика в Installer\bin\PaymProdNet9_Setup.exe
+    /// и копирует его в files, если он новее
+    /// </summary>
+    private static void CheckAndUpdateInstaller()
+    {
+        const string installerFileName = "PaymProdNet9_Setup.exe";
+        const string installerSourcePath = @"Installer\bin\PaymProdNet9_Setup.exe";
+        const string installerTargetPath = @"files\PaymProdNet9_Setup.exe";
+
+        try
+        {
+            // Находим корень решения для определения абсолютных путей к исходному файлу
+            var solutionRoot = FindSolutionRoot();
+            var sourcePath = Path.Combine(solutionRoot, installerSourcePath);
+            
+            // Путь к files - относительно базовой директории приложения (где запущена программа)
+            // Это соответствует DefaultSourceFolder = "files"
+            var baseDirectory = AppContext.BaseDirectory;
+            var targetPath = Path.Combine(baseDirectory, installerTargetPath);
+            
+            // Если папки files нет, пробуем найти её относительно корня решения
+            var targetDir = Path.GetDirectoryName(targetPath);
+            if (targetDir != null && !Directory.Exists(targetDir))
+            {
+                // Пробуем путь в S3UploadTool\files
+                var altPath = Path.Combine(solutionRoot, "S3UploadTool", installerTargetPath);
+                var altDir = Path.GetDirectoryName(altPath);
+                if (altDir != null && Directory.Exists(altDir))
+                {
+                    targetPath = altPath;
+                }
+            }
+
+            // Проверяем, существует ли исходный файл
+            if (!File.Exists(sourcePath))
+            {
+                Console.WriteLine($"INFO: Installer source not found: {sourcePath}");
+                Console.WriteLine("Skipping installer update check.");
+                Console.WriteLine();
+                return;
+            }
+
+            var sourceFile = new FileInfo(sourcePath);
+            Console.WriteLine($"Checking installer: {installerFileName}");
+
+            // Проверяем, существует ли целевой файл
+            if (!File.Exists(targetPath))
+            {
+                // Целевого файла нет - копируем
+                Console.WriteLine($"Target file not found. Copying installer to {installerTargetPath}...");
+                
+                // Создаем директорию files, если её нет
+                var targetDirectory = Path.GetDirectoryName(targetPath);
+                if (!string.IsNullOrEmpty(targetDirectory) && !Directory.Exists(targetDirectory))
+                {
+                    Directory.CreateDirectory(targetDirectory);
+                }
+
+                File.Copy(sourcePath, targetPath, true);
+                Console.WriteLine("Installer copied successfully.");
+                Console.WriteLine();
+                return;
+            }
+
+            var targetFile = new FileInfo(targetPath);
+
+            // Сравниваем даты модификации
+            if (sourceFile.LastWriteTimeUtc > targetFile.LastWriteTimeUtc)
+            {
+                Console.WriteLine($"Source installer is newer. Updating {installerTargetPath}...");
+                File.Copy(sourcePath, targetPath, true);
+                Console.WriteLine("Installer updated successfully.");
+            }
+            else
+            {
+                Console.WriteLine($"Installer is up to date. No update needed.");
+            }
+
+            Console.WriteLine();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"WARNING: Failed to check/update installer: {ex.Message}");
+            Console.WriteLine("Continuing with upload process...");
+            Console.WriteLine();
+        }
     }
 
     private static IAmazonS3 CreateS3Client(S3Config config)

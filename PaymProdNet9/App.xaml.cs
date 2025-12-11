@@ -1,5 +1,7 @@
+using System;
 using System.Globalization;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 using PaymProdNet9.Services;
 using PaymProdNet9.Windows;
@@ -55,14 +57,38 @@ public partial class App : Application
         AppDomain.CurrentDomain.UnhandledException += (sender, args) =>
         {
             var exception = args.ExceptionObject as Exception;
+            
+            // Выводим подробную информацию в консоль
+            Console.WriteLine("═══════════════════════════════════════════════════════════");
+            Console.WriteLine("КРИТИЧЕСКАЯ ОШИБКА: Необработанное исключение в AppDomain");
+            Console.WriteLine($"Время: {DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}");
+            Console.WriteLine($"Приложение завершается: {args.IsTerminating}");
+            if (exception != null)
+            {
+                Console.WriteLine($"Тип исключения: {exception.GetType().FullName}");
+                Console.WriteLine($"Сообщение: {exception.Message}");
+                Console.WriteLine($"Стек вызовов:\n{exception.StackTrace}");
+                if (exception.InnerException != null)
+                {
+                    Console.WriteLine($"Внутреннее исключение: {exception.InnerException.GetType().FullName}");
+                    Console.WriteLine($"Внутреннее сообщение: {exception.InnerException.Message}");
+                    Console.WriteLine($"Внутренний стек:\n{exception.InnerException.StackTrace}");
+                }
+            }
+            else
+            {
+                Console.WriteLine($"Объект исключения: {args.ExceptionObject?.GetType().FullName ?? "null"}");
+            }
+            Console.WriteLine("═══════════════════════════════════════════════════════════");
+            
             Logger.Error("Необработанное исключение в AppDomain", exception);
             
             // Показываем сообщение пользователю только для критических ошибок
             if (args.IsTerminating)
             {
                 var errorMessage = exception != null
-                    ? $"Критическая ошибка приложения:\n\n{exception.Message}\n\nПодробности в логах."
-                    : "Произошла критическая ошибка приложения. Подробности в логах.";
+                    ? $"Критическая ошибка приложения:\n\n{exception.Message}\n\nПодробности в логах и консоли."
+                    : "Произошла критическая ошибка приложения. Подробности в логах и консоли.";
                 
                 MessageBox.Show(errorMessage, "Критическая ошибка", 
                     MessageBoxButton.OK, MessageBoxImage.Error);
@@ -71,10 +97,25 @@ public partial class App : Application
 
         DispatcherUnhandledException += (sender, args) =>
         {
+            // Выводим подробную информацию в консоль
+            Console.WriteLine("═══════════════════════════════════════════════════════════");
+            Console.WriteLine("ОШИБКА: Необработанное исключение в UI потоке");
+            Console.WriteLine($"Время: {DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}");
+            Console.WriteLine($"Тип исключения: {args.Exception.GetType().FullName}");
+            Console.WriteLine($"Сообщение: {args.Exception.Message}");
+            Console.WriteLine($"Стек вызовов:\n{args.Exception.StackTrace}");
+            if (args.Exception.InnerException != null)
+            {
+                Console.WriteLine($"Внутреннее исключение: {args.Exception.InnerException.GetType().FullName}");
+                Console.WriteLine($"Внутреннее сообщение: {args.Exception.InnerException.Message}");
+                Console.WriteLine($"Внутренний стек:\n{args.Exception.InnerException.StackTrace}");
+            }
+            Console.WriteLine("═══════════════════════════════════════════════════════════");
+            
             Logger.Error("Необработанное исключение в UI потоке", args.Exception);
             
             // Показываем сообщение пользователю
-            var errorMessage = $"Произошла ошибка:\n\n{args.Exception.Message}\n\nПодробности в логах.";
+            var errorMessage = $"Произошла ошибка:\n\n{args.Exception.Message}\n\nПодробности в логах и консоли.";
             MessageBox.Show(errorMessage, "Ошибка", 
                 MessageBoxButton.OK, MessageBoxImage.Warning);
             
@@ -84,6 +125,21 @@ public partial class App : Application
         // Обработка необработанных исключений в задачах
         TaskScheduler.UnobservedTaskException += (sender, args) =>
         {
+            // Выводим подробную информацию в консоль
+            Console.WriteLine("═══════════════════════════════════════════════════════════");
+            Console.WriteLine("ОШИБКА: Необработанное исключение в Task");
+            Console.WriteLine($"Время: {DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}");
+            Console.WriteLine($"Тип исключения: {args.Exception.GetType().FullName}");
+            Console.WriteLine($"Сообщение: {args.Exception.Message}");
+            Console.WriteLine($"Стек вызовов:\n{args.Exception.StackTrace}");
+            if (args.Exception.InnerException != null)
+            {
+                Console.WriteLine($"Внутреннее исключение: {args.Exception.InnerException.GetType().FullName}");
+                Console.WriteLine($"Внутреннее сообщение: {args.Exception.InnerException.Message}");
+                Console.WriteLine($"Внутренний стек:\n{args.Exception.InnerException.StackTrace}");
+            }
+            Console.WriteLine("═══════════════════════════════════════════════════════════");
+            
             Logger.Error("Необработанное исключение в Task", args.Exception);
             args.SetObserved(); // Помечаем как обработанное
         };

@@ -25,26 +25,29 @@
                 <!-- Кнопки действий -->
                 <WrapPanel Grid.Column="0" HorizontalAlignment="Left" Margin="0,0,15,0">
                     <Button Style="{StaticResource MaterialDesignRaisedButton}"
-                            Click="SaveMenuChanges_Click" Margin="5">
-                        <StackPanel Orientation="Horizontal">
-                            <materialDesign:PackIcon Kind="ContentSave" VerticalAlignment="Center" Margin="0,0,5,0" />
-                            <TextBlock Text="Сохранить изменения" VerticalAlignment="Center" />
-                        </StackPanel>
+                            Click="SaveMenuChanges_Click" Margin="5"
+                            ToolTip="Сохранить изменения">
+                        <materialDesign:PackIcon Kind="ContentSave" />
                     </Button>
                     <Button Style="{StaticResource MaterialDesignRaisedButton}"
-                            Click="RefreshMenu_Click" Margin="5">
-                        <StackPanel Orientation="Horizontal">
-                            <materialDesign:PackIcon Kind="Refresh" VerticalAlignment="Center" Margin="0,0,5,0" />
-                            <TextBlock Text="Обновить" VerticalAlignment="Center" />
-                        </StackPanel>
+                            Click="RefreshMenu_Click" Margin="5"
+                            ToolTip="Обновить">
+                        <materialDesign:PackIcon Kind="Refresh" />
                     </Button>
                     <Button Style="{StaticResource MaterialDesignRaisedButton}"
-                            Click="EnterMenuPrices_Click" Margin="5">
-                        <StackPanel Orientation="Horizontal">
-                            <materialDesign:PackIcon Kind="CurrencyUsd" VerticalAlignment="Center" Margin="0,0,5,0" />
-                            <TextBlock Text="Ввести цены для меню" VerticalAlignment="Center" />
-                        </StackPanel>
+                            Click="EnterMenuPrices_Click" Margin="5"
+                            ToolTip="Ввести цены для меню">
+                        <materialDesign:PackIcon Kind="CurrencyUsd" />
                     </Button>
+                    <CheckBox x:Name="ShowHiddenItemsCheckBox"
+                              Margin="10,5,5,5"
+                              VerticalAlignment="Center"
+                              IsChecked="True"
+                              Checked="ShowHiddenItemsCheckBox_Changed"
+                              Unchecked="ShowHiddenItemsCheckBox_Changed"
+                              ToolTip="Показать товары (включая позиции &quot;не показывать в меню&quot;)">
+                        <TextBlock Text="Показать скрытые" />
+                    </CheckBox>
                 </WrapPanel>
                 
                 <!-- Поле поиска по блюдам -->
@@ -96,72 +99,64 @@
         <Grid Grid.Row="1">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
-                <RowDefinition Height="5" />
                 <RowDefinition Height="*" />
                 <RowDefinition Height="5" />
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
 
             <!-- БЛОК 1: Информация о банкете (ВВЕРХУ) -->
-            <materialDesign:Card Grid.Row="0" Margin="10" Padding="15">
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
+            <materialDesign:Card Grid.Row="0" Margin="10" Padding="0">
+                <Expander x:Name="BanquetInfoExpander" IsExpanded="True">
+                    <Expander.Header>
+                        <Grid Height="20" VerticalAlignment="Center" Margin="5,0">
+                            <TextBlock x:Name="BanquetInfoHeader" Text="" 
+                                       VerticalAlignment="Center" />
+                        </Grid>
+                    </Expander.Header>
+                    <Grid Margin="15,10,15,15">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
 
-                    <TextBlock Grid.Column="0" Text="Название банкета:"
-                               VerticalAlignment="Center" Margin="0,0,10,0" />
-                    <TextBox Grid.Column="1" x:Name="BanquetNameTextBox"
-                             materialDesign:HintAssist.Hint="Введите название"
-                             LostFocus="BanquetInfo_LostFocus" Margin="0,0,20,0" />
+                        <TextBox Grid.Column="0" x:Name="BanquetNameTextBox"
+                                 materialDesign:HintAssist.Hint="Банкет"
+                                 LostFocus="BanquetInfo_LostFocus" Margin="0,0,10,0" />
 
-                    <TextBlock Grid.Column="2" Text="Количество человек:"
-                               VerticalAlignment="Center" Margin="0,0,10,0" />
-                    <TextBox Grid.Column="3" x:Name="PeopleCountTextBox"
-                             materialDesign:HintAssist.Hint="Кол-во"
-                             PreviewTextInput="NumericTextBox_PreviewTextInput"
-                             LostFocus="BanquetInfo_LostFocus" Margin="0,0,20,0" />
+                        <TextBox Grid.Column="1" x:Name="PeopleCountTextBox"
+                                 materialDesign:HintAssist.Hint="Количество"
+                                 PreviewTextInput="NumericTextBox_PreviewTextInput"
+                                 LostFocus="BanquetInfo_LostFocus" Margin="0,0,10,0" />
 
-                    <TextBlock Grid.Column="4" Text="Дата, начало:"
-                               VerticalAlignment="Center" Margin="0,0,10,0" />
-                    <controls:DateTimePicker Grid.Column="5" x:Name="BanquetDatePicker"
-                                             SelectedDateTimeChanged="BanquetInfo_Changed" Margin="0,0,20,0" />
+                        <controls:DateTimePicker Grid.Column="2" x:Name="BanquetDatePicker"
+                                                 SelectedDateTimeChanged="BanquetInfo_Changed" Margin="0,0,10,0" />
 
-                    <TextBlock Grid.Column="6" Text="Описание:"
-                               VerticalAlignment="Center" Margin="0,0,10,0" />
-                    <TextBox Grid.Column="7" x:Name="DescriptionTextBox"
-                             materialDesign:HintAssist.Hint="Краткое описание"
-                             LostFocus="BanquetInfo_LostFocus" Margin="0,0,10,0" />
+                        <TextBox Grid.Column="3" x:Name="DescriptionTextBox"
+                                 materialDesign:HintAssist.Hint="Описание"
+                                 LostFocus="BanquetInfo_LostFocus" Margin="0,0,10,0" />
 
-                    <StackPanel Grid.Column="8" Orientation="Horizontal">
-                        <Button Style="{StaticResource MaterialDesignFloatingActionMiniButton}"
-                                Click="StartMenu_Click"
-                                ToolTip="Перейти к заполнению"
-                                Margin="0,0,5,0">
-                            <materialDesign:PackIcon Kind="PlayCircle" />
-                        </Button>
-                        <Button Style="{StaticResource MaterialDesignFloatingActionMiniButton}"
-                                Click="NewMenu_Click"
-                                ToolTip="Новое меню">
-                            <materialDesign:PackIcon Kind="Plus" />
-                        </Button>
-                    </StackPanel>
-                </Grid>
+                        <StackPanel Grid.Column="4" Orientation="Horizontal">
+                            <Button Style="{StaticResource MaterialDesignFloatingActionMiniButton}"
+                                    Click="StartMenu_Click"
+                                    ToolTip="Перейти к заполнению"
+                                    Margin="0,0,5,0">
+                                <materialDesign:PackIcon Kind="PlayCircle" />
+                            </Button>
+                            <Button Style="{StaticResource MaterialDesignFloatingActionMiniButton}"
+                                    Click="NewMenu_Click"
+                                    ToolTip="Новое меню">
+                                <materialDesign:PackIcon Kind="Plus" />
+                            </Button>
+                        </StackPanel>
+                    </Grid>
+                </Expander>
             </materialDesign:Card>
 
-            <GridSplitter Grid.Row="1" HorizontalAlignment="Stretch"
-                          Background="Gray" Height="5" />
-
             <!-- БЛОК 2: Доступные блюда (СЕРЕДИНА - равная высота) -->
-            <materialDesign:Card Grid.Row="2" Margin="10" Padding="10">
+            <materialDesign:Card Grid.Row="1" Margin="10" Padding="10">
                 <Grid x:Name="DelicatesPanel" IsEnabled="False">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
@@ -227,34 +222,12 @@
                 </Grid>
             </materialDesign:Card>
 
-            <GridSplitter Grid.Row="3" HorizontalAlignment="Stretch"
+            <GridSplitter Grid.Row="2" HorizontalAlignment="Stretch"
                           Background="Gray" Height="5" />
 
             <!-- БЛОК 3: Список блюд в меню (ВНИЗУ - равная высота) -->
-            <materialDesign:Card Grid.Row="4" Margin="10" Padding="10">
-                <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="*" />
-                    </Grid.RowDefinitions>
-
-                    <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,10">
-                        <TextBlock x:Name="CurrentMenuInfo"
-                                   Text="Выберите или создайте новое меню"
-                                   Style="{StaticResource MaterialDesignHeadline6TextBlock}"
-                                   VerticalAlignment="Center" />
-                        <CheckBox x:Name="ShowHiddenItemsCheckBox"
-                                  Margin="20,0,0,0"
-                                  VerticalAlignment="Center"
-                                  IsChecked="True"
-                                  Checked="ShowHiddenItemsCheckBox_Changed"
-                                  Unchecked="ShowHiddenItemsCheckBox_Changed">
-                            <TextBlock Text="Показать товары (включая позиции &quot;не показывать в меню&quot;)"
-                                       TextWrapping="Wrap" />
-                        </CheckBox>
-                    </StackPanel>
-
-                    <DataGrid Grid.Row="1" x:Name="MenuDelicatesDataGrid"
+            <materialDesign:Card Grid.Row="3" Margin="10" Padding="10">
+                <DataGrid x:Name="MenuDelicatesDataGrid"
                               AutoGenerateColumns="False"
                               CanUserAddRows="False"
                               SelectionMode="Single"
@@ -325,7 +298,6 @@
                                                 Width="*" IsReadOnly="True" />
                         </DataGrid.Columns>
                     </DataGrid>
-                </Grid>
             </materialDesign:Card>
         </Grid>
 

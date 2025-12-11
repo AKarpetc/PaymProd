@@ -81,42 +81,30 @@
                     <materialDesign:Card Grid.Row="0" Margin="10" Padding="15">
                         <Grid>
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto" />
                                 <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="Auto" />
                                 <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="Auto" />
                                 <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="Auto" />
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
 
-                            <TextBlock Grid.Column="0" Text="Название банкета:"
-                                       VerticalAlignment="Center" Margin="0,0,10,0" />
-                            <TextBox Grid.Column="1" x:Name="BanquetNameTextBox"
-                                     materialDesign:HintAssist.Hint="Введите название"
-                                     LostFocus="BanquetInfo_LostFocus" Margin="0,0,20,0" />
-
-                            <TextBlock Grid.Column="2" Text="Количество человек:"
-                                       VerticalAlignment="Center" Margin="0,0,10,0" />
-                            <TextBox Grid.Column="3" x:Name="PeopleCountTextBox"
-                                     materialDesign:HintAssist.Hint="Кол-во"
-                                     PreviewTextInput="NumericTextBox_PreviewTextInput"
-                                     LostFocus="BanquetInfo_LostFocus" Margin="0,0,20,0" />
-
-                            <TextBlock Grid.Column="4" Text="Дата, начало:"
-                                       VerticalAlignment="Center" Margin="0,0,10,0" />
-                            <controls:DateTimePicker Grid.Column="5" x:Name="BanquetDatePicker"
-                                                     SelectedDateTimeChanged="BanquetInfo_Changed" Margin="0,0,20,0" />
-
-                            <TextBlock Grid.Column="6" Text="Описание:"
-                                       VerticalAlignment="Center" Margin="0,0,10,0" />
-                            <TextBox Grid.Column="7" x:Name="DescriptionTextBox"
-                                     materialDesign:HintAssist.Hint="Краткое описание"
+                            <TextBox Grid.Column="0" x:Name="BanquetNameTextBox"
+                                     materialDesign:HintAssist.Hint="Банкет"
                                      LostFocus="BanquetInfo_LostFocus" Margin="0,0,10,0" />
 
-                            <StackPanel Grid.Column="8" Orientation="Horizontal">
+                            <TextBox Grid.Column="1" x:Name="PeopleCountTextBox"
+                                     materialDesign:HintAssist.Hint="Количество"
+                                     PreviewTextInput="NumericTextBox_PreviewTextInput"
+                                     LostFocus="BanquetInfo_LostFocus" Margin="0,0,10,0" />
+
+                            <controls:DateTimePicker Grid.Column="2" x:Name="BanquetDatePicker"
+                                                     SelectedDateTimeChanged="BanquetInfo_Changed" Margin="0,0,10,0" />
+
+                            <TextBox Grid.Column="3" x:Name="DescriptionTextBox"
+                                     materialDesign:HintAssist.Hint="Описание"
+                                     LostFocus="BanquetInfo_LostFocus" Margin="0,0,10,0" />
+
+                            <StackPanel Grid.Column="4" Orientation="Horizontal">
                                 <Button Style="{StaticResource MaterialDesignFloatingActionMiniButton}"
                                         Click="StartMenu_Click"
                                         ToolTip="Перейти к заполнению"

@@ -211,12 +211,10 @@ public partial class DelicatesPage : Page
 
         if (isEdit)
         {
-            EditPanelTitle.Text = "Редактирование блюда";
             SaveButton.Content = "💾 Сохранить изменения";
         }
         else
         {
-            EditPanelTitle.Text = "Создание нового блюда";
             SaveButton.Content = "💾 Создать блюдо";
         }
     }

@@ -195,32 +195,20 @@
         <!-- РЕЖИМ СОЗДАНИЯ/РЕДАКТИРОВАНИЯ -->
         <Grid x:Name="EditViewPanel" Visibility="Collapsed">
             <Grid.RowDefinitions>
-                <RowDefinition Height="Auto" />
                 <RowDefinition Height="*" />
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
-            <!-- Заголовок -->
-            <materialDesign:Card Grid.Row="0" Margin="10" Padding="15">
-                <StackPanel>
-                    <TextBlock x:Name="EditPanelTitle"
-                               Text="Создание нового блюда"
-                               Style="{StaticResource MaterialDesignHeadline5TextBlock}"
-                               FontWeight="Bold"
-                               Foreground="#2196F3" />
-                </StackPanel>
-            </materialDesign:Card>
-
             <!-- Форма редактирования -->
-            <materialDesign:Card Grid.Row="1" Margin="10" Padding="20">
-                <ScrollViewer VerticalScrollBarVisibility="Auto">
-                    <StackPanel>
-                        <!-- Основная информация -->
-                        <TextBlock Text="Основная информация"
-                                   Style="{StaticResource MaterialDesignHeadline6TextBlock}"
-                                   Margin="0,0,0,15" />
+            <materialDesign:Card Grid.Row="0" Margin="10" Padding="20">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
 
-                        <Grid>
+                    <Grid Grid.Row="0">
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto" />
                                 <RowDefinition Height="Auto" />
@@ -280,26 +268,22 @@
                             </StackPanel>
 
                             <!-- Автодобавление и скрытие в меню -->
-                            <StackPanel Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" Margin="0,5,0,0">
-                                <CheckBox x:Name="DelicateAutoAddCheckBox" Margin="0,5"
+                            <StackPanel Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" 
+                                        Orientation="Horizontal" Margin="0,5,0,0">
+                                <CheckBox x:Name="DelicateAutoAddCheckBox" Margin="0,5,15,5"
                                           ToolTip="Если отмечено, блюдо будет автоматически добавляться в новое меню с количеством, равным числу гостей.">
-                                    <TextBlock Text="Автоматически добавлять в новое меню (количество = число гостей)" TextWrapping="Wrap"/>
+                                    <TextBlock Text="Автоматически добавлять в новое меню"/>
                                 </CheckBox>
                                 <CheckBox x:Name="DelicateHideInMenuCheckBox" Margin="0,5"
                                           ToolTip="Если отмечено, блюдо не выводится в отчете меню, но учитывается в отчете по продуктам.">
-                                    <TextBlock Text="Не показывать это блюдо в меню (только в отчете по продуктам)" TextWrapping="Wrap"/>
+                                    <TextBlock Text="Не показывать это блюдо в меню"/>
                                 </CheckBox>
                             </StackPanel>
-                        </Grid>
+                    </Grid>
 
-                        <Separator Margin="0,10,0,20" />
+                    <Separator Grid.Row="1" Margin="0,10,0,20" />
 
-                        <!-- Состав блюда -->
-                        <TextBlock Text="Состав блюда"
-                                   Style="{StaticResource MaterialDesignHeadline6TextBlock}"
-                                   Margin="0,0,0,15" />
-
-                        <Grid Height="300">
+                    <Grid Grid.Row="2" MinHeight="300">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="80" />
@@ -360,13 +344,12 @@
                                     </DataGrid.Columns>
                                 </DataGrid>
                             </GroupBox>
-                        </Grid>
-                    </StackPanel>
-                </ScrollViewer>
+                    </Grid>
+                </Grid>
             </materialDesign:Card>
 
             <!-- Кнопки действий -->
-            <materialDesign:Card Grid.Row="2" Margin="10" Padding="15">
+            <materialDesign:Card Grid.Row="1" Margin="10" Padding="15">
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                     <Button Content="❌ Отмена"
                             Style="{StaticResource MaterialDesignOutlinedButton}"

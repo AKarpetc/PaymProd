@@ -59,5 +59,4 @@ echo [3/3] Готово!
 echo.
 echo Установщик создан: Installer\bin\PaymProdNet9_Setup.exe
 echo.
-pause
 
