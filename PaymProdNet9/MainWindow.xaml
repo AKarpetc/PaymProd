@@ -223,26 +223,37 @@
                                     </ItemsControl.ItemsPanel>
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
-                                            <materialDesign:Card Margin="5" Width="300"
+                                            <materialDesign:Card Margin="5" Width="280" Height="115"
                                                                  MouseDoubleClick="DelicateCard_MouseDoubleClick">
-                                                <Grid Margin="10">
+                                                <Grid Margin="6">
                                                     <Grid.RowDefinitions>
                                                         <RowDefinition Height="Auto" />
-                                                        <RowDefinition Height="Auto" />
+                                                        <RowDefinition Height="Auto" MaxHeight="32" />
                                                         <RowDefinition Height="Auto" />
                                                     </Grid.RowDefinitions>
 
                                                     <TextBlock Grid.Row="0" Text="{Binding Del}"
-                                                               FontWeight="Bold" TextWrapping="Wrap" />
+                                                               FontWeight="Bold" TextWrapping="Wrap"
+                                                               FontSize="12"
+                                                               MaxHeight="28"
+                                                               TextTrimming="CharacterEllipsis" />
                                                     <TextBlock Grid.Row="1" Text="{Binding Sost}"
-                                                               TextWrapping="Wrap" Opacity="0.7" Margin="0,5,0,5" />
-                                                    <StackPanel Grid.Row="2" Orientation="Horizontal">
-                                                        <TextBox Width="80"
+                                                               TextWrapping="Wrap" 
+                                                               Opacity="0.7" 
+                                                               Margin="0,2,0,2"
+                                                               FontSize="10"
+                                                               MaxHeight="32"
+                                                               TextTrimming="CharacterEllipsis" />
+                                                    <StackPanel Grid.Row="2" Orientation="Horizontal" VerticalAlignment="Center">
+                                                        <TextBox Width="55"
+                                                                 Height="26"
                                                                  materialDesign:HintAssist.Hint="Кол-во"
                                                                  PreviewTextInput="NumericTextBox_PreviewTextInput"
-                                                                 Tag="{Binding}" />
-                                                        <TextBlock VerticalAlignment="Center" Margin="5,0,0,0"
-                                                                   Text="{Binding WeightInfo}" />
+                                                                 Tag="{Binding}"
+                                                                 FontSize="11" />
+                                                        <TextBlock VerticalAlignment="Center" Margin="3,0,0,0"
+                                                                   Text="{Binding WeightInfo}"
+                                                                   FontSize="10" />
                                                     </StackPanel>
                                                 </Grid>
                                             </materialDesign:Card>

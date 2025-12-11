@@ -105,7 +105,7 @@
             </Grid.RowDefinitions>
 
             <!-- БЛОК 1: Информация о банкете (ВВЕРХУ) -->
-            <materialDesign:Card Grid.Row="0" Margin="10" Padding="0">
+            <materialDesign:Card Grid.Row="0" Margin="10,10,10,0" Padding="0">
                 <Expander x:Name="BanquetInfoExpander" IsExpanded="True">
                     <Expander.Header>
                         <Grid Height="20" VerticalAlignment="Center" Margin="5,0">
@@ -156,7 +156,7 @@
             </materialDesign:Card>
 
             <!-- БЛОК 2: Доступные блюда (СЕРЕДИНА - равная высота) -->
-            <materialDesign:Card Grid.Row="1" Margin="10" Padding="10">
+            <materialDesign:Card Grid.Row="1" Margin="10,5,10,0" Padding="10">
                 <Grid x:Name="DelicatesPanel" IsEnabled="False">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
@@ -180,35 +180,60 @@
                             </ItemsControl.ItemsPanel>
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <materialDesign:Card Margin="5" Width="300"
+                                    <materialDesign:Card Margin="5" Width="280" Height="115"
                                                          MouseDoubleClick="DelicateCard_MouseDoubleClick">
-                                        <Grid Margin="10">
+                                        <Grid Margin="6">
                                             <Grid.RowDefinitions>
                                                 <RowDefinition Height="Auto" />
-                                                <RowDefinition Height="Auto" />
+                                                <RowDefinition Height="Auto" MaxHeight="32" />
                                                 <RowDefinition Height="Auto" />
                                             </Grid.RowDefinitions>
 
                                             <TextBlock Grid.Row="0" Text="{Binding Del}"
-                                                       FontWeight="Bold" TextWrapping="Wrap" />
-                                            <TextBlock Grid.Row="1" Text="{Binding Sost}"
-                                                       TextWrapping="Wrap" Opacity="0.7" Margin="0,5,0,5" />
-                                            <StackPanel Grid.Row="2" Orientation="Horizontal">
+                                                       FontWeight="Bold" TextWrapping="Wrap"
+                                                       FontSize="12"
+                                                       MaxHeight="28"
+                                                       TextTrimming="CharacterEllipsis" />
+                                            <TextBlock Grid.Row="1" x:Name="CompositionTextBlock"
+                                                       Text="{Binding Sost}"
+                                                       TextWrapping="Wrap" 
+                                                       Opacity="0.7" 
+                                                       Margin="0,2,0,2"
+                                                       FontSize="10"
+                                                       MaxHeight="32"
+                                                       TextTrimming="CharacterEllipsis" />
+                                            <StackPanel Grid.Row="2" Orientation="Horizontal" VerticalAlignment="Center">
                                                 <TextBox x:Name="QuantityTextBox"
-                                                         Width="80"
+                                                         Width="55"
+                                                         Height="26"
                                                          materialDesign:HintAssist.Hint="Кол-во"
                                                          PreviewTextInput="NumericTextBox_PreviewTextInput"
                                                          TextChanged="QuantityTextBox_TextChanged"
                                                          Loaded="QuantityTextBox_Loaded"
-                                                         Tag="{Binding}" />
-                                                <TextBlock VerticalAlignment="Center" Margin="5,0,0,0"
-                                                           Text="{Binding WeightInfo}" />
-                                                <Button Style="{StaticResource MaterialDesignFloatingActionMiniButton}"
+                                                         Tag="{Binding}"
+                                                         FontSize="11" />
+                                                <TextBlock VerticalAlignment="Center" Margin="3,0,0,0"
+                                                           Text="{Binding WeightInfo}"
+                                                           FontSize="10" />
+                                                <Button Style="{StaticResource MaterialDesignIconButton}"
+                                                        Click="ShowDelicateInfo_Click"
+                                                        Tag="{Binding}"
+                                                        Margin="5,0,0,0"
+                                                        ToolTip="Показать полный состав"
+                                                        Width="28"
+                                                        Height="28"
+                                                        Padding="0">
+                                                    <materialDesign:PackIcon Kind="Information" Width="20" Height="20" />
+                                                </Button>
+                                                <Button Style="{StaticResource MaterialDesignIconButton}"
                                                         Click="AddDelicateToMenu_Click"
                                                         Tag="{Binding}"
-                                                        Margin="10,0,0,0"
+                                                        Margin="2,0,0,0"
                                                         ToolTip="Добавить в меню"
                                                         IsEnabled="False"
+                                                        Width="28"
+                                                        Height="28"
+                                                        Padding="0"
                                                         x:Name="AddButton">
                                                     <materialDesign:PackIcon Kind="Plus" Width="20" Height="20" />
                                                 </Button>
@@ -226,7 +251,7 @@
                           Background="Gray" Height="5" />
 
             <!-- БЛОК 3: Список блюд в меню (ВНИЗУ - равная высота) -->
-            <materialDesign:Card Grid.Row="3" Margin="10" Padding="10">
+            <materialDesign:Card Grid.Row="3" Margin="10,5,10,10" Padding="10">
                 <DataGrid x:Name="MenuDelicatesDataGrid"
                               AutoGenerateColumns="False"
                               CanUserAddRows="False"

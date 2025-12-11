@@ -5,9 +5,11 @@ using PaymProdNet9.Services;
 using PaymProdNet9.Windows;
 using System.Collections.ObjectModel;
 using System.Globalization;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
 
 namespace PaymProdNet9;
 
@@ -141,6 +143,9 @@ public partial class MainWindow : Window
             // Включаем панель добавления блюд
             DelicatesPanel.IsEnabled = true;
 
+            // Выделяем кнопку "Все" как активную белым цветом текста
+            AllTypesButton.Foreground = Brushes.White;
+
             // Загружаем доступные блюда
             LoadAvailableDelicates("%");
         }
@@ -165,17 +170,27 @@ public partial class MainWindow : Window
             var delicates = _delicateRepository.GetAvailableDelicatesForMenu(typeFilter);
 
             // Конвертируем в формат для отображения
-            var displayDelicates = delicates.Select(d => new
+            var displayDelicates = delicates.Select(d =>
             {
-                Del = d.Name,
-                Sost = d.Lcomp.Any()
+                var fullComposition = d.Lcomp.Any()
                     ? "Состав: " + string.Join(", ", d.Lcomp.Select(c => c.Name))
-                    : "Без состава",
-                WeightInfo = d.Ves > 0 ? $"{d.Ves}г" : d.Count > 0 ? "Порция" : "",
-                DelicateId = d.Id,
-                DefaultCount = d.LinkedProductDefaultCount.HasValue
-                    ? d.LinkedProductDefaultCount.Value.ToString(CultureInfo.CurrentCulture)
-                    : PeopleCountTextBox.Text
+                    : "Без состава";
+                
+                // Обрезаем состав до ~100 символов для компактного отображения
+                var shortComposition = fullComposition.Length > 100
+                    ? fullComposition.Substring(0, 97) + "..."
+                    : fullComposition;
+                
+                return new
+                {
+                    Del = d.Name,
+                    Sost = shortComposition,
+                    WeightInfo = d.Ves > 0 ? $"{d.Ves}г" : d.Count > 0 ? "Порция" : "",
+                    DelicateId = d.Id,
+                    DefaultCount = d.LinkedProductDefaultCount.HasValue
+                        ? d.LinkedProductDefaultCount.Value.ToString(CultureInfo.CurrentCulture)
+                        : PeopleCountTextBox.Text
+                };
             }).ToList();
 
             AvailableDelicatesPanel.ItemsSource = displayDelicates;
@@ -196,6 +211,20 @@ public partial class MainWindow : Window
         if (button?.Tag == null) return;
 
         var filter = button.Tag.ToString() ?? "%";
+        
+        // Сбрасываем цвет текста всех кнопок фильтров
+        var panel = AllTypesButton.Parent as StackPanel;
+        if (panel != null)
+        {
+            foreach (Button btn in panel.Children.OfType<Button>())
+            {
+                btn.ClearValue(Button.ForegroundProperty); // Сбрасываем локальное значение, возвращаем стиль по умолчанию
+            }
+            
+            // Выделяем активную кнопку белым цветом текста
+            button.Foreground = Brushes.White;
+        }
+        
         LoadAvailableDelicates(filter);
     }
 

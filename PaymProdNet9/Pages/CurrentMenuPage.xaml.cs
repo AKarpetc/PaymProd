@@ -2,6 +2,7 @@ using Microsoft.Win32;
 using PaymProdNet9.Data;
 using PaymProdNet9.Models;
 using PaymProdNet9.Services;
+using PaymProdNet9.Windows;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
@@ -10,6 +11,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Data;
+using System.Windows.Media;
 
 namespace PaymProdNet9.Pages;
 
@@ -203,6 +205,9 @@ public partial class CurrentMenuPage : Page
             // Включаем панель добавления блюд
             DelicatesPanel.IsEnabled = true;
 
+            // Выделяем кнопку "Все" как активную белым цветом текста
+            AllTypesButton.Foreground = Brushes.White;
+
             // Загружаем доступные блюда
             LoadAvailableDelicates("%");
         }
@@ -265,17 +270,28 @@ public partial class CurrentMenuPage : Page
             var availableDelicates = delicates.Where(d => !addedDelicateIds.Contains(d.Id)).ToList();
 
             // Конвертируем в формат для отображения
-            var displayDelicates = availableDelicates.Select(d => new
+            var displayDelicates = availableDelicates.Select(d =>
             {
-                Del = d.Name,
-                Sost = d.Lcomp.Any()
+                var fullComposition = d.Lcomp.Any()
                     ? "Состав: " + string.Join(", ", d.Lcomp.Select(c => c.Name))
-                    : "Без состава",
-                WeightInfo = d.Ves > 0 ? $"{d.Ves}г" : d.Count > 0 ? "Порция" : "",
-                DelicateId = d.Id,
-                DefaultCount = d.LinkedProductDefaultCount.HasValue
-                    ? d.LinkedProductDefaultCount.Value.ToString(CultureInfo.CurrentCulture)
-                    : PeopleCountTextBox.Text
+                    : "Без состава";
+                
+                // Обрезаем состав до ~100 символов для компактного отображения
+                var shortComposition = fullComposition.Length > 100
+                    ? fullComposition.Substring(0, 97) + "..."
+                    : fullComposition;
+                
+                return new
+                {
+                    Del = d.Name,
+                    Sost = shortComposition,
+                    FullSost = fullComposition, // Полный состав для окна информации
+                    WeightInfo = d.Ves > 0 ? $"{d.Ves}г" : d.Count > 0 ? "Порция" : "",
+                    DelicateId = d.Id,
+                    DefaultCount = d.LinkedProductDefaultCount.HasValue
+                        ? d.LinkedProductDefaultCount.Value.ToString(CultureInfo.CurrentCulture)
+                        : PeopleCountTextBox.Text
+                };
             }).ToList();
 
             // Сохраняем все доступные блюда
@@ -337,6 +353,20 @@ public partial class CurrentMenuPage : Page
         if (button?.Tag == null) return;
 
         _currentTypeFilter = button.Tag.ToString() ?? "%";
+        
+        // Сбрасываем цвет текста всех кнопок фильтров
+        var panel = AllTypesButton.Parent as StackPanel;
+        if (panel != null)
+        {
+            foreach (Button btn in panel.Children.OfType<Button>())
+            {
+                btn.ClearValue(Button.ForegroundProperty); // Сбрасываем локальное значение, возвращаем стиль по умолчанию
+            }
+            
+            // Выделяем активную кнопку белым цветом текста
+            button.Foreground = Brushes.White;
+        }
+        
         LoadAvailableDelicates(_currentTypeFilter);
     }
 
@@ -416,6 +446,17 @@ public partial class CurrentMenuPage : Page
                 DescriptionTextBox.Text,
                 BanquetDatePicker.SelectedDateTime?.ToString("yyyy-MM-dd HH:mm") ?? DateTime.Now.ToString("yyyy-MM-dd HH:mm")
             );
+
+            // Выделяем кнопку "Все" как активную при создании нового меню
+            var panel = AllTypesButton.Parent as StackPanel;
+            if (panel != null)
+            {
+                foreach (Button btn in panel.Children.OfType<Button>())
+                {
+                    btn.ClearValue(Button.ForegroundProperty); // Сбрасываем локальное значение, возвращаем стиль по умолчанию
+                }
+            }
+            AllTypesButton.Foreground = Brushes.White;
 
             LoadMenu(menuId);
         }
@@ -719,6 +760,36 @@ public partial class CurrentMenuPage : Page
         catch (Exception ex)
         {
             MessageBox.Show($"Ошибка при добавлении блюда: {ex.Message}",
+                "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    /// <summary>
+    /// Показать полный состав блюда в отдельном окне
+    /// </summary>
+    private void ShowDelicateInfo_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var button = sender as Button;
+            if (button == null) return;
+
+            var data = button.DataContext as dynamic;
+            if (data == null) return;
+
+            var delicateName = data.Del?.ToString() ?? "Блюдо";
+            var fullComposition = data.FullSost?.ToString() ?? data.Sost?.ToString() ?? "Состав не указан";
+
+            var infoWindow = new DelicateInfoWindow(delicateName, fullComposition)
+            {
+                Owner = Window.GetWindow(this)
+            };
+            infoWindow.ShowDialog();
+        }
+        catch (Exception ex)
+        {
+            Logger.Error("Ошибка при показе информации о блюде", ex);
+            MessageBox.Show($"Ошибка при открытии информации: {ex.Message}",
                 "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
