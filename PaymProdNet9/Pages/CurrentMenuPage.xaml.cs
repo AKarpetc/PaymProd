@@ -7,6 +7,8 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -27,6 +29,8 @@ public partial class CurrentMenuPage : Page
     private List<dynamic> _allAvailableDelicates; // Все доступные блюда без фильтрации
     private string _currentTypeFilter = "%";
     private string _currentSearchText = "";
+    private CancellationTokenSource? _searchCts;
+    private const int SearchDebounceMs = 250;
     private bool _isDataChanged = false;
 
     // Для редактирования блюда в меню
@@ -388,6 +392,29 @@ public partial class CurrentMenuPage : Page
             PerformSearch();
             e.Handled = true;
         }
+    }
+
+    /// <summary>
+    /// Дебаунс поиска по вводу
+    /// </summary>
+    private async void DelicateSearchBox_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        _searchCts?.Cancel();
+        var cts = new CancellationTokenSource();
+        _searchCts = cts;
+
+        try
+        {
+            await Task.Delay(SearchDebounceMs, cts.Token);
+        }
+        catch (TaskCanceledException)
+        {
+            return;
+        }
+
+        if (cts.IsCancellationRequested) return;
+
+        PerformSearch();
     }
 
     /// <summary>

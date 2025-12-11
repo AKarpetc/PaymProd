@@ -65,7 +65,8 @@
                              FontSize="14"
                              HorizontalAlignment="Stretch"
                              Margin="0,0,5,0"
-                             KeyDown="DelicateSearchBox_KeyDown" />
+                             KeyDown="DelicateSearchBox_KeyDown"
+                             TextChanged="DelicateSearchBox_TextChanged" />
                     
                     <Button Grid.Column="1" x:Name="DelicateSearchButton"
                             Style="{StaticResource MaterialDesignRaisedButton}"
@@ -171,79 +172,93 @@
                     </StackPanel>
 
                     <!-- Список доступных блюд -->
-                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
-                        <ItemsControl x:Name="AvailableDelicatesPanel">
-                            <ItemsControl.ItemsPanel>
-                                <ItemsPanelTemplate>
-                                    <WrapPanel />
-                                </ItemsPanelTemplate>
-                            </ItemsControl.ItemsPanel>
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                    <materialDesign:Card Margin="5" Width="280" Height="115"
-                                                         MouseDoubleClick="DelicateCard_MouseDoubleClick">
-                                        <Grid Margin="6">
-                                            <Grid.RowDefinitions>
-                                                <RowDefinition Height="Auto" />
-                                                <RowDefinition Height="Auto" MaxHeight="32" />
-                                                <RowDefinition Height="Auto" />
-                                            </Grid.RowDefinitions>
+                    <ListBox x:Name="AvailableDelicatesPanel"
+                             Grid.Row="1"
+                             BorderThickness="0"
+                             Background="Transparent"
+                             ScrollViewer.CanContentScroll="True"
+                             ScrollViewer.VerticalScrollBarVisibility="Auto"
+                             VirtualizingPanel.IsVirtualizing="True"
+                             VirtualizingPanel.VirtualizationMode="Recycling"
+                             SelectionMode="Single">
+                        <ListBox.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <VirtualizingStackPanel />
+                            </ItemsPanelTemplate>
+                        </ListBox.ItemsPanel>
+                        <ListBox.ItemContainerStyle>
+                            <Style TargetType="ListBoxItem">
+                                <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                                <Setter Property="Padding" Value="0" />
+                                <Setter Property="BorderThickness" Value="0" />
+                                <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+                                <EventSetter Event="MouseDoubleClick" Handler="DelicateCard_MouseDoubleClick" />
+                            </Style>
+                        </ListBox.ItemContainerStyle>
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Border Margin="5" Padding="6"
+                                        Background="White">
+                                        <Grid VerticalAlignment="Center">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="32" />
+                                            <ColumnDefinition Width="1.7*" />
+                                            <ColumnDefinition Width="4.3*" />
+                                            <ColumnDefinition Width="120" />
+                                        </Grid.ColumnDefinitions>
+                                        <!-- Info -->
+                                        <Button Style="{StaticResource MaterialDesignIconButton}"
+                                                Click="ShowDelicateInfo_Click"
+                                                Tag="{Binding}"
+                                                ToolTip="Показать полный состав"
+                                                Width="28" Height="28" Padding="2"
+                                                Margin="0,0,8,0">
+                                            <materialDesign:PackIcon Kind="InformationOutline" Width="18" Height="18" />
+                                        </Button>
 
-                                            <TextBlock Grid.Row="0" Text="{Binding Del}"
-                                                       FontWeight="Bold" TextWrapping="Wrap"
-                                                       FontSize="12"
-                                                       MaxHeight="28"
-                                                       TextTrimming="CharacterEllipsis" />
-                                            <TextBlock Grid.Row="1" x:Name="CompositionTextBlock"
-                                                       Text="{Binding Sost}"
-                                                       TextWrapping="Wrap" 
-                                                       Opacity="0.7" 
-                                                       Margin="0,2,0,2"
-                                                       FontSize="10"
-                                                       MaxHeight="32"
-                                                       TextTrimming="CharacterEllipsis" />
-                                            <StackPanel Grid.Row="2" Orientation="Horizontal" VerticalAlignment="Center">
-                                                <TextBox x:Name="QuantityTextBox"
-                                                         Width="55"
-                                                         Height="26"
-                                                         materialDesign:HintAssist.Hint="Кол-во"
-                                                         PreviewTextInput="NumericTextBox_PreviewTextInput"
-                                                         TextChanged="QuantityTextBox_TextChanged"
-                                                         Loaded="QuantityTextBox_Loaded"
-                                                         Tag="{Binding}"
-                                                         FontSize="11" />
-                                                <TextBlock VerticalAlignment="Center" Margin="3,0,0,0"
-                                                           Text="{Binding WeightInfo}"
-                                                           FontSize="10" />
-                                                <Button Style="{StaticResource MaterialDesignIconButton}"
-                                                        Click="ShowDelicateInfo_Click"
-                                                        Tag="{Binding}"
-                                                        Margin="5,0,0,0"
-                                                        ToolTip="Показать полный состав"
-                                                        Width="28"
-                                                        Height="28"
-                                                        Padding="0">
-                                                    <materialDesign:PackIcon Kind="Information" Width="20" Height="20" />
-                                                </Button>
-                                                <Button Style="{StaticResource MaterialDesignIconButton}"
-                                                        Click="AddDelicateToMenu_Click"
-                                                        Tag="{Binding}"
-                                                        Margin="2,0,0,0"
-                                                        ToolTip="Добавить в меню"
-                                                        IsEnabled="False"
-                                                        Width="28"
-                                                        Height="28"
-                                                        Padding="0"
-                                                        x:Name="AddButton">
-                                                    <materialDesign:PackIcon Kind="Plus" Width="20" Height="20" />
-                                                </Button>
-                                            </StackPanel>
-                                        </Grid>
-                                    </materialDesign:Card>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-                    </ScrollViewer>
+                                        <!-- Название -->
+                                        <TextBlock Grid.Column="1"
+                                                   Text="{Binding Del}"
+                                                   FontWeight="SemiBold"
+                                                   TextTrimming="CharacterEllipsis"
+                                                   VerticalAlignment="Center"
+                                                   Margin="0,0,8,0" />
+
+                                        <!-- Состав -->
+                                        <TextBlock Grid.Column="2"
+                                                   Text="{Binding Sost}"
+                                                   Opacity="0.8"
+                                                   FontSize="11"
+                                                   TextTrimming="CharacterEllipsis"
+                                                   TextWrapping="NoWrap"
+                                                   VerticalAlignment="Center"
+                                                   Margin="0,0,2,0" />
+
+                                        <!-- Кол-во -->
+                                        <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Right">
+                                            <TextBox x:Name="QuantityTextBox"
+                                                     Width="80"
+                                                     Height="28"
+                                                     materialDesign:HintAssist.Hint="Кол-во"
+                                                     PreviewTextInput="NumericTextBox_PreviewTextInput"
+                                                     TextChanged="QuantityTextBox_TextChanged"
+                                                     Loaded="QuantityTextBox_Loaded"
+                                                     Tag="{Binding}"
+                                                     FontSize="11" />
+                                            <Button Style="{StaticResource MaterialDesignIconButton}"
+                                                    Click="AddDelicateToMenu_Click"
+                                                    Tag="{Binding}"
+                                                    ToolTip="Добавить в меню"
+                                                    Width="28" Height="28" Padding="2"
+                                                    x:Name="AddButton">
+                                                <materialDesign:PackIcon Kind="PlusCircle" Width="18" Height="18" />
+                                            </Button>
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
                 </Grid>
             </materialDesign:Card>
 
