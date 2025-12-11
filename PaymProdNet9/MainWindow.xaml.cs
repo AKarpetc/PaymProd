@@ -426,7 +426,7 @@ public partial class MainWindow : Window
 
     private void BanquetInfo_Changed(object sender, RoutedEventArgs e)
     {
-        BanquetInfo_LostFocus(sender, null);
+        BanquetInfo_LostFocus(sender, new RoutedEventArgs());
     }
 
     /// <summary>
@@ -568,7 +568,7 @@ public partial class MainWindow : Window
             var menuPrinter = new MenuPrinter();
             var allDelicates = _delicateRepository
                 .GetAllDelicates()
-                .Where(d => !d.HideInMenu)
+                .Where(d => !d.HideInMenu && !d.IsDeleted)
                 .ToList();
 
             if (!allDelicates.Any())

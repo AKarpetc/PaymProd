@@ -26,11 +26,7 @@
                         <materialDesign:PackIcon Kind="FileExcel" />
                     </MenuItem.Icon>
                 </MenuItem>
-                <MenuItem Header="Печать" Click="Print_Click">
-                    <MenuItem.Icon>
-                        <materialDesign:PackIcon Kind="Printer" />
-                    </MenuItem.Icon>
-                </MenuItem>
+                <!-- Печать отключена: достаточно сохранения в Word / Excel -->
             </MenuItem>
         </Menu>
 

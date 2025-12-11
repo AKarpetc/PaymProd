@@ -43,17 +43,6 @@
                     <TextBlock Text="Сохранить в Word" VerticalAlignment="Center"/>
                 </StackPanel>
             </Button>
-            <Button x:Name="PrintButton"
-                    Visibility="Collapsed"
-                    Style="{StaticResource MaterialDesignOutlinedButton}"
-                    Padding="20,8"
-                    Margin="10,0,0,0"
-                    Click="Print_Click">
-                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                    <materialDesign:PackIcon Kind="Printer" Margin="0,0,8,0"/>
-                    <TextBlock Text="Печать" VerticalAlignment="Center"/>
-                </StackPanel>
-            </Button>
         </StackPanel>
 
         <!-- Отчет по товарам -->

@@ -22,14 +22,15 @@ public class DelicateRepository
         // Получаем все компоненты
         var allComponents = GetAllComponents(connection);
 
-        // Получаем блюда
+        // Получаем блюда (все, включая помеченные как удалённые; фильтрация выполняется на уровне UI)
         var command = connection.CreateCommand();
         command.CommandText = @"
             SELECT d.Del_id, d.Del_Name, COALESCE(d.Del_opis, ''), 
                    COALESCE(d.Del_count, 0), COALESCE(d.Del_Ves, 0), 
                    COALESCE(td.Type_del_opis, ''), td.Type_Del_ID, COALESCE(td.SortOrder, 0),
                    d.LinkedProductId, COALESCE(d.AutoAdd, 0),
-                   COALESCE(d.HideInMenu, 0)
+                   COALESCE(d.HideInMenu, 0),
+                   COALESCE(d.IsDeleted, 0)
             FROM Delicates d
             LEFT JOIN Type_Del td ON td.Type_Del_ID = d.Del_Type
             ORDER BY COALESCE(td.SortOrder, 0), td.Type_del_opis, d.Del_Name";
@@ -52,6 +53,7 @@ public class DelicateRepository
                 LinkedProductId = reader.IsDBNull(8) ? null : reader.GetInt32(8),
                 AutoAdd = !reader.IsDBNull(9) && reader.GetInt32(9) == 1,
                 HideInMenu = !reader.IsDBNull(10) && reader.GetInt32(10) == 1,
+                IsDeleted = !reader.IsDBNull(11) && reader.GetInt32(11) == 1,
                 Lcomp = allComponents.Where(c => c.Delid == delId).ToList()
             };
 
@@ -113,7 +115,8 @@ public class DelicateRepository
                    COALESCE(d.Del_count, 0), COALESCE(d.Del_Ves, 0), 
                    COALESCE(td.Type_del_opis, ''), td.Type_Del_ID, COALESCE(td.SortOrder, 0),
                    d.LinkedProductId, COALESCE(d.AutoAdd, 0),
-                   COALESCE(d.HideInMenu, 0)
+                   COALESCE(d.HideInMenu, 0),
+                   COALESCE(d.IsDeleted, 0)
             FROM Delicates d
             LEFT JOIN Type_Del td ON td.Type_Del_ID = d.Del_Type
             WHERE d.Del_id = @id";
@@ -135,6 +138,7 @@ public class DelicateRepository
                 LinkedProductId = reader.IsDBNull(8) ? null : reader.GetInt32(8),
                 AutoAdd = !reader.IsDBNull(9) && reader.GetInt32(9) == 1,
                 HideInMenu = !reader.IsDBNull(10) && reader.GetInt32(10) == 1,
+                IsDeleted = !reader.IsDBNull(11) && reader.GetInt32(11) == 1,
                 Lcomp = components
             };
 
@@ -247,14 +251,26 @@ public class DelicateRepository
         using var connection = DatabaseHelper.GetConnection();
         connection.Open();
 
+        // Мягкое удаление блюда:
+        // - само блюдо и его компоненты остаются в базе и во всех меню;
+        // - блюдо скрывается из справочников и списков доступных блюд.
         var command = connection.CreateCommand();
-        command.CommandText = @"
-            DELETE FROM Components WHERE Delic_id = @id;
-            DELETE FROM Components1 WHERE Delic_id = @id;
-            DELETE FROM Menu_Delicates WHERE Id_delic = @id;
-            DELETE FROM Delicates WHERE Del_id = @id;";
+        command.CommandText = "UPDATE Delicates SET IsDeleted = 1 WHERE Del_id = @id";
         command.Parameters.AddWithValue("@id", id);
+        command.ExecuteNonQuery();
+    }
 
+    /// <summary>
+    /// Восстановить блюдо (снять пометку об удалении)
+    /// </summary>
+    public void RestoreDelicate(int id)
+    {
+        using var connection = DatabaseHelper.GetConnection();
+        connection.Open();
+
+        var command = connection.CreateCommand();
+        command.CommandText = "UPDATE Delicates SET IsDeleted = 0 WHERE Del_id = @id";
+        command.Parameters.AddWithValue("@id", id);
         command.ExecuteNonQuery();
     }
 
@@ -344,7 +360,11 @@ public class DelicateRepository
         // Получаем типы блюд
         var command = connection.CreateCommand();
         command.CommandText =
-            "SELECT Type_Del_ID, Type_del_opis, COALESCE(SortOrder, 0), LinkedProductTypeId FROM Type_Del ORDER BY COALESCE(SortOrder, 0), Type_del_opis";
+            "SELECT Type_Del_ID, Type_del_opis, COALESCE(SortOrder, 0), LinkedProductTypeId, " +
+            "COALESCE(IsDeleted, 0) " +
+            "FROM Type_Del " +
+            "WHERE COALESCE(IsDeleted, 0) = 0 " +
+            "ORDER BY COALESCE(SortOrder, 0), Type_del_opis";
 
         using var reader = command.ExecuteReader();
         while (reader.Read())
@@ -353,7 +373,8 @@ public class DelicateRepository
                 Id = reader.GetInt32(0),
                 Name = reader.GetString(1),
                 SortOrder = reader.GetInt32(2),
-                LinkedProductTypeId = reader.IsDBNull(3) ? null : reader.GetInt32(3)
+                LinkedProductTypeId = reader.IsDBNull(3) ? null : reader.GetInt32(3),
+                IsDeleted = !reader.IsDBNull(4) && reader.GetInt32(4) == 1
             });
 
         return types.OrderBy(t => t.SortOrder).ThenBy(t => t.Name).ToList();
@@ -406,7 +427,8 @@ public class DelicateRepository
         connection.Open();
 
         var command = connection.CreateCommand();
-        command.CommandText = "DELETE FROM Type_Del WHERE Type_Del_ID = @id";
+        // Мягкое удаление типа блюда
+        command.CommandText = "UPDATE Type_Del SET IsDeleted = 1 WHERE Type_Del_ID = @id";
         command.Parameters.AddWithValue("@id", id);
 
         return command.ExecuteNonQuery() > 0;
@@ -422,14 +444,15 @@ public class DelicateRepository
         using var connection = DatabaseHelper.GetConnection();
         connection.Open();
 
-        // Получаем обычные блюда
+        // Получаем обычные блюда (только не удалённые)
         var sql = @"
             SELECT d.Del_id, d.Del_Name, COALESCE(d.Del_Ves, 0), 
                    COALESCE(d.Del_count, 0), td.Type_del_opis, td.Type_Del_ID, COALESCE(td.SortOrder, 0),
                    d.LinkedProductId, COALESCE(d.HideInMenu, 0)
             FROM Delicates d
             INNER JOIN Type_Del td ON td.Type_Del_ID = d.Del_Type
-            WHERE d.Del_Type != -1";
+            WHERE d.Del_Type != -1
+              AND COALESCE(d.IsDeleted, 0) = 0";
 
         if (!string.IsNullOrEmpty(typeFilter) && typeFilter != "%") sql += " AND td.Type_del_opis = @type";
 

@@ -164,6 +164,12 @@ public class DelicatesColl
     /// </summary>
     public bool HideInMenu { get; set; }
     public List<Components> Lcomp { get; set; } = new();
+
+    /// <summary>
+    /// Флаг мягкого удаления. Если true, блюдо скрыто из справочников и доступных для добавления списков,
+    /// но продолжает использоваться в уже созданных меню и отчетах.
+    /// </summary>
+    public bool IsDeleted { get; set; }
 }
 
 /// <summary>
@@ -392,6 +398,7 @@ public class ProductView : INotifyPropertyChanged
     private bool _isModified;
     private decimal _originalPrice;
     private bool _hideInMenu;
+    private bool _isDeleted;
 
     public string Name
     {
@@ -600,6 +607,20 @@ public class ProductView : INotifyPropertyChanged
         {
             _hideInMenu = value;
             OnPropertyChanged(nameof(HideInMenu));
+        }
+    }
+
+    /// <summary>
+    /// Флаг мягкого удаления. Если true, продукт скрывается из справочников и списков выбора,
+    /// но остается во всех старых блюдах, меню и отчетах.
+    /// </summary>
+    public bool IsDeleted
+    {
+        get => _isDeleted;
+        set
+        {
+            _isDeleted = value;
+            OnPropertyChanged(nameof(IsDeleted));
         }
     }
 

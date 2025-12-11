@@ -81,17 +81,7 @@
                 </MenuItem.Icon>
             </MenuItem>
 
-            <MenuItem Header="Распечатать все меню" Click="PrintAllMenu_Click">
-                <MenuItem.Icon>
-                    <materialDesign:PackIcon Kind="Printer" />
-                </MenuItem.Icon>
-            </MenuItem>
-
-            <MenuItem Header="Распечатать текущее меню" Click="PrintCurrentMenu_Click">
-                <MenuItem.Icon>
-                    <materialDesign:PackIcon Kind="PrinterSettings" />
-                </MenuItem.Icon>
-            </MenuItem>
+            <!-- Пункты печати меню убраны: печать из приложения не используется -->
 
             <MenuItem Header="Справка">
                 <MenuItem Header="О программе" Click="About_Click">

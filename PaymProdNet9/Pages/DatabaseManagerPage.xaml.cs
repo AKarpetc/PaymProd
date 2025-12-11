@@ -16,8 +16,21 @@ public partial class DatabaseManagerPage : Page
     public DatabaseManagerPage()
     {
         InitializeComponent();
+        InitializeDeletedItemsSettings();
         LoadCurrentDatabaseInfo();
         LoadBackups();
+    }
+
+    private void InitializeDeletedItemsSettings()
+    {
+        try
+        {
+            ShowDeletedItemsCheckBox.IsChecked = DeletedItemsViewSettings.ShowDeletedItems;
+        }
+        catch
+        {
+            // Если по какой-то причине чекбокс недоступен — просто игнорируем.
+        }
     }
 
     private void LoadCurrentDatabaseInfo()
@@ -376,5 +389,13 @@ public partial class DatabaseManagerPage : Page
             MessageBox.Show($"Ошибка при загрузке базы данных:\n{ex.Message}",
                 "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
         }
+    }
+
+    /// <summary>
+    /// Переключение глобальной настройки показа удалённых элементов в справочниках.
+    /// </summary>
+    private void ShowDeletedItemsCheckBox_Changed(object sender, RoutedEventArgs e)
+    {
+        DeletedItemsViewSettings.ShowDeletedItems = ShowDeletedItemsCheckBox.IsChecked == true;
     }
 }

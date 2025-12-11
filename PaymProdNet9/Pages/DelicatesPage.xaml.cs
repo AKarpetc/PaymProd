@@ -86,7 +86,9 @@ public partial class DelicatesPage : Page
     {
         try
         {
+            var showDeleted = DeletedItemsViewSettings.ShowDeletedItems;
             var delicates = _delicateRepository.GetAllDelicates()
+                .Where(d => showDeleted || !d.IsDeleted)
                 .OrderByDescending(d => d.Id) // Новые блюда вверху
                 .ToList();
 
@@ -158,7 +160,9 @@ public partial class DelicatesPage : Page
     {
         try
         {
-            var products = _productRepository.GetAllProducts();
+            var products = _productRepository.GetAllProducts()
+                .Where(p => !p.IsDeleted)
+                .ToList();
             _productsCache = products.ToList();
 
             _allProducts.Clear();
@@ -287,6 +291,17 @@ public partial class DelicatesPage : Page
             var button = sender as Button;
             var delicate = button?.DataContext as DelicatesColl;
             if (delicate == null) return;
+
+            if (delicate.IsDeleted)
+            {
+                MessageBox.Show(
+                    $"Блюдо \"{delicate.Name}\" помечено как удалённое.\n" +
+                    "Сначала восстановите его, чтобы редактировать.",
+                    "Нельзя редактировать удалённое блюдо",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+                return;
+            }
 
             // Продукты с отрицательным ID нельзя редактировать (только для чтения)
             if (delicate.Id < 0)
@@ -497,16 +512,40 @@ public partial class DelicatesPage : Page
                 return;
             }
 
-            var result = MessageBox.Show($"Удалить блюдо \"{delicate.Name}\"?",
-                "Подтверждение", MessageBoxButton.YesNo, MessageBoxImage.Question);
-
-            if (result == MessageBoxResult.Yes)
+            if (delicate.IsDeleted)
             {
-                _delicateRepository.DeleteDelicate(delicate.Id);
-                LoadDelicates();
+                var restoreResult = MessageBox.Show(
+                    $"Восстановить блюдо \"{delicate.Name}\"?\n\n" +
+                    "Оно снова будет доступно в справочниках и при добавлении в меню.",
+                    "Восстановление блюда",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Question);
 
-                MessageBox.Show("Блюдо успешно удалено!",
-                    "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
+                if (restoreResult == MessageBoxResult.Yes)
+                {
+                    _delicateRepository.RestoreDelicate(delicate.Id);
+                    LoadDelicates();
+
+                    MessageBox.Show("Блюдо восстановлено.",
+                        "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+            }
+            else
+            {
+                var result = MessageBox.Show(
+                    $"Пометить блюдо \"{delicate.Name}\" как удалённое?\n\n" +
+                    "Блюдо исчезнет из справочников и новых меню,\n" +
+                    "но останется во всех уже созданных меню и отчетах.",
+                    "Подтверждение", MessageBoxButton.YesNo, MessageBoxImage.Question);
+
+                if (result == MessageBoxResult.Yes)
+                {
+                    _delicateRepository.DeleteDelicate(delicate.Id);
+                    LoadDelicates();
+
+                    MessageBox.Show("Блюдо помечено как удалённое.",
+                        "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
             }
         }
         catch (Exception ex)
@@ -514,6 +553,15 @@ public partial class DelicatesPage : Page
             MessageBox.Show($"Ошибка при удалении блюда: {ex.Message}",
                 "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
         }
+    }
+
+    /// <summary>
+    /// Обработчик кнопки восстановления в таблице (перенаправляет на DeleteDelicate_Click,
+    /// где реализована логика восстановления).
+    /// </summary>
+    private void RestoreDelicate_Click(object sender, RoutedEventArgs e)
+    {
+        DeleteDelicate_Click(sender, e);
     }
 
     /// <summary>

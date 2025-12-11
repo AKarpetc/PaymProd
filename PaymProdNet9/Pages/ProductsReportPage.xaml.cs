@@ -53,7 +53,6 @@ public partial class ProductsReportPage : Page
             FontStyle = FontStyles.Italic
         });
         SaveToWordButton.Visibility = Visibility.Collapsed;
-        PrintButton.Visibility = Visibility.Collapsed;
         _currentReportWithPrices = null;
     }
 
@@ -122,7 +121,6 @@ public partial class ProductsReportPage : Page
 
             _currentReportWithPrices = includePrices;
             SaveToWordButton.Visibility = Visibility.Visible;
-            PrintButton.Visibility = Visibility.Visible;
         }
         catch (Exception ex)
         {

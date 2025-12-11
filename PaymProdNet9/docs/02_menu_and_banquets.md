@@ -212,3 +212,5 @@ var menuTitle = $"{BanquetInfo[0]} • {BanquetInfo[1]} человек • {Banq
 - `ProductsReportPage` / `SummaryTablePage` / `PrintMenuPage`.
 
 
+
+

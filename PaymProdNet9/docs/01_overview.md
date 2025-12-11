@@ -167,3 +167,5 @@ var dbPath = Path.Combine(appDataDir, "MenuCalc.db");
 См. `README.md` в корне `docs` для быстрого перехода.
 
 
+
+

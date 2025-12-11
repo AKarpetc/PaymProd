@@ -9,7 +9,7 @@
         <ApplicationIcon>Resources\Restaurant_Blue_2.ico</ApplicationIcon>
         <AssemblyName>PaymProdNet9</AssemblyName>
         <RootNamespace>PaymProdNet9</RootNamespace>
-        <Version>3.0.5</Version>
+        <Version>3.0.6</Version>
     </PropertyGroup>
 
     <ItemGroup>

@@ -1,4 +1,5 @@
 using PaymProdNet9.Data;
+using PaymProdNet9.Services;
 using System;
 using System.Diagnostics;
 using System.IO;
@@ -11,8 +12,21 @@ public partial class DatabaseManagerWindow : Window
     public DatabaseManagerWindow()
     {
         InitializeComponent();
+        InitializeDeletedItemsSettings();
         LoadCurrentDatabaseInfo();
         LoadBackups();
+    }
+
+    private void InitializeDeletedItemsSettings()
+    {
+        try
+        {
+            ShowDeletedItemsCheckBox.IsChecked = DeletedItemsViewSettings.ShowDeletedItems;
+        }
+        catch
+        {
+            // Если по какой-то причине чекбокс недоступен — просто игнорируем.
+        }
     }
 
     private void LoadCurrentDatabaseInfo()
@@ -199,6 +213,14 @@ public partial class DatabaseManagerWindow : Window
             MessageBox.Show($"Ошибка при открытии папки:\n{ex.Message}",
                 "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
         }
+    }
+
+    /// <summary>
+    /// Переключение глобальной настройки показа удалённых элементов в справочниках.
+    /// </summary>
+    private void ShowDeletedItemsCheckBox_Changed(object sender, RoutedEventArgs e)
+    {
+        DeletedItemsViewSettings.ShowDeletedItems = ShowDeletedItemsCheckBox.IsChecked == true;
     }
 
     private void CloseButton_Click(object sender, RoutedEventArgs e)

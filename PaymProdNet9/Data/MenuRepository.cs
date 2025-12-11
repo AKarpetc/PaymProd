@@ -312,6 +312,8 @@ public class MenuRepository
 
         var command = connection.CreateCommand();
         command.CommandText = @"
+            DELETE FROM Menu_AutoProduct_Ignore WHERE Id_men = @id;
+            DELETE FROM Menu_Product_Prices   WHERE Id_men = @id;
             DELETE FROM Components1 WHERE Idmen = @id;
             DELETE FROM Menu_Delicates WHERE Id_men = @id;
             DELETE FROM Menus WHERE Id = @id;";

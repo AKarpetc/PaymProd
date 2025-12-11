@@ -125,6 +125,13 @@ public partial class MainNavigationWindow : Window
 
     private void GoBack_Click(object sender, RoutedEventArgs e)
     {
+        // Проверяем, можно ли вернуться назад
+        if (!NavigationService.Instance.CanGoBack)
+        {
+            // Если нельзя вернуться назад, ничего не делаем и не показываем загрузчик
+            return;
+        }
+        
         ShowLoadingAndNavigate(() => NavigationService.Instance.GoBack());
     }
 
@@ -160,6 +167,12 @@ public partial class MainNavigationWindow : Window
 
         // Обновляем заголовок страницы в зависимости от типа страницы
         UpdatePageTitle(e.Content);
+    }
+
+    private void MainFrame_NavigationStopped(object sender, System.Windows.Navigation.NavigationEventArgs e)
+    {
+        // Скрываем индикатор загрузки, если навигация была остановлена
+        LoadingOverlay.Visibility = Visibility.Collapsed;
     }
 
     /// <summary>

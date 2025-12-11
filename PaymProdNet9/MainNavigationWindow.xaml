@@ -343,7 +343,8 @@
                    Grid.Row="1"
                    NavigationUIVisibility="Hidden"
                    Navigated="MainFrame_Navigated"
-                   Navigating="MainFrame_Navigating" />
+                   Navigating="MainFrame_Navigating"
+                   NavigationStopped="MainFrame_NavigationStopped" />
 
             <!-- Overlay с индикатором загрузки -->
             <Border x:Name="LoadingOverlay"

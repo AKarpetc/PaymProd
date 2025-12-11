@@ -31,7 +31,8 @@ public class ProductRepository
                    p.Priz_menu, 
                    COALESCE(p.Count, 0), p.Avtomat, p.Chel, p.Isdiap,
                    COALESCE(p.Price, 0),
-                   COALESCE(p.HideInMenu, 0)
+                   COALESCE(p.HideInMenu, 0),
+                   COALESCE(p.IsDeleted, 0)
             FROM Producrs p
             INNER JOIN Produkt_Type pt ON p.Type = pt.TypeProdId
             LEFT JOIN Mera m ON m.Mera_ID = p.Ves
@@ -180,41 +181,48 @@ public class ProductRepository
         using var connection = DatabaseHelper.GetConnection();
         connection.Open();
 
-        // Проверяем, используется ли продукт в блюдах
+        // Мягкое удаление продукта:
+        // - сам продукт остаётся в базе и во всех старых блюдах/меню;
+        // - скрывается из справочников и списков выбора.
         var command = connection.CreateCommand();
-        command.CommandText = "SELECT COUNT(*) FROM Components WHERE ProductID = @id";
+        command.CommandText = "UPDATE Producrs SET IsDeleted = 1 WHERE Prod_ID = @id";
         command.Parameters.AddWithValue("@id", id);
+        var affected = command.ExecuteNonQuery();
 
-        var count = Convert.ToInt32(command.ExecuteScalar());
-        if (count > 0) return false; // Продукт используется
+        // Связанное блюдо (если создавалось автоматически) НЕ удаляем физически,
+        // чтобы не ломать существующие меню. При необходимости его тоже можно
+        // пометить как удалённое через интерфейс блюд.
 
-        // Удаляем продукт
-        // Удаляем связанное блюдо, если оно было создано автоматически
-        RemoveLinkedDelicate(connection, id);
-
-        command = connection.CreateCommand();
-        command.CommandText = "DELETE FROM Producrs WHERE Prod_ID = @id";
-        command.Parameters.AddWithValue("@id", id);
-        command.ExecuteNonQuery();
-
-        return true;
+        return affected > 0;
     }
 
     /// <summary>
-    /// Удалить продукт со всеми связями
+    /// Восстановить продукт (снять пометку об удалении)
+    /// </summary>
+    public void RestoreProduct(int id)
+    {
+        using var connection = DatabaseHelper.GetConnection();
+        connection.Open();
+
+        var command = connection.CreateCommand();
+        command.CommandText = "UPDATE Producrs SET IsDeleted = 0 WHERE Prod_ID = @id";
+        command.Parameters.AddWithValue("@id", id);
+        command.ExecuteNonQuery();
+    }
+
+    /// <summary>
+    /// Удалить продукт со всеми связями (устаревший метод, теперь не используется)
     /// </summary>
     public void DeleteProductWithComponents(int id)
     {
         using var connection = DatabaseHelper.GetConnection();
         connection.Open();
 
+        // Для совместимости оставляем метод пустым: фактическое удаление
+        // компонентов и продукта больше не выполняется, чтобы не ломать меню.
         var command = connection.CreateCommand();
-        command.CommandText = @"
-            DELETE FROM Components WHERE ProductID = @id;
-            DELETE FROM Components1 WHERE ProductID = @id;
-            DELETE FROM Producrs WHERE Prod_ID = @id;";
+        command.CommandText = "UPDATE Producrs SET IsDeleted = 1 WHERE Prod_ID = @id";
         command.Parameters.AddWithValue("@id", id);
-
         command.ExecuteNonQuery();
     }
 
@@ -230,8 +238,11 @@ public class ProductRepository
 
         var command = connection.CreateCommand();
         command.CommandText =
-            "SELECT TypeProdId, Type_Opis, COALESCE(SortOrder, 0), COALESCE(HideInMenu, 0) " +
-            "FROM Produkt_Type ORDER BY COALESCE(SortOrder, 0), Type_Opis";
+            "SELECT TypeProdId, Type_Opis, COALESCE(SortOrder, 0), COALESCE(HideInMenu, 0), " +
+            "COALESCE(IsDeleted, 0) " +
+            "FROM Produkt_Type " +
+            "WHERE COALESCE(IsDeleted, 0) = 0 " +
+            "ORDER BY COALESCE(SortOrder, 0), Type_Opis";
 
         using var reader = command.ExecuteReader();
         while (reader.Read())
@@ -240,7 +251,8 @@ public class ProductRepository
                 Id = reader.GetInt32(0),
                 Name = reader.GetString(1),
                 SortOrder = reader.GetInt32(2),
-                HideInMenu = reader.GetInt32(3) == 1
+                HideInMenu = reader.GetInt32(3) == 1,
+                IsDeleted = !reader.IsDBNull(4) && reader.GetInt32(4) == 1
             });
 
         return types;
@@ -259,7 +271,9 @@ public class ProductRepository
         var command = connection.CreateCommand();
         command.CommandText =
             "SELECT Mera_ID, Name_Mera, COALESCE(Fass_Def, 1), COALESCE(Fass_Izmer, Name_Mera), " +
-            "COALESCE(RoundingPrecision, 2), COALESCE(MenuRoundingPrecision, 2) FROM Mera ORDER BY Name_Mera";
+            "COALESCE(RoundingPrecision, 2), COALESCE(MenuRoundingPrecision, 2), " +
+            "COALESCE(IsDeleted, 0) " +
+            "FROM Mera ORDER BY Name_Mera";
 
         using var reader = command.ExecuteReader();
         while (reader.Read())
@@ -270,7 +284,8 @@ public class ProductRepository
                 Fass = reader.GetDouble(2),
                 FassIzmer = reader.GetString(3),
                 RoundingPrecision = reader.GetInt32(4),
-                MenuRoundingPrecision = reader.GetInt32(5)
+                MenuRoundingPrecision = reader.GetInt32(5),
+                IsDeleted = !reader.IsDBNull(6) && reader.GetInt32(6) == 1
             });
 
         return measures;
@@ -353,7 +368,8 @@ public class ProductRepository
         connection.Open();
 
         var command = connection.CreateCommand();
-        command.CommandText = "DELETE FROM Mera WHERE Mera_ID = @id";
+        // Мягкое удаление меры, чтобы не ломать существующие продукты/блюда
+        command.CommandText = "UPDATE Mera SET IsDeleted = 1 WHERE Mera_ID = @id";
         command.Parameters.AddWithValue("@id", id);
 
         return command.ExecuteNonQuery() > 0;
@@ -389,7 +405,8 @@ public class ProductRepository
         connection.Open();
 
         var command = connection.CreateCommand();
-        command.CommandText = "DELETE FROM Produkt_Type WHERE TypeProdId = @id";
+        // Мягкое удаление типа продукта
+        command.CommandText = "UPDATE Produkt_Type SET IsDeleted = 1 WHERE TypeProdId = @id";
         command.Parameters.AddWithValue("@id", id);
 
         return command.ExecuteNonQuery() > 0;
@@ -510,7 +527,8 @@ public class ProductRepository
             CountPeople = reader.GetInt32(16),
             MainCount = reader.GetInt32(17) == 1,
             Price = reader.IsDBNull(18) ? 0 : Convert.ToDecimal(reader.GetDouble(18)),
-            HideInMenu = reader.GetInt32(19) == 1
+            HideInMenu = reader.GetInt32(19) == 1,
+            IsDeleted = !reader.IsDBNull(20) && reader.GetInt32(20) == 1
         };
 
         var baseFassDef = reader.IsDBNull(9) ? 0 : Convert.ToDecimal(reader.GetDouble(9));

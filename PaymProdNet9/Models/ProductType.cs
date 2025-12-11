@@ -13,4 +13,10 @@ public class ProductType
     /// но учитываются в отчёте по продуктам.
     /// </summary>
     public bool HideInMenu { get; set; }
+
+    /// <summary>
+    /// Флаг мягкого удаления. Если true, тип не отображается в справочниках,
+    /// но его можно встретить в старых данных и отчетах.
+    /// </summary>
+    public bool IsDeleted { get; set; }
 }

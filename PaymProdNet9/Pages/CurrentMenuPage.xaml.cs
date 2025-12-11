@@ -1087,7 +1087,7 @@ public partial class CurrentMenuPage : Page
 
     private void BanquetInfo_Changed(object sender, RoutedEventArgs e)
     {
-        BanquetInfo_LostFocus(sender, null);
+        BanquetInfo_LostFocus(sender, new RoutedEventArgs());
     }
 
     /// <summary>

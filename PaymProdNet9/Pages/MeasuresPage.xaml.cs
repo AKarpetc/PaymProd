@@ -39,11 +39,16 @@ public partial class MeasuresPage : Page
 
     private void MeasuresPage_Navigating(object sender, NavigatingCancelEventArgs e)
     {
+        // Блокируем навигацию назад только если открыт режим редактирования
+        // В режиме просмотра списка разрешаем нормальную навигацию назад
         if (MeasureEditView.Visibility == Visibility.Visible && e.NavigationMode == NavigationMode.Back)
         {
+            // Отменяем навигацию назад из режима редактирования
             e.Cancel = true;
+            // Возвращаемся к списку вместо навигации назад
             ShowListView();
         }
+        // Если мы в режиме списка, навигация назад разрешена - ничего не делаем
     }
 
     private void Page_Loaded(object sender, RoutedEventArgs e)

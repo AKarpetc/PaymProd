@@ -94,19 +94,53 @@
                               materialDesign:DataGridAssist.CellPadding="8"
                               materialDesign:DataGridAssist.ColumnHeaderPadding="8"
                               FontSize="13">
+                        <DataGrid.RowStyle>
+                            <Style TargetType="DataGridRow">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsDeleted}" Value="True">
+                                        <Setter Property="Background" Value="#FFFFCDD2" />
+                                        <Setter Property="Foreground" Value="#B71C1C" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </DataGrid.RowStyle>
                         <DataGrid.Columns>
                             <DataGridTemplateColumn Width="50" Header="">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
-                                        <Button Style="{StaticResource DeleteButtonStyle}"
-                                                Click="DeleteProduct_Click"
-                                                Width="24"
-                                                Height="24"
-                                                ToolTip="Удалить продукт">
-                                            <materialDesign:PackIcon Kind="Delete"
-                                                                     Width="14"
-                                                                     Height="14" />
-                                        </Button>
+                                        <Grid>
+                                            <Button x:Name="DeleteButton"
+                                                    Style="{StaticResource DeleteButtonStyle}"
+                                                    Click="DeleteProduct_Click"
+                                                    Width="24"
+                                                    Height="24"
+                                                    ToolTip="Удалить продукт">
+                                                <materialDesign:PackIcon Kind="Delete"
+                                                                         Width="14"
+                                                                         Height="14" />
+                                            </Button>
+                                            <Button x:Name="RestoreButton"
+                                                    Style="{StaticResource EditButtonStyle}"
+                                                    Click="RestoreProduct_Click"
+                                                    Width="24"
+                                                    Height="24"
+                                                    ToolTip="Восстановить продукт"
+                                                    Visibility="Collapsed">
+                                                <materialDesign:PackIcon Kind="Restore"
+                                                                         Width="14"
+                                                                         Height="14" />
+                                            </Button>
+                                        </Grid>
+                                        <DataTemplate.Triggers>
+                                            <DataTrigger Binding="{Binding IsDeleted}" Value="True">
+                                                <Setter TargetName="DeleteButton" Property="Visibility" Value="Collapsed" />
+                                                <Setter TargetName="RestoreButton" Property="Visibility" Value="Visible" />
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding IsDeleted}" Value="False">
+                                                <Setter TargetName="DeleteButton" Property="Visibility" Value="Visible" />
+                                                <Setter TargetName="RestoreButton" Property="Visibility" Value="Collapsed" />
+                                            </DataTrigger>
+                                        </DataTemplate.Triggers>
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>

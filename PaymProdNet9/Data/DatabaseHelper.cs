@@ -86,7 +86,8 @@ public static class DatabaseHelper
                 Fass_Def REAL DEFAULT 1,
                 Fass_Izmer TEXT,
                 RoundingPrecision INTEGER DEFAULT 2,
-                MenuRoundingPrecision INTEGER DEFAULT 2
+                MenuRoundingPrecision INTEGER DEFAULT 2,
+                IsDeleted INTEGER DEFAULT 0
             );";
         command.ExecuteNonQuery();
 
@@ -112,13 +113,25 @@ public static class DatabaseHelper
             // Колонка уже существует, игнорируем ошибку
         }
 
+        // Миграция: добавляем IsDeleted для мер, если его нет
+        try
+        {
+            command.CommandText = "ALTER TABLE Mera ADD COLUMN IsDeleted INTEGER DEFAULT 0";
+            command.ExecuteNonQuery();
+        }
+        catch
+        {
+            // Колонка уже существует, игнорируем ошибку
+        }
+
         // Создание таблицы типов продуктов
         command.CommandText = @"
             CREATE TABLE IF NOT EXISTS Produkt_Type (
                 TypeProdId INTEGER PRIMARY KEY AUTOINCREMENT,
                 Type_Opis TEXT NOT NULL,
                 SortOrder INTEGER DEFAULT 0,
-                HideInMenu INTEGER DEFAULT 0
+                HideInMenu INTEGER DEFAULT 0,
+                IsDeleted INTEGER DEFAULT 0
             );";
         command.ExecuteNonQuery();
 
@@ -126,6 +139,17 @@ public static class DatabaseHelper
         try
         {
             command.CommandText = "ALTER TABLE Produkt_Type ADD COLUMN SortOrder INTEGER DEFAULT 0";
+            command.ExecuteNonQuery();
+        }
+        catch
+        {
+            // Колонка уже существует, игнорируем ошибку
+        }
+
+        // Миграция: добавляем IsDeleted для типов продуктов, если его нет
+        try
+        {
+            command.CommandText = "ALTER TABLE Produkt_Type ADD COLUMN IsDeleted INTEGER DEFAULT 0";
             command.ExecuteNonQuery();
         }
         catch
@@ -149,6 +173,7 @@ public static class DatabaseHelper
                 Isdiap INTEGER DEFAULT 0,
                 Price REAL DEFAULT 0,
                 HideInMenu INTEGER DEFAULT 0,
+                IsDeleted INTEGER DEFAULT 0,
                 FOREIGN KEY (Type) REFERENCES Produkt_Type(TypeProdId),
                 FOREIGN KEY (Ves) REFERENCES Mera(Mera_ID),
                 FOREIGN KEY (Izmer) REFERENCES Mera(Mera_ID)
@@ -161,7 +186,8 @@ public static class DatabaseHelper
                 Type_Del_ID INTEGER PRIMARY KEY AUTOINCREMENT,
                 Type_del_opis TEXT NOT NULL,
                 SortOrder INTEGER DEFAULT 0,
-                LinkedProductTypeId INTEGER
+                LinkedProductTypeId INTEGER,
+                IsDeleted INTEGER DEFAULT 0
             );";
         command.ExecuteNonQuery();
 
@@ -187,6 +213,17 @@ public static class DatabaseHelper
             // Колонка уже существует
         }
 
+        // Миграция: добавляем IsDeleted для типов блюд, если его нет
+        try
+        {
+            command.CommandText = "ALTER TABLE Type_Del ADD COLUMN IsDeleted INTEGER DEFAULT 0";
+            command.ExecuteNonQuery();
+        }
+        catch
+        {
+            // Колонка уже существует, игнорируем ошибку
+        }
+
         // Миграция: добавляем Price, если его нет
         try
         {
@@ -196,6 +233,17 @@ public static class DatabaseHelper
         catch
         {
             // Колонка уже существует, игнорируем
+        }
+
+        // Миграция: добавляем IsDeleted для продуктов, если его нет
+        try
+        {
+            command.CommandText = "ALTER TABLE Producrs ADD COLUMN IsDeleted INTEGER DEFAULT 0";
+            command.ExecuteNonQuery();
+        }
+        catch
+        {
+            // Колонка уже существует, игнорируем ошибку
         }
 
         // Создание таблицы блюд
@@ -212,6 +260,7 @@ public static class DatabaseHelper
                 LinkedProductId INTEGER,
                 AutoAdd INTEGER DEFAULT 0,
                 HideInMenu INTEGER DEFAULT 0,
+                IsDeleted INTEGER DEFAULT 0,
                 FOREIGN KEY (Del_Type) REFERENCES Type_Del(Type_Del_ID)
             );";
         command.ExecuteNonQuery();
@@ -225,6 +274,17 @@ public static class DatabaseHelper
         catch
         {
             // Колонка уже существует
+        }
+
+        // Миграция: добавляем IsDeleted для блюд, если его нет
+        try
+        {
+            command.CommandText = "ALTER TABLE Delicates ADD COLUMN IsDeleted INTEGER DEFAULT 0";
+            command.ExecuteNonQuery();
+        }
+        catch
+        {
+            // Колонка уже существует, игнорируем ошибку
         }
 
         // Создание таблицы компонентов

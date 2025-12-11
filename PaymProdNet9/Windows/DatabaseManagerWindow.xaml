@@ -58,6 +58,7 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
         <!-- Заголовок -->
@@ -146,8 +147,20 @@
             </Grid>
         </GroupBox>
 
+        <!-- Настройки отображения данных -->
+        <GroupBox Grid.Row="3" Header="Настройки отображения" Padding="10" Margin="0,15,0,0">
+            <StackPanel Orientation="Vertical">
+                <CheckBox x:Name="ShowDeletedItemsCheckBox"
+                          Content="Показывать удалённые элементы в справочниках"
+                          Margin="0,0,0,5"
+                          ToolTip="Если включено, в справочниках продуктов и блюд будут отображаться элементы, помеченные как удалённые (подсвечены красным и доступно только восстановление)."
+                          Checked="ShowDeletedItemsCheckBox_Changed"
+                          Unchecked="ShowDeletedItemsCheckBox_Changed" />
+            </StackPanel>
+        </GroupBox>
+
         <!-- Закрыть -->
-        <Button Grid.Row="3"
+        <Button Grid.Row="4"
                 Content="Закрыть"
                 Width="120"
                 HorizontalAlignment="Right"

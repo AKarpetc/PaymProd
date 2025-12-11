@@ -1,4 +1,3 @@
-using PaymProdNet9.Data;
 using PaymProdNet9.Models;
 using PaymProdNet9.Services;
 using System.Collections.ObjectModel;
@@ -88,8 +87,11 @@ public partial class ProductsPage : Page
     {
         try
         {
-            var products = _productRepository.GetAllProducts();
-            _productsCache = products.ToList();
+            var showDeleted = DeletedItemsViewSettings.ShowDeletedItems;
+            var products = _productRepository.GetAllProducts()
+                .Where(p => showDeleted || !p.IsDeleted)
+                .ToList();
+            _productsCache = products;
 
             _allProducts.Clear();
             foreach (var product in _productsCache) _allProducts.Add(product);
@@ -222,10 +224,61 @@ public partial class ProductsPage : Page
 
     private void ProductMeasureComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        // Автоматически устанавливаем ту же единицу измерения для фасовки
+        // Автоматическое заполнение единицы измерения и значения фасовки только при создании продукта
+        if (_currentProductId.HasValue)
+        {
+            // При редактировании продукта ничего не делаем
+            return;
+        }
+
+        // Режим создания нового продукта
         if (ProductMeasureComboBox.SelectedValue != null && ProductFassMeasureComboBox.Items.Count > 0)
         {
-            ProductFassMeasureComboBox.SelectedValue = ProductMeasureComboBox.SelectedValue;
+            try
+            {
+                // Получаем список мер из источника данных
+                var measures = ProductMeasureComboBox.ItemsSource as List<Measure>;
+                if (measures == null)
+                {
+                    measures = _productRepository.GetMeasures();
+                }
+
+                // Находим выбранную меру
+                var selectedMeasureId = (int)ProductMeasureComboBox.SelectedValue;
+                var selectedMeasure = measures.FirstOrDefault(m => m.Id == selectedMeasureId);
+                
+                if (selectedMeasure != null)
+                {
+                    // Устанавливаем единицу измерения фасовки из справочника мер
+                    if (!string.IsNullOrWhiteSpace(selectedMeasure.FassIzmer))
+                    {
+                        // Ищем меру по имени FassIzmer
+                        var fassMeasure = measures.FirstOrDefault(m => 
+                            m.Name.Equals(selectedMeasure.FassIzmer, StringComparison.OrdinalIgnoreCase));
+                        
+                        if (fassMeasure != null)
+                        {
+                            ProductFassMeasureComboBox.SelectedValue = fassMeasure.Id;
+                        }
+                    }
+                    else
+                    {
+                        // Если FassIzmer не указан, используем ту же единицу измерения
+                        ProductFassMeasureComboBox.SelectedValue = selectedMeasureId;
+                    }
+
+                    // Устанавливаем значение фасовки из справочника мер
+                    if (selectedMeasure.Fass > 0)
+                    {
+                        ProductFassTextBox.Text = selectedMeasure.Fass.ToString(CultureInfo.CurrentCulture);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                // В случае ошибки просто игнорируем - не блокируем создание продукта
+                System.Diagnostics.Debug.WriteLine($"Ошибка при установке фасовки: {ex.Message}");
+            }
         }
     }
 
@@ -234,6 +287,17 @@ public partial class ProductsPage : Page
         var button = sender as Button;
         var product = button?.DataContext as ProductView;
         if (product == null) return;
+
+        if (product.IsDeleted)
+        {
+            MessageBox.Show(
+                $"Продукт \"{product.Name}\" помечен как удалённый.\n" +
+                "Сначала восстановите его, чтобы редактировать.",
+                "Нельзя редактировать удалённый продукт",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+            return;
+        }
 
         _currentProductId = product.ID;
 
@@ -314,14 +378,42 @@ public partial class ProductsPage : Page
             var product = button?.DataContext as ProductView;
             if (product == null) return;
 
-            var result = MessageBox.Show($"Удалить продукт '{product.Name}'?",
-                "Подтверждение", MessageBoxButton.YesNo, MessageBoxImage.Question);
-
-            if (result == MessageBoxResult.Yes)
+            if (product.IsDeleted)
             {
-                _productRepository.DeleteProduct(product.ID);
-                LoadProducts();
-                MessageBox.Show("Продукт удален", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
+                // Восстановление продукта
+                var restoreResult = MessageBox.Show(
+                    $"Восстановить продукт '{product.Name}'?\n\n" +
+                    "Он снова будет доступен в справочнике и при выборе в блюдах/меню.",
+                    "Восстановление продукта",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Question);
+
+                if (restoreResult == MessageBoxResult.Yes)
+                {
+                    _productRepository.RestoreProduct(product.ID);
+                    LoadProducts();
+                    MessageBox.Show("Продукт восстановлен.", "Успех",
+                        MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+            }
+            else
+            {
+                // Мягкое удаление продукта
+                var result = MessageBox.Show(
+                    $"Пометить продукт '{product.Name}' как удалённый?\n\n" +
+                    "Продукт исчезнет из справочника и новых блюд/меню,\n" +
+                    "но останется во всех уже созданных блюдах и отчетах.",
+                    "Подтверждение",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Question);
+
+                if (result == MessageBoxResult.Yes)
+                {
+                    _productRepository.DeleteProduct(product.ID);
+                    LoadProducts();
+                    MessageBox.Show("Продукт помечен как удалённый.", "Успех",
+                        MessageBoxButton.OK, MessageBoxImage.Information);
+                }
             }
         }
         catch (Exception ex)
@@ -329,6 +421,15 @@ public partial class ProductsPage : Page
             MessageBox.Show($"Ошибка при удалении продукта: {ex.Message}",
                 "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
         }
+    }
+
+    /// <summary>
+    /// Отдельный обработчик для кнопки восстановления в таблице (для наглядности XAML),
+    /// фактически перенаправляет на DeleteProduct_Click, где есть логика восстановления.
+    /// </summary>
+    private void RestoreProduct_Click(object sender, RoutedEventArgs e)
+    {
+        DeleteProduct_Click(sender, e);
     }
 
     private void SaveProduct_Click(object sender, RoutedEventArgs e)
