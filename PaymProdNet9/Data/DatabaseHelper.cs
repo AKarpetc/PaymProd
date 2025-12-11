@@ -367,6 +367,47 @@ public static class DatabaseHelper
             );";
         command.ExecuteNonQuery();
 
+        // Индексы для ускорения выборок и фильтрации
+        var indexStatements = new[]
+        {
+            // Блюда
+            @"CREATE INDEX IF NOT EXISTS idx_delicates_type_hide_deleted ON Delicates(Del_Type, HideInMenu, IsDeleted);",
+            @"CREATE INDEX IF NOT EXISTS idx_delicates_name ON Delicates(Del_Name);",
+            @"CREATE INDEX IF NOT EXISTS idx_delicates_linked_product ON Delicates(LinkedProductId);",
+
+            // Компоненты блюд
+            @"CREATE INDEX IF NOT EXISTS idx_components_delic ON Components(Delic_id);",
+            @"CREATE INDEX IF NOT EXISTS idx_components_product ON Components(ProductID);",
+
+            // Продукты
+            @"CREATE INDEX IF NOT EXISTS idx_products_type ON Producrs(Type);",
+            @"CREATE INDEX IF NOT EXISTS idx_products_name ON Producrs(Name);",
+            @"CREATE INDEX IF NOT EXISTS idx_products_hide_deleted ON Producrs(HideInMenu, IsDeleted);",
+
+            // Типы блюд
+            @"CREATE INDEX IF NOT EXISTS idx_type_del_sort_deleted ON Type_Del(SortOrder, IsDeleted);",
+
+            // Связь меню и блюд
+            @"CREATE INDEX IF NOT EXISTS idx_menu_delicates_menu ON Menu_Delicates(Id_men);",
+            @"CREATE INDEX IF NOT EXISTS idx_menu_delicates_delic ON Menu_Delicates(Id_delic);",
+            @"CREATE INDEX IF NOT EXISTS idx_menu_delicates_menu_delic ON Menu_Delicates(Id_men, Id_delic);",
+
+            // Цены продуктов в меню
+            @"CREATE INDEX IF NOT EXISTS idx_menu_product_prices_menu ON Menu_Product_Prices(Id_men);",
+
+            // Игнор авто-добавления продуктов
+            @"CREATE INDEX IF NOT EXISTS idx_menu_auto_ignore_menu ON Menu_AutoProduct_Ignore(Id_men);",
+
+            // Меню
+            @"CREATE INDEX IF NOT EXISTS idx_menus_isopen ON Menus(Isopen);"
+        };
+
+        foreach (var sql in indexStatements)
+        {
+            command.CommandText = sql;
+            command.ExecuteNonQuery();
+        }
+
         // Миграция: добавляем Menu_Product_Prices, если её нет
         try
         {
