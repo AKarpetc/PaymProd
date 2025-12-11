@@ -108,6 +108,54 @@
 
                         <Separator Background="#34495E" Margin="10,5" />
 
+                        <!-- Отчеты -->
+                        <TextBlock Text="ОТЧЕТЫ"
+                                   Foreground="#7F8C8D"
+                                   FontSize="11"
+                                   FontWeight="Bold"
+                                   Margin="20,10,20,5" />
+
+                        <Button x:Name="ProductsReportButton"
+                                Style="{StaticResource NavButtonStyle}"
+                                Click="NavigateToProductsReport_Click">
+                            <StackPanel Orientation="Horizontal">
+                                <materialDesign:PackIcon Kind="FileDocument"
+                                                         Width="24"
+                                                         Height="24"
+                                                         VerticalAlignment="Center"
+                                                         Margin="0,0,15,0" />
+                                <TextBlock Text="Отчет по товарам" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+
+                        <Button x:Name="SummaryTableButton"
+                                Style="{StaticResource NavButtonStyle}"
+                                Click="NavigateToSummaryTable_Click">
+                            <StackPanel Orientation="Horizontal">
+                                <materialDesign:PackIcon Kind="Table"
+                                                         Width="24"
+                                                         Height="24"
+                                                         VerticalAlignment="Center"
+                                                         Margin="0,0,15,0" />
+                                <TextBlock Text="Сводная таблица" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+
+                        <Button x:Name="PrintMenuButton"
+                                Style="{StaticResource NavButtonStyle}"
+                                Click="PrintMenu_Click">
+                            <StackPanel Orientation="Horizontal">
+                                <materialDesign:PackIcon Kind="FileDocument"
+                                                         Width="24"
+                                                         Height="24"
+                                                         VerticalAlignment="Center"
+                                                         Margin="0,0,15,0" />
+                                <TextBlock Text="Отчет по меню" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+
+                        <Separator Background="#34495E" Margin="10,5" />
+
                         <!-- Справочники -->
                         <TextBlock Text="СПРАВОЧНИКИ"
                                    Foreground="#7F8C8D"
@@ -190,54 +238,6 @@
                                                          VerticalAlignment="Center"
                                                          Margin="0,0,15,0" />
                                 <TextBlock Text="Типы блюд" VerticalAlignment="Center" />
-                            </StackPanel>
-                        </Button>
-
-                        <Separator Background="#34495E" Margin="10,5" />
-
-                        <!-- Отчеты -->
-                        <TextBlock Text="ОТЧЕТЫ"
-                                   Foreground="#7F8C8D"
-                                   FontSize="11"
-                                   FontWeight="Bold"
-                                   Margin="20,10,20,5" />
-
-                        <Button x:Name="ProductsReportButton"
-                                Style="{StaticResource NavButtonStyle}"
-                                Click="NavigateToProductsReport_Click">
-                            <StackPanel Orientation="Horizontal">
-                                <materialDesign:PackIcon Kind="FileDocument"
-                                                         Width="24"
-                                                         Height="24"
-                                                         VerticalAlignment="Center"
-                                                         Margin="0,0,15,0" />
-                                <TextBlock Text="Отчет по товарам" VerticalAlignment="Center" />
-                            </StackPanel>
-                        </Button>
-
-                        <Button x:Name="SummaryTableButton"
-                                Style="{StaticResource NavButtonStyle}"
-                                Click="NavigateToSummaryTable_Click">
-                            <StackPanel Orientation="Horizontal">
-                                <materialDesign:PackIcon Kind="Table"
-                                                         Width="24"
-                                                         Height="24"
-                                                         VerticalAlignment="Center"
-                                                         Margin="0,0,15,0" />
-                                <TextBlock Text="Сводная таблица" VerticalAlignment="Center" />
-                            </StackPanel>
-                        </Button>
-
-                        <Button x:Name="PrintMenuButton"
-                                Style="{StaticResource NavButtonStyle}"
-                                Click="PrintMenu_Click">
-                            <StackPanel Orientation="Horizontal">
-                                <materialDesign:PackIcon Kind="FileDocument"
-                                                         Width="24"
-                                                         Height="24"
-                                                         VerticalAlignment="Center"
-                                                         Margin="0,0,15,0" />
-                                <TextBlock Text="Отчет по меню" VerticalAlignment="Center" />
                             </StackPanel>
                         </Button>
 
