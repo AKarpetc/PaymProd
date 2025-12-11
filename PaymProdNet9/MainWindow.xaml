@@ -126,6 +126,7 @@
                                        VerticalAlignment="Center" Margin="0,0,10,0" />
                             <TextBox Grid.Column="1" x:Name="BanquetNameTextBox"
                                      materialDesign:HintAssist.Hint="Введите название"
+                                     MaxLength="50"
                                      LostFocus="BanquetInfo_LostFocus" Margin="0,0,20,0" />
 
                             <TextBlock Grid.Column="2" Text="Количество человек:"
@@ -144,6 +145,7 @@
                                        VerticalAlignment="Center" Margin="0,0,10,0" />
                             <TextBox Grid.Column="7" x:Name="DescriptionTextBox"
                                      materialDesign:HintAssist.Hint="Краткое описание"
+                                     MaxLength="50"
                                      LostFocus="BanquetInfo_LostFocus" Margin="0,0,10,0" />
 
                             <StackPanel Grid.Column="8" Orientation="Horizontal">

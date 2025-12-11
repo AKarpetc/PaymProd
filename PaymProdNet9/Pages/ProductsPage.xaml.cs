@@ -627,24 +627,16 @@ public partial class ProductsPage : Page
 
     private void NumericOnly_PreviewTextInput(object sender, TextCompositionEventArgs e)
     {
-        // Разрешаем только цифры и десятичный разделитель
-        var textBox = sender as TextBox;
-        if (textBox == null) return;
+        InputValidationHelper.NumericOnly_PreviewTextInput(sender, e);
+    }
 
-        var decimalSeparator = CultureInfo.CurrentCulture.NumberFormat.NumberDecimalSeparator;
-        var allowedChars = "0123456789" + decimalSeparator;
+    private void NumericField_LostFocus(object sender, RoutedEventArgs e)
+    {
+        InputValidationHelper.ValidateNumericField_LostFocus(sender, e);
+    }
 
-        // Проверяем, что вводимый символ разрешен
-        if (allowedChars.IndexOf(e.Text) < 0)
-        {
-            e.Handled = true;
-            return;
-        }
-
-        // Проверяем, что десятичный разделитель не дублируется
-        if (e.Text == decimalSeparator && textBox.Text.Contains(decimalSeparator))
-        {
-            e.Handled = true;
-        }
+    private void TextField_LostFocus(object sender, RoutedEventArgs e)
+    {
+        InputValidationHelper.ValidateTextField_LostFocus(sender, e);
     }
 }

@@ -152,6 +152,8 @@
                                        Margin="0,0,0,5" />
                             <TextBox x:Name="ProductTypeNameTextBox"
                                      materialDesign:HintAssist.Hint="Например: Овощи, Мясные продукты"
+                                     MaxLength="50"
+                                     LostFocus="TextField_LostFocus"
                                      Style="{StaticResource MaterialDesignOutlinedTextBox}" />
 
                             <TextBlock Text="Порядок сортировки:"
@@ -160,7 +162,8 @@
                             <TextBox x:Name="ProductTypeSortOrderTextBox"
                                      materialDesign:HintAssist.Hint="Число для сортировки (меньше = выше в списке)"
                                      Style="{StaticResource MaterialDesignOutlinedTextBox}"
-                                     PreviewTextInput="NumericOnly_PreviewTextInput" />
+                                     PreviewTextInput="NumericOnly_PreviewTextInput"
+                                     LostFocus="NumericField_LostFocus" />
 
                             <CheckBox x:Name="ProductTypeHideInMenuCheckBox" Margin="0,15,0,0">
                                 <TextBlock Text="Не показывать продукты этого типа в меню (только в отчете по продуктам)"

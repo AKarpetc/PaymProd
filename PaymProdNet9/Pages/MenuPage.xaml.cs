@@ -433,12 +433,17 @@ public partial class MenuPage : Page
     /// </summary>
     private void NumericTextBox_PreviewTextInput(object sender, TextCompositionEventArgs e)
     {
-        e.Handled = !IsTextNumeric(e.Text);
+        Services.InputValidationHelper.NumericOnly_PreviewTextInput(sender, e);
     }
 
-    private static bool IsTextNumeric(string text)
+    private void NumericField_LostFocus(object sender, RoutedEventArgs e)
     {
-        return text.All(c => char.IsDigit(c) || c == ',' || c == '.');
+        Services.InputValidationHelper.ValidateNumericField_LostFocus(sender, e);
+    }
+
+    private void TextField_LostFocus(object sender, RoutedEventArgs e)
+    {
+        Services.InputValidationHelper.ValidateTextField_LostFocus(sender, e);
     }
 
     /// <summary>

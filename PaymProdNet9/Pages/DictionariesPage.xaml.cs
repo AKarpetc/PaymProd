@@ -502,17 +502,17 @@ public partial class DictionariesPage : Page
     /// </summary>
     private void NumericOnly_PreviewTextInput(object sender, System.Windows.Input.TextCompositionEventArgs e)
     {
-        // Разрешаем только цифры и десятичную точку/запятую
-        var textBox = sender as TextBox;
-        if (textBox == null) return;
+        Services.InputValidationHelper.NumericOnly_PreviewTextInput(sender, e);
+    }
 
-        var text = textBox.Text.Insert(textBox.SelectionStart, e.Text);
+    private void NumericField_LostFocus(object sender, RoutedEventArgs e)
+    {
+        Services.InputValidationHelper.ValidateNumericField_LostFocus(sender, e);
+    }
 
-        // Проверяем, что можно распарсить как число
-        e.Handled = !decimal.TryParse(text.Replace(',', '.'),
-            System.Globalization.NumberStyles.AllowDecimalPoint,
-            System.Globalization.CultureInfo.InvariantCulture,
-            out _);
+    private void TextField_LostFocus(object sender, RoutedEventArgs e)
+    {
+        Services.InputValidationHelper.ValidateTextField_LostFocus(sender, e);
     }
 }
 

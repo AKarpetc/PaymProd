@@ -1,5 +1,6 @@
 using PaymProdNet9.Data;
 using PaymProdNet9.Models;
+using PaymProdNet9.Services;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows;
@@ -232,12 +233,17 @@ public partial class MeasuresPage : Page
 
     private void NumericOnly_PreviewTextInput(object sender, TextCompositionEventArgs e)
     {
-        e.Handled = !IsTextNumeric(e.Text);
+        InputValidationHelper.NumericOnly_PreviewTextInput(sender, e);
     }
 
-    private static bool IsTextNumeric(string text)
+    private void NumericField_LostFocus(object sender, RoutedEventArgs e)
     {
-        return text.All(c => char.IsDigit(c) || c == ',' || c == '.');
+        InputValidationHelper.ValidateNumericField_LostFocus(sender, e);
+    }
+
+    private void TextField_LostFocus(object sender, RoutedEventArgs e)
+    {
+        InputValidationHelper.ValidateTextField_LostFocus(sender, e);
     }
 
     private static void SelectRoundingComboItem(ComboBox comboBox, int precision)

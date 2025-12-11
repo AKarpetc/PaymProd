@@ -238,6 +238,8 @@
                                            Margin="0,0,0,5" />
                                 <TextBox x:Name="DelicateNameTextBox"
                                          materialDesign:HintAssist.Hint="Введите название блюда"
+                                         MaxLength="50"
+                                         LostFocus="TextField_LostFocus"
                                          Style="{StaticResource MaterialDesignOutlinedTextBox}" />
                             </StackPanel>
 
@@ -261,7 +263,8 @@
                                 <TextBox x:Name="DelicateWeightTextBox"
                                          materialDesign:HintAssist.Hint="Например: 250"
                                          Style="{StaticResource MaterialDesignOutlinedTextBox}"
-                                         PreviewTextInput="NumericOnly_PreviewTextInput" />
+                                         PreviewTextInput="NumericOnly_PreviewTextInput"
+                                         LostFocus="NumericField_LostFocus" />
                             </StackPanel>
 
                             <!-- Количество -->
@@ -272,7 +275,8 @@
                                 <TextBox x:Name="DelicateCountTextBox"
                                          materialDesign:HintAssist.Hint="По умолчанию: 1"
                                          Style="{StaticResource MaterialDesignOutlinedTextBox}"
-                                         PreviewTextInput="NumericOnly_PreviewTextInput" />
+                                         PreviewTextInput="NumericOnly_PreviewTextInput"
+                                         LostFocus="NumericField_LostFocus" />
                             </StackPanel>
 
                             <!-- Автодобавление и скрытие в меню -->

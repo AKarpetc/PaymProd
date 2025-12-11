@@ -255,22 +255,12 @@ public partial class ProductPricesPage : Page
 
     private void NumericOnly_PreviewTextInput(object sender, TextCompositionEventArgs e)
     {
-        var textBox = sender as TextBox;
-        if (textBox == null) return;
+        Services.InputValidationHelper.NumericOnly_PreviewTextInput(sender, e);
+    }
 
-        var decimalSeparator = CultureInfo.CurrentCulture.NumberFormat.NumberDecimalSeparator;
-        var allowedChars = "0123456789" + decimalSeparator;
-
-        if (allowedChars.IndexOf(e.Text) < 0)
-        {
-            e.Handled = true;
-            return;
-        }
-
-        if (e.Text == decimalSeparator && textBox.Text.Contains(decimalSeparator))
-        {
-            e.Handled = true;
-        }
+    private void NumericField_LostFocus(object sender, RoutedEventArgs e)
+    {
+        Services.InputValidationHelper.ValidateNumericField_LostFocus(sender, e);
     }
 
     private void ProductsPricesDataGrid_PreviewKeyDown(object sender, KeyEventArgs e)

@@ -140,6 +140,8 @@
                                        Margin="0,0,0,5" />
                             <TextBox x:Name="DelicateTypeNameTextBox"
                                      materialDesign:HintAssist.Hint="Например: Горячие, Салат, Закуска"
+                                     MaxLength="50"
+                                     LostFocus="TextField_LostFocus"
                                      Style="{StaticResource MaterialDesignOutlinedTextBox}" />
 
                             <TextBlock Text="Порядок сортировки:"
@@ -148,7 +150,8 @@
                             <TextBox x:Name="DelicateTypeSortOrderTextBox"
                                      materialDesign:HintAssist.Hint="Число для сортировки (меньше = выше в списке)"
                                      Style="{StaticResource MaterialDesignOutlinedTextBox}"
-                                     PreviewTextInput="NumericOnly_PreviewTextInput" />
+                                     PreviewTextInput="NumericOnly_PreviewTextInput"
+                                     LostFocus="NumericField_LostFocus" />
                         </StackPanel>
                     </StackPanel>
                 </materialDesign:Card>

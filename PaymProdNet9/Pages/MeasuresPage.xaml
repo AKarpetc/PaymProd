@@ -159,6 +159,8 @@
                                            Margin="0,0,0,5" />
                                 <TextBox x:Name="MeasureNameTextBox"
                                          materialDesign:HintAssist.Hint="Например: кг, л, шт"
+                                         MaxLength="50"
+                                         LostFocus="TextField_LostFocus"
                                          Style="{StaticResource MaterialDesignOutlinedTextBox}" />
                             </StackPanel>
 
@@ -169,7 +171,8 @@
                                 <TextBox x:Name="MeasureFassTextBox"
                                          materialDesign:HintAssist.Hint="Например: 1"
                                          Style="{StaticResource MaterialDesignOutlinedTextBox}"
-                                         PreviewTextInput="NumericOnly_PreviewTextInput" />
+                                         PreviewTextInput="NumericOnly_PreviewTextInput"
+                                         LostFocus="NumericField_LostFocus" />
                             </StackPanel>
 
                             <StackPanel Grid.Row="2" Margin="0,0,0,15">
@@ -178,6 +181,8 @@
                                            Margin="0,0,0,5" />
                                 <TextBox x:Name="MeasureFassIzmerTextBox"
                                          materialDesign:HintAssist.Hint="Например: кг, л"
+                                         MaxLength="50"
+                                         LostFocus="TextField_LostFocus"
                                          Style="{StaticResource MaterialDesignOutlinedTextBox}" />
                             </StackPanel>
 

@@ -209,7 +209,16 @@ public partial class ProductTypesPage : Page
 
     private void NumericOnly_PreviewTextInput(object sender, System.Windows.Input.TextCompositionEventArgs e)
     {
-        // Разрешаем только цифры
-        e.Handled = !e.Text.All(char.IsDigit);
+        Services.InputValidationHelper.IntegerOnly_PreviewTextInput(sender, e);
+    }
+
+    private void NumericField_LostFocus(object sender, RoutedEventArgs e)
+    {
+        Services.InputValidationHelper.ValidateIntegerField_LostFocus(sender, e);
+    }
+
+    private void TextField_LostFocus(object sender, RoutedEventArgs e)
+    {
+        Services.InputValidationHelper.ValidateTextField_LostFocus(sender, e);
     }
 }

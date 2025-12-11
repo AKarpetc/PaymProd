@@ -630,12 +630,17 @@ public partial class DelicatesPage : Page
     /// </summary>
     private void NumericOnly_PreviewTextInput(object sender, TextCompositionEventArgs e)
     {
-        e.Handled = !IsTextNumeric(e.Text);
+        InputValidationHelper.NumericOnly_PreviewTextInput(sender, e);
     }
 
-    private static bool IsTextNumeric(string text)
+    private void NumericField_LostFocus(object sender, RoutedEventArgs e)
     {
-        return text.All(c => char.IsDigit(c) || c == ',' || c == '.');
+        InputValidationHelper.ValidateNumericField_LostFocus(sender, e);
+    }
+
+    private void TextField_LostFocus(object sender, RoutedEventArgs e)
+    {
+        InputValidationHelper.ValidateTextField_LostFocus(sender, e);
     }
 
     /// <summary>
