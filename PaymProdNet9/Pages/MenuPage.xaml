@@ -36,13 +36,6 @@
         <materialDesign:Card Grid.Row="0" Margin="10" Padding="10">
             <WrapPanel HorizontalAlignment="Center">
                 <Button Style="{StaticResource MaterialDesignRaisedButton}"
-                        Click="SaveMenuChanges_Click" Margin="5">
-                    <StackPanel Orientation="Horizontal">
-                        <materialDesign:PackIcon Kind="ContentSave" VerticalAlignment="Center" Margin="0,0,5,0" />
-                        <TextBlock Text="Сохранить изменения" VerticalAlignment="Center" />
-                    </StackPanel>
-                </Button>
-                <Button Style="{StaticResource MaterialDesignRaisedButton}"
                         Click="RefreshMenu_Click" Margin="5">
                     <StackPanel Orientation="Horizontal">
                         <materialDesign:PackIcon Kind="Refresh" VerticalAlignment="Center" Margin="0,0,5,0" />

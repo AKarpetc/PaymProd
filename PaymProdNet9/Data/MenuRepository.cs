@@ -489,7 +489,8 @@ public class MenuRepository
                             ELSE (SELECT m2.Name_Mera FROM Mera m2 WHERE m2.Mera_ID = p.Izmer) END, 
                            (SELECT m2.Name_Mera FROM Mera m2 WHERE m2.Mera_ID = p.Izmer)) as FassIzmer,
                    CASE WHEN p.Izmer != p.Ves AND p.Izmer IS NOT NULL THEN 1 ELSE 0 END as Flag,
-                   p.Name as ProdName
+                   p.Name as ProdName,
+                   COALESCE(p.DoNotConvertToPackInMenu, 0)
             FROM Components c
             INNER JOIN Producrs p ON p.Prod_ID = c.ProductID
             INNER JOIN Produkt_Type pt ON p.Type = pt.TypeProdId
@@ -509,7 +510,8 @@ public class MenuRepository
                 Fass = reader.GetDecimal(7),
                 FassIz = reader.IsDBNull(8) ? string.Empty : reader.GetString(8),
                 Flag = reader.GetInt32(9),
-                Name = reader.GetString(10)
+                Name = reader.GetString(10),
+                DoNotConvertToPackInMenu = !reader.IsDBNull(11) && reader.GetInt32(11) == 1
             });
 
         return components;
@@ -1435,7 +1437,8 @@ public class MenuRepository
                    COALESCE(CASE WHEN p.Izmer = p.Ves THEN m.Fass_Izmer 
                             ELSE (SELECT m2.Name_Mera FROM Mera m2 WHERE m2.Mera_ID = p.Izmer) END, 
                            (SELECT m2.Name_Mera FROM Mera m2 WHERE m2.Mera_ID = p.Izmer)) as FassIzmer,
-                   pt.Type_Opis
+                   pt.Type_Opis,
+                   COALESCE(p.DoNotConvertToPackInMenu, 0)
             FROM Components1 c1
             INNER JOIN Producrs p ON p.Prod_ID = c1.ProductID
             LEFT JOIN Mera m ON m.Mera_ID = p.Ves
@@ -1457,7 +1460,8 @@ public class MenuRepository
                 Mera = reader.IsDBNull(5) ? "" : reader.GetString(5),
                 Fass = reader.GetDecimal(6),
                 FassIz = reader.IsDBNull(7) ? "" : reader.GetString(7),
-                Type = reader.GetString(8)
+                Type = reader.GetString(8),
+                DoNotConvertToPackInMenu = !reader.IsDBNull(9) && reader.GetInt32(9) == 1
             });
 
         return components;
@@ -1476,6 +1480,7 @@ public class MenuRepository
                    p.Name as ProdName, 
                    COALESCE(m.Name_Mera, '') as MeraName,
                    COALESCE(m.MenuRoundingPrecision, 2) as MenuRoundingPrecision,
+                   COALESCE(p.DoNotConvertToPackInMenu, 0) as DoNotConvertToPackInMenu,
                    CASE WHEN p.Fass = 0 THEN COALESCE(m.Fass_Def, 1) 
                         ELSE COALESCE(COALESCE(p.Fass, m.Fass_Def), 1) END as Fass,
                    COALESCE(CASE WHEN p.Izmer = p.Ves THEN m.Fass_Izmer 
@@ -1502,9 +1507,10 @@ public class MenuRepository
                 NameT = reader.GetString(4),
                 Mera = reader.IsDBNull(5) ? "" : reader.GetString(5),
                 MenuRoundingPrecision = reader.GetInt32(6),
-                Fass = reader.GetDecimal(7),
-                FassIz = reader.IsDBNull(8) ? "" : reader.GetString(8),
-                Type = reader.GetString(9)
+                DoNotConvertToPackInMenu = !reader.IsDBNull(7) && reader.GetInt32(7) == 1,
+                Fass = reader.GetDecimal(8),
+                FassIz = reader.IsDBNull(9) ? "" : reader.GetString(9),
+                Type = reader.GetString(10)
             });
 
         return components;
@@ -1603,7 +1609,8 @@ public class MenuRepository
                    COALESCE(CASE WHEN p.Izmer = p.Ves THEN m.Fass_Izmer 
                             ELSE (SELECT m2.Name_Mera FROM Mera m2 WHERE m2.Mera_ID = p.Izmer) END, 
                            (SELECT m2.Name_Mera FROM Mera m2 WHERE m2.Mera_ID = p.Izmer)) as FassIzmer,
-                   pt.Type_Opis
+                   pt.Type_Opis,
+                   COALESCE(p.DoNotConvertToPackInMenu, 0)
             FROM Components c
             INNER JOIN Producrs p ON p.Prod_ID = c.ProductID
             LEFT JOIN Mera m ON m.Mera_ID = p.Ves
@@ -1624,7 +1631,8 @@ public class MenuRepository
                 Mera = reader.IsDBNull(5) ? "" : reader.GetString(5),
                 Fass = reader.GetDecimal(6),
                 FassIz = reader.IsDBNull(7) ? "" : reader.GetString(7),
-                Type = reader.GetString(8)
+                Type = reader.GetString(8),
+                DoNotConvertToPackInMenu = !reader.IsDBNull(9) && reader.GetInt32(9) == 1
             });
 
         return components;

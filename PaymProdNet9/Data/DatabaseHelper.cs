@@ -235,6 +235,17 @@ public static class DatabaseHelper
             // Колонка уже существует, игнорируем
         }
 
+        // Миграция: флаг "не переводить в фасованные в меню" (на уровне продукта)
+        try
+        {
+            command.CommandText = "ALTER TABLE Producrs ADD COLUMN DoNotConvertToPackInMenu INTEGER DEFAULT 0";
+            command.ExecuteNonQuery();
+        }
+        catch
+        {
+            // Колонка уже существует
+        }
+
         // Миграция: добавляем IsDeleted для продуктов, если его нет
         try
         {

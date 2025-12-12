@@ -340,6 +340,7 @@ public partial class ProductsPage : Page
         ProductAutoAddCheckBox.IsChecked = product.AutoAdd;
         ProductMainCountCheckBox.IsChecked = product.MainCount;
         ProductHideInMenuCheckBox.IsChecked = product.HideInMenu;
+        ProductDoNotConvertToPackInMenuCheckBox.IsChecked = product.DoNotConvertToPackInMenu;
 
         ShowEditView(true);
     }
@@ -360,6 +361,7 @@ public partial class ProductsPage : Page
         ProductAutoAddCheckBox.IsChecked = false;
         ProductMainCountCheckBox.IsChecked = false;
         ProductHideInMenuCheckBox.IsChecked = false;
+        ProductDoNotConvertToPackInMenuCheckBox.IsChecked = false;
 
         ShowEditView(false);
         ProductNameTextBox.Focus();
@@ -536,6 +538,7 @@ public partial class ProductsPage : Page
             var automat = ProductAutoAddCheckBox.IsChecked == true;
             var mainCount = ProductMainCountCheckBox.IsChecked == true;
         var hideInMenu = ProductHideInMenuCheckBox.IsChecked == true;
+        var doNotConvertToPackInMenu = ProductDoNotConvertToPackInMenuCheckBox.IsChecked == true;
 
         double price = 0;
         if (!string.IsNullOrWhiteSpace(ProductPriceTextBox.Text))
@@ -563,7 +566,8 @@ public partial class ProductsPage : Page
                     countPeople,
                     mainCount,
                     price,
-                    hideInMenu
+                    hideInMenu,
+                    doNotConvertToPackInMenu
                 );
                 productId = _currentProductId.Value;
 
@@ -586,7 +590,8 @@ public partial class ProductsPage : Page
                     countPeople,
                     mainCount,
                     price,
-                    hideInMenu
+                    hideInMenu,
+                    doNotConvertToPackInMenu
                 );
 
                 MessageBox.Show("Продукт создан!",

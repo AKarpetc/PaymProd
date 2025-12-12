@@ -74,7 +74,8 @@ public class DelicateRepository
         command.CommandText = @"
             SELECT c.Comp_Id, c.Delic_id, c.ProductID, 
                    p.Name, c.Ves, m.Name_Mera, pt.Type_Opis,
-                   COALESCE(p.Fass, 1), p.Name
+                   COALESCE(p.Fass, 1), p.Name,
+                   COALESCE(p.DoNotConvertToPackInMenu, 0)
             FROM Components c
             INNER JOIN Producrs p ON p.Prod_ID = c.ProductID
             INNER JOIN Produkt_Type pt ON p.Type = pt.TypeProdId
@@ -92,7 +93,8 @@ public class DelicateRepository
                 Mera = reader.GetString(5),
                 Type = reader.GetString(6),
                 Fass = reader.GetDecimal(7),
-                Name = reader.GetString(8)
+                Name = reader.GetString(8),
+                DoNotConvertToPackInMenu = !reader.IsDBNull(9) && reader.GetInt32(9) == 1
             });
 
         return components;

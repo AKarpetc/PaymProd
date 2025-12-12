@@ -43,11 +43,6 @@
         <!-- Меню -->
         <Menu Grid.Row="0" materialDesign:ElevationAssist.Elevation="Dp2">
             <MenuItem Header="Меню">
-                <MenuItem Header="Сохранить изменения в меню" Click="SaveMenuChanges_Click">
-                    <MenuItem.Icon>
-                        <materialDesign:PackIcon Kind="ContentSave" />
-                    </MenuItem.Icon>
-                </MenuItem>
                 <MenuItem Header="Обновить меню" Click="RefreshMenu_Click">
                     <MenuItem.Icon>
                         <materialDesign:PackIcon Kind="Refresh" />

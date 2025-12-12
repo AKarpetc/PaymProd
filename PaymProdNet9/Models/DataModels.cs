@@ -206,6 +206,7 @@ public class Components : INotifyPropertyChanged
     private int _flag;
     private string _nameT = string.Empty;
     private int _menuRoundingPrecision = 2;
+    private bool _doNotConvertToPackInMenu;
 
     public decimal Fass1
     {
@@ -349,6 +350,19 @@ public class Components : INotifyPropertyChanged
         }
     }
 
+    /// <summary>
+    /// Флаг продукта: "не переводить в фасованные в меню/отчете меню".
+    /// </summary>
+    public bool DoNotConvertToPackInMenu
+    {
+        get => _doNotConvertToPackInMenu;
+        set
+        {
+            _doNotConvertToPackInMenu = value;
+            OnPropertyChanged(nameof(DoNotConvertToPackInMenu));
+        }
+    }
+
     public decimal DisplayVes
     {
         get => RoundForMenu(_ves, _menuRoundingPrecision);
@@ -398,6 +412,7 @@ public class ProductView : INotifyPropertyChanged
     private bool _isModified;
     private decimal _originalPrice;
     private bool _hideInMenu;
+    private bool _doNotConvertToPackInMenu;
     private bool _isDeleted;
 
     public string Name
@@ -607,6 +622,20 @@ public class ProductView : INotifyPropertyChanged
         {
             _hideInMenu = value;
             OnPropertyChanged(nameof(HideInMenu));
+        }
+    }
+
+    /// <summary>
+    /// Флаг "не переводить в фасованные в меню/отчете меню".
+    /// Если true — в отчете по меню всегда показываем в базовой единице (без пересчета в фасовку).
+    /// </summary>
+    public bool DoNotConvertToPackInMenu
+    {
+        get => _doNotConvertToPackInMenu;
+        set
+        {
+            _doNotConvertToPackInMenu = value;
+            OnPropertyChanged(nameof(DoNotConvertToPackInMenu));
         }
     }
 

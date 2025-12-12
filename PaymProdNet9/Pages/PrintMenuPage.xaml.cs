@@ -248,23 +248,32 @@ public partial class PrintMenuPage : Page
             var baseUnitNormalized = NormalizeUnitLocal(baseUnit);
             var fassIzNormalized = NormalizeUnitLocal(component.FassIz ?? string.Empty);
             
-            // Проверяем, нужно ли пересчитывать в фасовку (как в отчете по товарам)
-            // Пересчитываем только если: есть фасовка, единица фасовки отличается от базовой, и вес >= фасовка
-            if (component.Fass > 0 && 
-                !string.IsNullOrWhiteSpace(component.FassIz) && 
-                fassIzNormalized != baseUnitNormalized &&
-                totalWeight >= component.Fass)
+            // Если на продукте стоит флаг "не переводить в фасованные" — всегда показываем в базовой единице
+            if (component.DoNotConvertToPackInMenu)
             {
-                // Есть перерасчет в фасовку - показываем в фасовке
-                var packageCount = totalWeight / component.Fass;
-                displayValue = Math.Round(packageCount, 2, MidpointRounding.AwayFromZero);
-                displayUnit = !string.IsNullOrWhiteSpace(component.FassIz) ? component.FassIz : baseUnit;
+                displayValue = Math.Round(totalWeight, 2, MidpointRounding.AwayFromZero);
+                displayUnit = baseUnit;
             }
             else
             {
-                // Нет перерасчета в фасовку - показываем в основных единицах
-                displayValue = Math.Round(totalWeight, 2, MidpointRounding.AwayFromZero);
-                displayUnit = baseUnit;
+                // Проверяем, нужно ли пересчитывать в фасовку (как в отчете по товарам)
+                // Пересчитываем только если: есть фасовка, единица фасовки отличается от базовой, и вес >= фасовка
+                if (component.Fass > 0 && 
+                    !string.IsNullOrWhiteSpace(component.FassIz) && 
+                    fassIzNormalized != baseUnitNormalized &&
+                    totalWeight >= component.Fass)
+                {
+                    // Есть перерасчет в фасовку - показываем в фасовке
+                    var packageCount = totalWeight / component.Fass;
+                    displayValue = Math.Round(packageCount, 2, MidpointRounding.AwayFromZero);
+                    displayUnit = !string.IsNullOrWhiteSpace(component.FassIz) ? component.FassIz : baseUnit;
+                }
+                else
+                {
+                    // Нет перерасчета в фасовку - показываем в основных единицах
+                    displayValue = Math.Round(totalWeight, 2, MidpointRounding.AwayFromZero);
+                    displayUnit = baseUnit;
+                }
             }
             
             var formattedWeight = FormatValueOld(displayValue, displayUnit);

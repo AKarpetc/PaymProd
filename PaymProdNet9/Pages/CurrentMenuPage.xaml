@@ -25,11 +25,6 @@
                 <!-- Кнопки действий -->
                 <WrapPanel Grid.Column="0" HorizontalAlignment="Left" Margin="0,0,15,0">
                     <Button Style="{StaticResource MaterialDesignRaisedButton}"
-                            Click="SaveMenuChanges_Click" Margin="5"
-                            ToolTip="Сохранить изменения">
-                        <materialDesign:PackIcon Kind="ContentSave" />
-                    </Button>
-                    <Button Style="{StaticResource MaterialDesignRaisedButton}"
                             Click="RefreshMenu_Click" Margin="5"
                             ToolTip="Обновить">
                         <materialDesign:PackIcon Kind="Refresh" />
