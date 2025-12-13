@@ -46,8 +46,17 @@ public static class Logger
             }
 
             // Создаем директорию, если её нет
-            if (!Directory.Exists(_logDirectory))
+            try
             {
+                if (!Directory.Exists(_logDirectory))
+                {
+                    Directory.CreateDirectory(_logDirectory);
+                }
+            }
+            catch
+            {
+                // Fallback: если AppData недоступна (редкий случай) — пишем в TEMP
+                _logDirectory = Path.Combine(Path.GetTempPath(), "PaymProdNet9", "Logs");
                 Directory.CreateDirectory(_logDirectory);
             }
 
@@ -211,10 +220,15 @@ public static class Logger
             Initialize();
         }
 
-        // Фильтруем логи по минимальному уровню
-        if (level < _minLogLevel)
+        // Важно: ошибки пишем всегда (даже если в конфиге высокий уровень)
+        // Пользователь должен иметь возможность поделиться логом в Release.
+        if (level != LogLevel.Error)
         {
-            return;
+            // Фильтруем логи по минимальному уровню
+            if (level < _minLogLevel)
+            {
+                return;
+            }
         }
 
         // В Release сборке пропускаем Debug логи (если они не включены через конфигурацию)
@@ -262,6 +276,16 @@ public static class Logger
         {
             try
             {
+                // Если по какой-то причине директория не готова (Release/инсталлятор/права) — используем fallback в TEMP
+                if (string.IsNullOrEmpty(_logDirectory))
+                {
+                    _logDirectory = Path.Combine(Path.GetTempPath(), "PaymProdNet9", "Logs");
+                }
+                if (!Directory.Exists(_logDirectory))
+                {
+                    Directory.CreateDirectory(_logDirectory);
+                }
+
                 // Проверяем, нужно ли создать новый файл (если дата изменилась)
                 var currentLogFileName = Path.Combine(_logDirectory!, $"PaymProd_{DateTime.Now:yyyyMMdd}.log");
                 if (currentLogFileName != _logFileName)

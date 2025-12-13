@@ -119,7 +119,19 @@ public partial class MainNavigationWindow : Window
         // Выполняем навигацию асинхронно, чтобы UI успел обновиться
         Application.Current.Dispatcher.BeginInvoke(new Action(() =>
         {
-            navigateAction();
+            try
+            {
+                navigateAction();
+            }
+            catch (Exception ex)
+            {
+                // Если навигация упала до наступления событий Frame — обязательно скрываем лоадер,
+                // иначе он останется "навсегда" (особенно заметно при GoBack с некоторых страниц).
+                LoadingOverlay.Visibility = Visibility.Collapsed;
+                Logger.Error("Ошибка навигации", ex);
+                MessageBox.Show($"Ошибка при переходе:\n\n{ex.Message}\n\nПодробности в логах.",
+                    "Ошибка навигации", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }), DispatcherPriority.Normal);
     }
 
@@ -153,6 +165,20 @@ public partial class MainNavigationWindow : Window
         
         // Принудительно обновляем UI
         Application.Current.Dispatcher.Invoke(() => { }, DispatcherPriority.Render);
+
+        // Важно: некоторые страницы отменяют Back-навигацию (e.Cancel = true), чтобы закрыть режим редактирования
+        // и вернуться к списку. В этом случае Navigated/NavigationStopped могут не отработать так, как ожидается,
+        // и лоадер может остаться навсегда. Поэтому проверяем "в фоне": если навигация не в процессе — скрываем.
+        var navArgs = e;
+        Application.Current.Dispatcher.BeginInvoke(new Action(() =>
+        {
+            // Если кто-то отменил навигацию (e.Cancel=true), Navigated не сработает —
+            // поэтому прячем лоадер вручную.
+            if (navArgs.Cancel)
+            {
+                LoadingOverlay.Visibility = Visibility.Collapsed;
+            }
+        }), DispatcherPriority.Background);
     }
 
     private void MainFrame_Navigated(object sender, System.Windows.Navigation.NavigationEventArgs e)
@@ -173,6 +199,19 @@ public partial class MainNavigationWindow : Window
     {
         // Скрываем индикатор загрузки, если навигация была остановлена
         LoadingOverlay.Visibility = Visibility.Collapsed;
+    }
+
+    private void MainFrame_NavigationFailed(object sender, System.Windows.Navigation.NavigationFailedEventArgs e)
+    {
+        // Скрываем индикатор загрузки, если навигация завершилась ошибкой
+        LoadingOverlay.Visibility = Visibility.Collapsed;
+        Logger.Error("NavigationFailed при переходе на страницу", e.Exception);
+
+        MessageBox.Show($"Ошибка при загрузке страницы:\n\n{e.Exception.Message}\n\nПодробности в логах.",
+            "Ошибка навигации", MessageBoxButton.OK, MessageBoxImage.Error);
+
+        // Чтобы исключение не роняло приложение и не оставляло UI в подвешенном состоянии
+        e.Handled = true;
     }
 
     /// <summary>

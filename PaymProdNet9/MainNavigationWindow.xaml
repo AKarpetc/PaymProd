@@ -301,7 +301,8 @@
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
+                        <!-- Отдельная колонка под пользователя: чтобы длинный email помещался, а заголовок страницы ужимался -->
+                        <ColumnDefinition Width="Auto" MinWidth="260" MaxWidth="520" />
                     </Grid.ColumnDefinitions>
 
                     <!-- Кнопка "Назад" -->
@@ -320,20 +321,32 @@
                                FontSize="20"
                                FontWeight="SemiBold"
                                VerticalAlignment="Center"
-                               Foreground="#2C3E50" />
+                               Foreground="#2C3E50"
+                               TextTrimming="CharacterEllipsis" />
 
                     <!-- Информация о пользователе -->
-                    <StackPanel Grid.Column="2" Orientation="Horizontal">
-                        <materialDesign:PackIcon Kind="Account"
-                                                 Width="24"
-                                                 Height="24"
-                                                 VerticalAlignment="Center"
-                                                 Margin="0,0,10,0"
-                                                 Foreground="#7F8C8D" />
-                        <TextBlock x:Name="UserNameText"
-                                   Text="Пользователь"
-                                   VerticalAlignment="Center"
-                                   Foreground="#7F8C8D" />
+                    <StackPanel Grid.Column="2"
+                                Orientation="Horizontal"
+                                HorizontalAlignment="Right"
+                                MaxWidth="500">
+
+
+                            <TextBlock x:Name="UserNameText"
+                                       Text="Пользователь"
+                                       VerticalAlignment="Center"
+                                       Foreground="#7F8C8D"
+                                       FontSize="15"
+                                       Width="250px"
+                                       TextAlignment="Right"
+                                       FontWeight="SemiBold"
+                                       TextWrapping="NoWrap"
+                                       ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}" />
+                            <materialDesign:PackIcon Kind="Account"
+                                                     Width="26"
+                                                     Height="26"
+                                                     VerticalAlignment="Center"
+                                                     Margin="0,0,10,0"
+                                                     Foreground="#7F8C8D" />
                     </StackPanel>
                 </Grid>
             </Border>
@@ -344,7 +357,8 @@
                    NavigationUIVisibility="Hidden"
                    Navigated="MainFrame_Navigated"
                    Navigating="MainFrame_Navigating"
-                   NavigationStopped="MainFrame_NavigationStopped" />
+                   NavigationStopped="MainFrame_NavigationStopped"
+                   NavigationFailed="MainFrame_NavigationFailed" />
 
             <!-- Overlay с индикатором загрузки -->
             <Border x:Name="LoadingOverlay"
