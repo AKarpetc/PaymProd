@@ -250,16 +250,16 @@
                                    FontWeight="Bold"
                                    Margin="20,10,20,5" />
 
-                        <Button x:Name="DatabaseButton"
+                        <Button x:Name="ParametersButton"
                                 Style="{StaticResource NavButtonStyle}"
-                                Click="NavigateToDatabase_Click">
+                                Click="NavigateToParameters_Click">
                             <StackPanel Orientation="Horizontal">
-                                <materialDesign:PackIcon Kind="Database"
+                                <materialDesign:PackIcon Kind="Cog"
                                                          Width="24"
                                                          Height="24"
                                                          VerticalAlignment="Center"
                                                          Margin="0,0,15,0" />
-                                <TextBlock Text="База данных" VerticalAlignment="Center" />
+                                <TextBlock Text="Параметры" VerticalAlignment="Center" />
                             </StackPanel>
                         </Button>
                     </StackPanel>

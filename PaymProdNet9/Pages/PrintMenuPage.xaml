@@ -21,7 +21,18 @@
                     Click="GenerateReportWithPrices_Click">
                 <StackPanel Orientation="Horizontal">
                     <materialDesign:PackIcon Kind="CashMultiple" Width="20" Height="20" Margin="0,0,10,0"/>
-                    <TextBlock Text="Отчет с ценами" VerticalAlignment="Center"/>
+                    <TextBlock Text="Отчет с себестоимостью" VerticalAlignment="Center"/>
+                </StackPanel>
+            </Button>
+            <Button Style="{StaticResource MaterialDesignRaisedButton}"
+                    Background="#C2185B"
+                    Foreground="White"
+                    Padding="20,5"
+                    Margin="10,0,0,0"
+                    Click="GenerateReportWithSalePrices_Click">
+                <StackPanel Orientation="Horizontal">
+                    <materialDesign:PackIcon Kind="TagTextOutline" Width="20" Height="20" Margin="0,0,10,0"/>
+                    <TextBlock Text="Отчет с ценой" VerticalAlignment="Center"/>
                 </StackPanel>
             </Button>
             <Button Style="{StaticResource MaterialDesignRaisedButton}"

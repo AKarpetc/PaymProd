@@ -1,6 +1,6 @@
 using PaymProdNet9.Data;
+using PaymProdNet9.Models;
 using PaymProdNet9.Services;
-using PaymProdNet9.Windows;
 using System;
 using System.Diagnostics;
 using System.IO;
@@ -8,17 +8,23 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 
 namespace PaymProdNet9.Pages;
 
-public partial class DatabaseManagerPage : Page
+public partial class ParametersPage : Page
 {
-    public DatabaseManagerPage()
+    private readonly SettingsRepository _settingsRepository;
+
+    public ParametersPage()
     {
         InitializeComponent();
+        _settingsRepository = new SettingsRepository();
+        
         InitializeDeletedItemsSettings();
         LoadCurrentDatabaseInfo();
         LoadBackups();
+        LoadSettings();
     }
 
     private void InitializeDeletedItemsSettings()
@@ -32,6 +38,58 @@ public partial class DatabaseManagerPage : Page
             // Если по какой-то причине чекбокс недоступен — просто игнорируем.
         }
     }
+
+    // --- Settings Logic ---
+
+    private void LoadSettings()
+    {
+        try
+        {
+            var settings = _settingsRepository.GetSettings();
+            ServicePercentTextBox.Text = settings.ServicePercent.ToString("G");
+            DefaultMarkupTextBox.Text = settings.DefaultMarkup.ToString("G");
+        }
+        catch (Exception ex)
+        {
+            Logger.Error("Ошибка при загрузке настроек", ex);
+            MessageBox.Show($"Ошибка при загрузке настроек: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    private void SaveSettings_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            if (!decimal.TryParse(ServicePercentTextBox.Text, out var servicePercent))
+            {
+                MessageBox.Show("Некорректное значение процента за обслуживание", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            if (!decimal.TryParse(DefaultMarkupTextBox.Text, out var defaultMarkup))
+            {
+                MessageBox.Show("Некорректное значение надбавки по умолчанию", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            var settings = new AppGlobalSettings
+            {
+                Id = 1,
+                ServicePercent = servicePercent,
+                DefaultMarkup = defaultMarkup
+            };
+
+            _settingsRepository.SaveSettings(settings);
+            MessageBox.Show("Настройки успешно сохранены", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            Logger.Error("Ошибка при сохранении настроек", ex);
+            MessageBox.Show($"Ошибка при сохранении настроек: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+    
+    // --- Database Logic (From DatabaseManagerPage) ---
 
     private void LoadCurrentDatabaseInfo()
     {
@@ -70,10 +128,7 @@ public partial class DatabaseManagerPage : Page
             var backups = DatabaseBackupHelper.GetAvailableBackups();
             BackupsDataGrid.ItemsSource = backups;
 
-            if (backups.Count == 0)
-                MessageBox.Show("Резервные копии не найдены.\n\n" +
-                                "Создайте первую резервную копию нажав кнопку 'Создать резервную копию'.",
-                    "Информация", MessageBoxButton.OK, MessageBoxImage.Information);
+            // Optional: if (backups.Count == 0) ...
         }
         catch (Exception ex)
         {
@@ -219,15 +274,68 @@ public partial class DatabaseManagerPage : Page
         }
     }
 
-    private async void ShareToGoogleDriveButton_Click(object sender, RoutedEventArgs e)
+    private async void ShareLogsToS3Button_Click(object sender, RoutedEventArgs e)
     {
-        // Функциональность обмена базой данных через Google Drive отключена.
-        await Task.CompletedTask;
+        try
+        {
+            var logsDir = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "PaymProdNet9", "Logs");
+
+            if (!Directory.Exists(logsDir))
+            {
+                MessageBox.Show("Папка с логами не найдена.", "Ошибка",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            var files = Directory.GetFiles(logsDir, "PaymProd_*.log");
+            if (files.Length == 0)
+            {
+                MessageBox.Show("Лог-файлы не найдены.", "Ошибка",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            var latestLog = files
+                .OrderByDescending(f => File.GetLastWriteTime(f))
+                .First();
+
+            var key = await S3UploadService.UploadFileAsync(latestLog, "logs");
+
+            MessageBox.Show($"Журнал ошибок отправлен.\n\nОбъект: {key}",
+                "Готово", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Ошибка при загрузке журнала ошибок:\n{ex.Message}",
+                "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
     }
 
-    private void ConfigureGoogleDriveButton_Click(object sender, RoutedEventArgs e)
+    private async void ShareDbToS3Button_Click(object sender, RoutedEventArgs e)
     {
-        // Функциональность настройки автозагрузки на Google Drive отключена.
+        try
+        {
+            // Сначала создаем резервную копию (это снимает блокировки и копирует актуальную БД)
+            var backupPath = DatabaseBackupHelper.CreateAutoBackup();
+            if (!File.Exists(backupPath))
+            {
+                MessageBox.Show("Не удалось создать резервную копию базы данных.", "Ошибка",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            var key = await S3UploadService.UploadFileAsync(backupPath, "database");
+
+            MessageBox.Show($"База данных отправлена.\n\nОбъект: {key}",
+                "Готово", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Ошибка при загрузке базы данных:\n{ex.Message}",
+                "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
     }
 
     private void ResetDbButton_Click(object sender, RoutedEventArgs e)
@@ -321,81 +429,18 @@ public partial class DatabaseManagerPage : Page
         }
     }
 
-    /// <summary>
-    /// Загрузка последнего лог-файла в S3 (logs/{username}/...).
-    /// </summary>
-    private async void ShareLogsToS3Button_Click(object sender, RoutedEventArgs e)
-    {
-        try
-        {
-            var logsDir = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                "PaymProdNet9", "Logs");
-
-            if (!Directory.Exists(logsDir))
-            {
-                MessageBox.Show("Папка с логами не найдена.", "Ошибка",
-                    MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
-
-            var files = Directory.GetFiles(logsDir, "PaymProd_*.log");
-            if (files.Length == 0)
-            {
-                MessageBox.Show("Лог-файлы не найдены.", "Ошибка",
-                    MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
-
-            var latestLog = files
-                .OrderByDescending(f => File.GetLastWriteTime(f))
-                .First();
-
-            var key = await S3UploadService.UploadFileAsync(latestLog, "logs");
-
-            MessageBox.Show($"Журнал ошибок отправлен.\n\nОбъект: {key}",
-                "Готово", MessageBoxButton.OK, MessageBoxImage.Information);
-        }
-        catch (Exception ex)
-        {
-            MessageBox.Show($"Ошибка при загрузке журнала ошибок:\n{ex.Message}",
-                "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
-        }
-    }
-
-    /// <summary>
-    /// Загрузка текущей базы данных в S3 (database/{username}/...).
-    /// </summary>
-    private async void ShareDbToS3Button_Click(object sender, RoutedEventArgs e)
-    {
-        try
-        {
-            // Сначала создаем резервную копию (это снимает блокировки и копирует актуальную БД)
-            var backupPath = DatabaseBackupHelper.CreateAutoBackup();
-            if (!File.Exists(backupPath))
-            {
-                MessageBox.Show("Не удалось создать резервную копию базы данных.", "Ошибка",
-                    MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
-
-            var key = await S3UploadService.UploadFileAsync(backupPath, "database");
-
-            MessageBox.Show($"База данных отправлена.\n\nОбъект: {key}",
-                "Готово", MessageBoxButton.OK, MessageBoxImage.Information);
-        }
-        catch (Exception ex)
-        {
-            MessageBox.Show($"Ошибка при загрузке базы данных:\n{ex.Message}",
-                "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
-        }
-    }
-
-    /// <summary>
-    /// Переключение глобальной настройки показа удалённых элементов в справочниках.
-    /// </summary>
     private void ShowDeletedItemsCheckBox_Changed(object sender, RoutedEventArgs e)
     {
         DeletedItemsViewSettings.ShowDeletedItems = ShowDeletedItemsCheckBox.IsChecked == true;
+    }
+
+    private void NumericTextBox_PreviewTextInput(object sender, TextCompositionEventArgs e)
+    {
+        Services.InputValidationHelper.NumericOnly_PreviewTextInput(sender, e);
+    }
+
+    private void ValidateNumeric_LostFocus(object sender, RoutedEventArgs e)
+    {
+         Services.InputValidationHelper.ValidateNumericField_LostFocus(sender, e);
     }
 }

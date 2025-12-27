@@ -7,6 +7,7 @@ using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
 using PaymProdNet9.Data;
 using PaymProdNet9.Models;
+using PaymProdNet9.Enums;
 
 namespace PaymProdNet9.Services;
 
@@ -27,7 +28,7 @@ public class MenuPrinter
     /// <summary>
     ///     Печать меню
     /// </summary>
-    public void PrintMenu(List<DelicatesColl> delicates, string menuName, bool includePrices = false, int? menuId = null)
+    public void PrintMenu(List<DelicatesColl> delicates, string menuName, ReportMode reportMode = ReportMode.NoPrices, int? menuId = null)
     {
         try
         {
@@ -117,7 +118,9 @@ public class MenuPrinter
                 );
                 table.AppendChild(tableProperties);
 
-                var tableGrid = includePrices
+                bool showPriceColumn = reportMode != ReportMode.NoPrices;
+
+                var tableGrid = showPriceColumn
                     ? new TableGrid(
                         new GridColumn { Width = "2000" },
                         new GridColumn { Width = "5000" },
@@ -133,7 +136,7 @@ public class MenuPrinter
                     var headerRow = new TableRow();
                     var headerCell = new TableCell();
                     var headerCellProperties = new TableCellProperties(
-                        new GridSpan { Val = includePrices ? 3 : 2 },
+                        new GridSpan { Val = showPriceColumn ? 3 : 2 },
                         new Shading { Fill = "D3D3D3" },
                         new TableCellVerticalAlignment { Val = TableVerticalAlignmentValues.Center }
                     );
@@ -153,7 +156,7 @@ public class MenuPrinter
                     var columnsRow = new TableRow();
                     columnsRow.Append(CreateTableHeaderCell("Блюдо"));
                     columnsRow.Append(CreateTableHeaderCell("Состав"));
-                    if (includePrices) columnsRow.Append(CreateTableHeaderCell("Цена, тг"));
+                    if (showPriceColumn) columnsRow.Append(CreateTableHeaderCell("Цена, тг"));
                     table.Append(columnsRow);
 
                     // Блюда в группе
@@ -220,23 +223,27 @@ public class MenuPrinter
                                     }
                                 }
 
-                                var line = BuildComponentLine(includePrices, component, productName, displayValue,
+                                var line = BuildComponentLine(reportMode, component, productName, displayValue,
                                     menuId, delicate.Count, ref dishTotal);
                                 componentLines.Add(line);
                             }
 
-                            if (includePrices)
+                            // Для режима Price не показываем цены компонентов в составе
+                            // В режиме Cost и NoPrices - цены компонентов уже включены в строку (или нет, в зависимости от логики BuildComponentLine)
+                            // Если Price - то мы просто перечисляем компоненты без цен
+                            
+                            if (reportMode == ReportMode.NoPrices || reportMode == ReportMode.Price)
+                            {
+                                compositionParagraph.Append(new Break());
+                                compositionParagraph.Append(new Run(new Text(string.Join(", ", componentLines))));
+                            }
+                            else
                             {
                                 foreach (var line in componentLines)
                                 {
                                     compositionParagraph.Append(new Break());
                                     compositionParagraph.Append(new Run(new Text(line)));
                                 }
-                            }
-                            else
-                            {
-                                compositionParagraph.Append(new Break());
-                                compositionParagraph.Append(new Run(new Text(string.Join(", ", componentLines))));
                             }
                         }
                         else
@@ -250,8 +257,14 @@ public class MenuPrinter
                         EnsureVerticalCenter(compositionCell);
                         row.Append(compositionCell);
 
-                        if (includePrices)
+                        if (showPriceColumn)
                         {
+                            // Если режим Price, применяем наценку
+                            if (reportMode == ReportMode.Price && delicate.DefaultMarkup > 0)
+                            {
+                                 dishTotal = dishTotal * (delicate.DefaultMarkup / 100);
+                            }
+
                             var priceText = dishTotal > 0 ? FormatCurrency(dishTotal) : "—";
                             var priceCell = new TableCell();
                             priceCell.Append(new Paragraph(
@@ -279,17 +292,21 @@ public class MenuPrinter
         }
     }
 
-    private string BuildComponentLine(bool includePrices, Components component, string productName, string displayValue,
+    private string BuildComponentLine(ReportMode reportMode, Components component, string productName, string displayValue,
         int? menuId, decimal dishCount, ref decimal dishTotal)
     {
-        if (!includePrices)
+        // Считаем цену компонента всегда, чтобы накопить dishTotal
+        var priceInfo = _menuPriceService.GetComponentPriceInfo(menuId ?? 0, component, dishCount);
+        dishTotal += priceInfo.TotalPrice;
+
+        // Если режим Price или NoPrices - не показываем цену компонента в строке
+        if (reportMode == ReportMode.Price || reportMode == ReportMode.NoPrices)
             return $"{productName} ({displayValue})";
 
-        var priceInfo = _menuPriceService.GetComponentPriceInfo(menuId ?? 0, component, dishCount);
+        // Если режим Cost - показываем цену компонента
         if (priceInfo.TotalPrice <= 0)
             return $"{productName} ({displayValue}) — цена не указана";
 
-        dishTotal += priceInfo.TotalPrice;
         return $"{productName} ({displayValue}) — {FormatCurrency(priceInfo.TotalPrice)} тг";
     }
 

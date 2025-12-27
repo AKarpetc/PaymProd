@@ -63,9 +63,9 @@
                     </MenuItem.Icon>
                 </MenuItem>
                 <Separator />
-                <MenuItem Header="Управление базой данных" Click="DatabaseManager_Click">
+                <MenuItem Header="Параметры" Click="Parameters_Click">
                     <MenuItem.Icon>
-                        <materialDesign:PackIcon Kind="Database" />
+                        <materialDesign:PackIcon Kind="Cog" />
                     </MenuItem.Icon>
                 </MenuItem>
             </MenuItem>

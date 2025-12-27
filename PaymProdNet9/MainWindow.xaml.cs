@@ -554,23 +554,26 @@ public partial class MainWindow : Window
     }
 
     /// <summary>
-    /// Открыть менеджер базы данных
+    /// Открыть окно параметров
     /// </summary>
-    private void DatabaseManager_Click(object sender, RoutedEventArgs e)
+    private void Parameters_Click(object sender, RoutedEventArgs e)
     {
+        MessageBox.Show("Пожалуйста, используйте новое окно навигации для доступа к параметрам.", "Инфо", MessageBoxButton.OK, MessageBoxImage.Information);
+        /*
         try
         {
-            var dbManagerWindow = new DatabaseManagerWindow();
-            dbManagerWindow.ShowDialog();
+            var parametersWindow = new ParametersWindow();
+            parametersWindow.ShowDialog();
 
             // Обновляем данные после возможного импорта
             LoadSavedMenus();
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Ошибка при открытии менеджера базы данных: {ex.Message}",
+            MessageBox.Show($"Ошибка при открытии окна параметров: {ex.Message}",
                 "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
         }
+        */
     }
 
     /// <summary>

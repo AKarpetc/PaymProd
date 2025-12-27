@@ -460,10 +460,24 @@ public static class DatabaseHelper
             command.CommandText = "UPDATE Menu_Delicates SET Markup = 200 WHERE Markup IS NULL";
             command.ExecuteNonQuery();
         }
+
         catch
         {
             // Колонка уже существует/ошибка обновления
         }
+
+        // Создание таблицы настроек
+        command.CommandText = @"
+            CREATE TABLE IF NOT EXISTS Settings (
+                Id INTEGER PRIMARY KEY CHECK (Id = 1),
+                ServicePercent REAL DEFAULT 10,
+                DefaultMarkup REAL DEFAULT 200
+            );";
+        command.ExecuteNonQuery();
+
+        // Инициализация дефолтных настроек, если их нет
+        command.CommandText = "INSERT OR IGNORE INTO Settings (Id, ServicePercent, DefaultMarkup) VALUES (1, 10, 200)";
+        command.ExecuteNonQuery();
 
         // Запускаем миграции (поддержка старых форматов базы данных)
         MigrationRunner.RunAllMigrations(connection);

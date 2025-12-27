@@ -98,11 +98,11 @@ public partial class MainNavigationWindow : Window
         ShowLoadingAndNavigate(() => NavigationService.Instance.NavigateTo<DelicateTypesPage>());
     }
 
-    private void NavigateToDatabase_Click(object sender, RoutedEventArgs e)
+    private void NavigateToParameters_Click(object sender, RoutedEventArgs e)
     {
         SetActiveButton(sender as Button);
-        PageTitle.Text = "Управление базой данных";
-        ShowLoadingAndNavigate(() => NavigationService.Instance.NavigateTo<DatabaseManagerPage>());
+        PageTitle.Text = "Параметры";
+        ShowLoadingAndNavigate(() => NavigationService.Instance.NavigateTo<ParametersPage>());
     }
 
     /// <summary>
@@ -234,7 +234,8 @@ public partial class MainNavigationWindow : Window
             nameof(MeasuresPage) => "Единицы измерения",
             nameof(ProductTypesPage) => "Типы продуктов",
             nameof(DelicateTypesPage) => "Типы блюд",
-            nameof(DatabaseManagerPage) => "Управление базой данных",
+            nameof(ParametersPage) => "Параметры",
+
             nameof(ProductsReportPage) => "Отчет по товарам",
             nameof(SummaryTablePage) => "Сводная таблица",
             nameof(PrintMenuPage) => "Отчет по меню",

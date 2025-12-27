@@ -1,3 +1,4 @@
+using PaymProdNet9.Enums;
 using PaymProdNet9.Models;
 using PaymProdNet9.Services;
 using System.Collections.Generic;
@@ -18,7 +19,7 @@ public partial class PrintMenuPage : Page
 
     private readonly MenuPrinter _menuPrinter;
     private readonly MenuPriceService _menuPriceService;
-    private bool? _currentReportWithPrices;
+    private ReportMode? _currentReportMode;
 
     public PrintMenuPage()
     {
@@ -37,20 +38,28 @@ public partial class PrintMenuPage : Page
         var text = message ?? "Выберите тип отчета для отображения.";
         DocumentViewer.Document = new FlowDocument(new Paragraph(new Run(text)));
         SaveToWordButton.Visibility = Visibility.Collapsed;
-        _currentReportWithPrices = null;
+        _currentReportMode = null;
     }
 
     private void GenerateReportWithPrices_Click(object sender, RoutedEventArgs e)
     {
-        GenerateReport(true);
+        // "Отчет с себестоимостью" -> ReportMode.Cost
+        GenerateReport(ReportMode.Cost);
+    }
+
+    private void GenerateReportWithSalePrices_Click(object sender, RoutedEventArgs e)
+    {
+        // "Отчет с ценой" -> ReportMode.Price
+        GenerateReport(ReportMode.Price);
     }
 
     private void GenerateReportWithoutPrices_Click(object sender, RoutedEventArgs e)
     {
-        GenerateReport(false);
+        // "Отчет без цен" -> ReportMode.NoPrices
+        GenerateReport(ReportMode.NoPrices);
     }
 
-    private void GenerateReport(bool includePrices)
+    private void GenerateReport(ReportMode mode)
     {
         try
         {
@@ -60,8 +69,8 @@ public partial class PrintMenuPage : Page
                 return;
             }
 
-            BuildDocument(includePrices);
-            _currentReportWithPrices = includePrices;
+            BuildDocument(mode);
+            _currentReportMode = mode;
             SaveToWordButton.Visibility = Visibility.Visible;
         }
         catch (Exception ex)
@@ -71,7 +80,7 @@ public partial class PrintMenuPage : Page
         }
     }
 
-    private void BuildDocument(bool includePrices)
+    private void BuildDocument(ReportMode reportMode)
     {
         if (Delicates == null || Delicates.Count == 0)
         {
@@ -109,8 +118,9 @@ public partial class PrintMenuPage : Page
 
         var table = new Table();
         table.Columns.Add(new TableColumn { Width = new GridLength(250) });
-        table.Columns.Add(new TableColumn { Width = includePrices ? new GridLength(500) : new GridLength(650) });
-        if (includePrices)
+        bool showPriceColumn = reportMode != ReportMode.NoPrices;
+        table.Columns.Add(new TableColumn { Width = showPriceColumn ? new GridLength(500) : new GridLength(650) });
+        if (showPriceColumn)
             table.Columns.Add(new TableColumn { Width = new GridLength(150) });
 
         var rowGroup = new TableRowGroup();
@@ -123,7 +133,7 @@ public partial class PrintMenuPage : Page
                 FontWeight = FontWeights.Bold
             }))
             {
-                ColumnSpan = includePrices ? 3 : 2,
+                ColumnSpan = showPriceColumn ? 3 : 2,
                 Background = Brushes.LightGray,
                 TextAlignment = TextAlignment.Center,
                 Padding = new Thickness(4),
@@ -136,7 +146,7 @@ public partial class PrintMenuPage : Page
             var columnsHeaderRow = new TableRow();
             columnsHeaderRow.Cells.Add(CreateColumnHeaderCell("Блюдо"));
             columnsHeaderRow.Cells.Add(CreateColumnHeaderCell("Состав"));
-            if (includePrices)
+            if (showPriceColumn)
                 columnsHeaderRow.Cells.Add(CreateColumnHeaderCell("Цена, тг"));
             rowGroup.Rows.Add(columnsHeaderRow);
 
@@ -152,10 +162,10 @@ public partial class PrintMenuPage : Page
                 };
                 row.Cells.Add(nameCell);
 
-                var compositionParagraph = BuildCompositionParagraph(delicate, includePrices, out var dishPrice);
+                var compositionParagraph = BuildCompositionParagraph(delicate, reportMode, out var dishPrice);
                 
                 // Применяем наценку к итоговой стоимости блюда
-                if (includePrices && delicate.DefaultMarkup > 0)
+                if (reportMode == ReportMode.Price && delicate.DefaultMarkup > 0)
                 {
                     // Наценка хранится в DefaultMarkup (передана из MainNavigationWindow)
                     // Считаем, что наценка - это множитель в процентах (например, 200% = x2)
@@ -170,7 +180,7 @@ public partial class PrintMenuPage : Page
                 };
                 row.Cells.Add(compositionCell);
 
-                if (includePrices)
+                if (showPriceColumn)
                 {
                     var priceCell = new TableCell(new Paragraph(new Run(dishPrice > 0 ? FormatCurrency(dishPrice) : "—")))
                     {
@@ -206,10 +216,10 @@ public partial class PrintMenuPage : Page
         return cell;
     }
 
-    private Paragraph BuildCompositionParagraph(DelicatesColl delicate, bool includePrices, out decimal dishTotal)
+    private Paragraph BuildCompositionParagraph(DelicatesColl delicate, ReportMode reportMode, out decimal dishTotal)
     {
         var paragraph = new Paragraph();
-        var lines = BuildCompositionLines(delicate, includePrices, out dishTotal);
+        var lines = BuildCompositionLines(delicate, reportMode, out dishTotal);
 
         if (lines.Count == 0)
         {
@@ -217,7 +227,15 @@ public partial class PrintMenuPage : Page
             return paragraph;
         }
 
-        if (!includePrices)
+        // Если режим Price, мы не показываем цены компонентов, поэтому разделяем запятыми или новой строкой?
+        // В старом коде для includePrices=true использовалась новая строка.
+        // Для includePrices=false использовалась запятая.
+        // Новая логика:
+        // Price: новая строка (т.к. состав может быть длинным), но без цен.
+        // Cost: новая строка, с ценами (как было).
+        // NoPrices: запятая (как было).
+
+        if (reportMode == ReportMode.NoPrices || reportMode == ReportMode.Price)
         {
             paragraph.Inlines.Add(new Run(string.Join(", ", lines)));
             return paragraph;
@@ -232,7 +250,7 @@ public partial class PrintMenuPage : Page
         return paragraph;
     }
 
-    private List<string> BuildCompositionLines(DelicatesColl delicate, bool includePrices, out decimal dishTotal)
+    private List<string> BuildCompositionLines(DelicatesColl delicate, ReportMode reportMode, out decimal dishTotal)
     {
         var lines = new List<string>();
         dishTotal = 0;
@@ -286,17 +304,20 @@ public partial class PrintMenuPage : Page
             
             var formattedWeight = FormatValueOld(displayValue, displayUnit);
 
+            // Считаем цену компонента всегда, чтобы накопить dishTotal
+            var priceInfo = _menuPriceService.GetComponentPriceInfo(MenuId, component, delicate.Count);
+            dishTotal += priceInfo.TotalPrice;
+
             string line;
-            if (includePrices)
+            if (reportMode == ReportMode.Cost)
             {
-                var priceInfo = _menuPriceService.GetComponentPriceInfo(MenuId, component, delicate.Count);
-                dishTotal += priceInfo.TotalPrice;
                 line = priceInfo.TotalPrice > 0
                     ? $"{productName} ({formattedWeight}) — {FormatCurrency(priceInfo.TotalPrice)} тг"
                     : $"{productName} ({formattedWeight}) — цена не указана";
             }
             else
             {
+                // Price или NoPrices - без цены
                 line = $"{productName} ({formattedWeight})";
             }
 
@@ -337,7 +358,7 @@ public partial class PrintMenuPage : Page
     {
         try
         {
-            if (!_currentReportWithPrices.HasValue)
+            if (!_currentReportMode.HasValue)
             {
                 MessageBox.Show("Сначала сформируйте отчет.", "Внимание",
                     MessageBoxButton.OK, MessageBoxImage.Information);
@@ -351,7 +372,7 @@ public partial class PrintMenuPage : Page
             _menuPrinter.PrintMenu(
                 Delicates,
                 menuTitle,
-                includePrices: _currentReportWithPrices.Value,
+                reportMode: _currentReportMode.Value,
                 menuId: MenuId > 0 ? MenuId : null);
         }
         catch (Exception ex)

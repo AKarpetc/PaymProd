@@ -207,10 +207,15 @@ public class DelicateRepository
         using var connection = DatabaseHelper.GetConnection();
         connection.Open();
 
+        // Получаем настройки по умолчанию
+        var settingsRepository = new SettingsRepository();
+        var settings = settingsRepository.GetSettings();
+        var defaultMarkup = settings.DefaultMarkup;
+
         var command = connection.CreateCommand();
         command.CommandText = @"
-            INSERT INTO Delicates (Del_Type, Del_Name, Del_Ves, Del_count, Datew, AutoAdd, HideInMenu) 
-            VALUES (@type, @name, @ves, @count, datetime('now'), @autoAdd, @hideInMenu);
+            INSERT INTO Delicates (Del_Type, Del_Name, Del_Ves, Del_count, Datew, AutoAdd, HideInMenu, DefaultMarkup) 
+            VALUES (@type, @name, @ves, @count, datetime('now'), @autoAdd, @hideInMenu, @defaultMarkup);
             SELECT last_insert_rowid();";
 
         command.Parameters.AddWithValue("@type", typeId);
@@ -219,6 +224,7 @@ public class DelicateRepository
         command.Parameters.AddWithValue("@count", (double)count);
         command.Parameters.AddWithValue("@autoAdd", autoAdd ? 1 : 0);
         command.Parameters.AddWithValue("@hideInMenu", hideInMenu ? 1 : 0);
+        command.Parameters.AddWithValue("@defaultMarkup", defaultMarkup);
 
         return Convert.ToInt32(command.ExecuteScalar());
     }
