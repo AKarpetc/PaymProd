@@ -153,6 +153,14 @@ public partial class PrintMenuPage : Page
                 row.Cells.Add(nameCell);
 
                 var compositionParagraph = BuildCompositionParagraph(delicate, includePrices, out var dishPrice);
+                
+                // Применяем наценку к итоговой стоимости блюда
+                if (includePrices && delicate.DefaultMarkup > 0)
+                {
+                    // Наценка хранится в DefaultMarkup (передана из MainNavigationWindow)
+                    // Считаем, что наценка - это множитель в процентах (например, 200% = x2)
+                    dishPrice = dishPrice * (delicate.DefaultMarkup / 100);
+                }
                 var compositionCell = new TableCell(compositionParagraph)
                 {
                     Padding = new Thickness(4),

@@ -439,6 +439,32 @@ public static class DatabaseHelper
             // Таблица уже существует, игнорируем ошибку
         }
 
+        // Миграция: добавляем DefaultMarkup для блюд (надбавка по умолчанию)
+        try
+        {
+            command.CommandText = "ALTER TABLE Delicates ADD COLUMN DefaultMarkup REAL DEFAULT 200";
+            command.ExecuteNonQuery();
+        }
+        catch
+        {
+            // Колонка уже существует
+        }
+
+        // Миграция: добавляем Markup для блюд в меню (индивидуальная надбавка)
+        try
+        {
+            command.CommandText = "ALTER TABLE Menu_Delicates ADD COLUMN Markup REAL";
+            command.ExecuteNonQuery();
+            
+            // Заполняем существующие записи значением 200, если было пусто
+            command.CommandText = "UPDATE Menu_Delicates SET Markup = 200 WHERE Markup IS NULL";
+            command.ExecuteNonQuery();
+        }
+        catch
+        {
+            // Колонка уже существует/ошибка обновления
+        }
+
         // Запускаем миграции (поддержка старых форматов базы данных)
         MigrationRunner.RunAllMigrations(connection);
 

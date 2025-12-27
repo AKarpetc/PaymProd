@@ -30,7 +30,8 @@ public class DelicateRepository
                    COALESCE(td.Type_del_opis, ''), td.Type_Del_ID, COALESCE(td.SortOrder, 0),
                    d.LinkedProductId, COALESCE(d.AutoAdd, 0),
                    COALESCE(d.HideInMenu, 0),
-                   COALESCE(d.IsDeleted, 0)
+                   COALESCE(d.IsDeleted, 0),
+                   COALESCE(d.DefaultMarkup, 200)
             FROM Delicates d
             LEFT JOIN Type_Del td ON td.Type_Del_ID = d.Del_Type
             ORDER BY COALESCE(td.SortOrder, 0), td.Type_del_opis, d.Del_Name";
@@ -54,6 +55,7 @@ public class DelicateRepository
                 AutoAdd = !reader.IsDBNull(9) && reader.GetInt32(9) == 1,
                 HideInMenu = !reader.IsDBNull(10) && reader.GetInt32(10) == 1,
                 IsDeleted = !reader.IsDBNull(11) && reader.GetInt32(11) == 1,
+                DefaultMarkup = reader.IsDBNull(12) ? 200 : reader.GetDecimal(12),
                 Lcomp = allComponents.Where(c => c.Delid == delId).ToList()
             };
 
@@ -118,7 +120,8 @@ public class DelicateRepository
                    COALESCE(td.Type_del_opis, ''), td.Type_Del_ID, COALESCE(td.SortOrder, 0),
                    d.LinkedProductId, COALESCE(d.AutoAdd, 0),
                    COALESCE(d.HideInMenu, 0),
-                   COALESCE(d.IsDeleted, 0)
+                   COALESCE(d.IsDeleted, 0),
+                   COALESCE(d.DefaultMarkup, 200)
             FROM Delicates d
             LEFT JOIN Type_Del td ON td.Type_Del_ID = d.Del_Type
             WHERE d.Del_id = @id";
@@ -141,6 +144,7 @@ public class DelicateRepository
                 AutoAdd = !reader.IsDBNull(9) && reader.GetInt32(9) == 1,
                 HideInMenu = !reader.IsDBNull(10) && reader.GetInt32(10) == 1,
                 IsDeleted = !reader.IsDBNull(11) && reader.GetInt32(11) == 1,
+                DefaultMarkup = reader.IsDBNull(12) ? 200 : reader.GetDecimal(12),
                 Lcomp = components
             };
 
@@ -242,6 +246,21 @@ public class DelicateRepository
         command.Parameters.AddWithValue("@autoAdd", autoAdd ? 1 : 0);
         command.Parameters.AddWithValue("@hideInMenu", hideInMenu ? 1 : 0);
 
+        command.ExecuteNonQuery();
+    }
+
+    /// <summary>
+    /// Обновить наценку по умолчанию для блюда
+    /// </summary>
+    public void UpdateDelicateDefaultMarkup(int id, decimal markup)
+    {
+        using var connection = DatabaseHelper.GetConnection();
+        connection.Open();
+
+        var command = connection.CreateCommand();
+        command.CommandText = "UPDATE Delicates SET DefaultMarkup = @markup WHERE Del_id = @id";
+        command.Parameters.AddWithValue("@markup", markup);
+        command.Parameters.AddWithValue("@id", id);
         command.ExecuteNonQuery();
     }
 
@@ -450,7 +469,8 @@ public class DelicateRepository
         var sql = @"
             SELECT d.Del_id, d.Del_Name, COALESCE(d.Del_Ves, 0), 
                    COALESCE(d.Del_count, 0), td.Type_del_opis, td.Type_Del_ID, COALESCE(td.SortOrder, 0),
-                   d.LinkedProductId, COALESCE(d.HideInMenu, 0)
+                   d.LinkedProductId, COALESCE(d.HideInMenu, 0),
+                   COALESCE(d.DefaultMarkup, 200)
             FROM Delicates d
             INNER JOIN Type_Del td ON td.Type_Del_ID = d.Del_Type
             WHERE d.Del_Type != -1
@@ -479,7 +499,8 @@ public class DelicateRepository
                     IDType = reader.GetInt32(5),
                     TypeSortOrder = reader.GetInt32(6),
                     LinkedProductId = reader.IsDBNull(7) ? null : reader.GetInt32(7),
-                    HideInMenu = !reader.IsDBNull(8) && reader.GetInt32(8) == 1
+                    HideInMenu = !reader.IsDBNull(8) && reader.GetInt32(8) == 1,
+                    DefaultMarkup = reader.IsDBNull(9) ? 200 : reader.GetDecimal(9)
                 });
         }
 

@@ -14,17 +14,25 @@ namespace PaymProdNet9.Pages;
 public partial class ProductPricesPage : Page
 {
     private readonly ProductRepository _productRepository;
+    private readonly DelicateRepository _delicateRepository;
+    private readonly MenuRepository _menuRepository;
     private ObservableCollection<ProductView> _allProducts;
+    private ObservableCollection<DishMarkupView> _allDishes;
     private string _currentTypeFilter = "%";
+    private string _currentDishTypeFilter = "%";
     private int? _menuId; // Если null - редактирование общих цен, иначе - цены для конкретного меню
 
     public ProductPricesPage(int? menuId = null)
     {
         InitializeComponent();
         _productRepository = new ProductRepository();
+        _delicateRepository = new DelicateRepository();
+        _menuRepository = new MenuRepository();
         _allProducts = new ObservableCollection<ProductView>();
+        _allDishes = new ObservableCollection<DishMarkupView>();
         _menuId = menuId;
         ProductsPricesDataGrid.ItemsSource = _allProducts;
+        DishMarkupDataGrid.ItemsSource = _allDishes;
         
         // Подписываемся на событие навигации
         if (NavigationService != null)
@@ -57,12 +65,16 @@ public partial class ProductPricesPage : Page
             
             if (_menuId.HasValue)
             {
-                // Загружаем цены из меню
                 LoadMenuPrices();
             }
+
+            // Загружаем блюда и типы блюд
+            LoadDishes();
+            LoadDishTypes();
         }
         catch (Exception ex)
         {
+            Logger.Error("Ошибка при загрузке данных", ex);
             MessageBox.Show($"Ошибка при загрузке данных: {ex.Message}",
                 "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
         }
@@ -110,6 +122,7 @@ public partial class ProductPricesPage : Page
         }
         catch (Exception ex)
         {
+            Logger.Error("Ошибка при загрузке типов продуктов", ex);
             MessageBox.Show($"Ошибка при загрузке типов продуктов: {ex.Message}",
                 "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
         }
@@ -132,6 +145,126 @@ public partial class ProductPricesPage : Page
         }
     }
 
+    private void FilterDishByType_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button button)
+        {
+            _currentDishTypeFilter = button.Tag?.ToString() ?? "%";
+            
+            // Обновляем стиль кнопок
+            foreach (Button btn in DishFilterPanel.Children.OfType<Button>())
+            {
+                btn.Style = (Style)FindResource("MaterialDesignRaisedButton");
+            }
+            button.Style = (Style)FindResource("MaterialDesignFlatButton");
+            
+            LoadDishes();
+        }
+    }
+
+    private void LoadDishTypes()
+    {
+        try
+        {
+             var panel = DishFilterPanel;
+             if (panel == null) return;
+ 
+             // Очищаем все кнопки кроме "Все", если они были добавлены динамически (хотя здесь "DishAllTypesButton" статическая)
+             var buttonsToRemove = panel.Children.Cast<UIElement>()
+                 .Where(c => c != DishAllTypesButton).ToList();
+             foreach (var button in buttonsToRemove) panel.Children.Remove(button);
+ 
+             List<DelicateType> types;
+             
+             // Для блюд всегда показываем все типы, которые есть в меню
+             if (_menuId.HasValue)
+             {
+                 var menuDelicates = _menuRepository.GetMenuDelicates(_menuId.Value);
+                 // Здесь сложно получить типы напрямую из MenuDel_act, так как там нет TypeId.
+                 // Но мы можем получить все доступные типы.
+                 // Для простоты пока загружаем все типы.
+                 types = _delicateRepository.GetDelicateTypes();
+             }
+             else
+             {
+                 types = _delicateRepository.GetDelicateTypes();
+             }
+             
+             foreach (var type in types.OrderBy(t => t.SortOrder).ThenBy(t => t.Name))
+             {
+                 var button = new Button
+                 {
+                     Content = type.Name,
+                     Tag = type.Name,
+                     Margin = new Thickness(0, 0, 5, 0)
+                 };
+                 button.Click += FilterDishByType_Click;
+                 button.SetResourceReference(StyleProperty, "MaterialDesignRaisedButton");
+                 panel.Children.Add(button);
+             }
+        }
+        catch (Exception ex)
+        {
+            Logger.Error("Ошибка при загрузке типов блюд", ex);
+            MessageBox.Show($"Ошибка при загрузке типов блюд: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    private void LoadDishes()
+    {
+        try
+        {
+            _allDishes.Clear();
+            if (!_menuId.HasValue) return;
+
+            var menuDelicates = _menuRepository.GetMenuDelicates(_menuId.Value);
+
+            // Получаем мапу типов для фильтрации (в MenuDel_act нет названий типов)
+            // Придется подгружать деликатесы чтобы узнать тип? 
+            // Или расширить MenuDel_act?
+            // Пока просто загружаем все, фильтрацию реализуем на клиенте если типы есть в справочнике
+            
+            // Оптимизация: нам нужно знать тип блюда для фильтрации.
+            // MenuDel_act имеет Del_id. Можно получить DelicatesColl по ID.
+            // Но делать это в цикле дорого.
+            // Мы можем загрузить все Delicates (GetAllDelicates) и сделать словарь Id -> Type.
+            var allDelicatesDict = _delicateRepository.GetAllDelicates().ToDictionary(d => d.Id, d => d.Type);
+
+            var filtered = menuDelicates.Where(d => 
+            {
+                if (_currentDishTypeFilter == "%") return true;
+                if (allDelicatesDict.TryGetValue(d.Del_id, out var type))
+                {
+                    return type == _currentDishTypeFilter;
+                }
+                return false; 
+            }).ToList();
+
+            Logger.Debug($"LoadDishes: Loading {filtered.Count} dishes. MenuId={_menuId}");
+
+            foreach (var md in filtered)
+            {
+                var view = new DishMarkupView
+                {
+                    Id = md.Id, 
+                    Name = md.Del,
+                    ShortComposition = md.Sost,
+                    DefaultMarkup = md.DefaultMarkup,
+                    Markup = md.Markup ?? md.DefaultMarkup, 
+                    SaveToDefault = true,
+                    IsModified = false,
+                    Type = allDelicatesDict.ContainsKey(md.Del_id) ? allDelicatesDict[md.Del_id] : ""
+                };
+                // Logger.Debug($"Loaded Dish: Id={view.Id} Name={view.Name} Markup={view.Markup} (DB Markup={md.Markup}, Default={md.DefaultMarkup})");
+                _allDishes.Add(view);
+            }
+        }
+        catch (Exception ex)
+        {
+             Logger.Error("Ошибка при загрузке блюд", ex);
+             MessageBox.Show($"Ошибка при загрузке блюд: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
     private void LoadProducts()
     {
         try
@@ -173,6 +306,7 @@ public partial class ProductPricesPage : Page
         }
         catch (Exception ex)
         {
+            Logger.Error("Ошибка при загрузке продуктов", ex);
             MessageBox.Show($"Ошибка при загрузке продуктов: {ex.Message}",
                 "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
         }
@@ -207,6 +341,7 @@ public partial class ProductPricesPage : Page
         }
         catch (Exception ex)
         {
+            Logger.Error("Ошибка при загрузке цен меню", ex);
             MessageBox.Show($"Ошибка при загрузке цен меню: {ex.Message}",
                 "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
         }
@@ -238,6 +373,7 @@ public partial class ProductPricesPage : Page
             }
             catch (Exception ex)
             {
+                Logger.Error("Ошибка при изменении цены", ex);
                 MessageBox.Show($"Ошибка при изменении цены: {ex.Message}",
                     "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
                 e.Cancel = true;
@@ -357,56 +493,56 @@ public partial class ProductPricesPage : Page
 
     private bool HasUnsavedChanges()
     {
-        return _allProducts.Any(p => p.IsModified);
+        return _allProducts.Any(p => p.IsModified) || _allDishes.Any(d => d.IsModified);
     }
 
     private void SaveChanges_Click(object sender, RoutedEventArgs e)
     {
         try
         {
-            var modifiedProducts = _allProducts.Where(p => p.IsModified).ToList();
-            
-            if (modifiedProducts.Count == 0)
+            int count = SaveProductsInternal();
+            if (count > 0)
             {
-                MessageBox.Show("Нет изменений для сохранения.", 
-                    "Информация", MessageBoxButton.OK, MessageBoxImage.Information);
-                return;
+                MessageBox.Show($"Сохранено изменений: {count}", "Успешно", MessageBoxButton.OK, MessageBoxImage.Information);
             }
-
-            foreach (var product in modifiedProducts)
+            else
             {
-                if (_menuId.HasValue)
-                {
-                    // Сохраняем цену для меню
-                    _productRepository.SaveMenuProductPrice(_menuId.Value, product.ID, (double)product.Price);
-                    
-                    // Если галочка включена, обновляем базовую цену в справочнике
-                    if (product.SaveToBasePrice)
-                    {
-                        _productRepository.UpdateProductPrice(product.ID, (double)product.Price);
-                        product.BasePrice = product.Price; // Обновляем отображаемую базовую цену
-                    }
-                }
-                else
-                {
-                    // Сохраняем общую цену
-                    _productRepository.UpdateProductPrice(product.ID, (double)product.Price);
-                    product.BasePrice = product.Price; // Обновляем базовую цену
-                }
-                
-                // Обновляем оригинальную цену и сбрасываем флаг изменений
-                product.OriginalPrice = product.Price;
-                product.IsModified = false;
+                 MessageBox.Show("Нет изменений для сохранения.", "Информация", MessageBoxButton.OK, MessageBoxImage.Information);
             }
-
-            MessageBox.Show($"Сохранено изменений: {modifiedProducts.Count}", 
-                "Успешно", MessageBoxButton.OK, MessageBoxImage.Information);
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Ошибка при сохранении изменений: {ex.Message}",
-                "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+            Logger.Error("Ошибка при сохранении изменений", ex);
+            MessageBox.Show($"Ошибка при сохранении изменений: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
         }
+    }
+
+    private int SaveProductsInternal()
+    {
+        var modifiedProducts = _allProducts.Where(p => p.IsModified).ToList();
+        if (modifiedProducts.Count == 0) return 0;
+
+        foreach (var product in modifiedProducts)
+        {
+            if (_menuId.HasValue)
+            {
+                _productRepository.SaveMenuProductPrice(_menuId.Value, product.ID, (double)product.Price);
+                if (product.SaveToBasePrice)
+                {
+                    _productRepository.UpdateProductPrice(product.ID, (double)product.Price);
+                    product.BasePrice = product.Price; 
+                }
+            }
+            else
+            {
+                _productRepository.UpdateProductPrice(product.ID, (double)product.Price);
+                product.BasePrice = product.Price;
+            }
+            
+            product.OriginalPrice = product.Price;
+            product.IsModified = false;
+        }
+        return modifiedProducts.Count;
     }
 
     private void CancelChanges_Click(object sender, RoutedEventArgs e)
@@ -437,8 +573,74 @@ public partial class ProductPricesPage : Page
         }
         catch (Exception ex)
         {
+            Logger.Error("Ошибка при отмене изменений", ex);
             MessageBox.Show($"Ошибка при отмене изменений: {ex.Message}",
                 "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    private void SaveDishChanges_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            int count = SaveDishesInternal();
+            if (count > 0)
+            {
+                MessageBox.Show($"Сохранено изменений блюд: {count}", "Успешно", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            else
+            {
+                MessageBox.Show("Нет изменений для сохранения.", "Информация", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.Error("Ошибка при сохранении блюд", ex);
+            MessageBox.Show($"Ошибка при сохранении блюд: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    private int SaveDishesInternal()
+    {
+        var modifiedDishes = _allDishes.Where(d => d.IsModified).ToList();
+        Logger.Debug($"SaveDishesInternal: Found {modifiedDishes.Count} modified dishes.");
+        
+        if (modifiedDishes.Count == 0) return 0;
+
+        foreach (var dish in modifiedDishes)
+        {
+            Logger.Debug($"Saving Dish: Id={dish.Id}, Name={dish.Name}, NewMarkup={dish.Markup}, SaveToDefault={dish.SaveToDefault}");
+            
+            _menuRepository.UpdateMenuDelicateMarkup(dish.Id, dish.Markup);
+
+            if (dish.SaveToDefault)
+            {
+                var md = _menuRepository.GetMenuDelicateById(dish.Id, _menuId.Value);
+                if (md != null)
+                {
+                    var delicateId = md.Del_id;
+                    if (delicateId > 0)
+                    {
+                        Logger.Debug($"Updating DefaultMarkup for Dish {delicateId} to {dish.Markup}");
+                        _delicateRepository.UpdateDelicateDefaultMarkup(delicateId, dish.Markup);
+                        dish.DefaultMarkup = dish.Markup;
+                    }
+                }
+            }
+
+            dish.IsModified = false;
+        }
+        return modifiedDishes.Count;
+    }
+
+    private void CancelDishChanges_Click(object sender, RoutedEventArgs e)
+    {
+        var modified = _allDishes.Where(d => d.IsModified).Count();
+        if (modified == 0) return;
+
+        if (MessageBox.Show($"Отменить изменения ({modified})?", "Подтверждение", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+        {
+            LoadDishes(); // Проще перезагрузить список
         }
     }
 
@@ -454,7 +656,19 @@ public partial class ProductPricesPage : Page
 
             if (result == MessageBoxResult.Yes)
             {
-                SaveChanges_Click(SaveButton, new RoutedEventArgs());
+                try
+                {
+                    int prodCount = SaveProductsInternal();
+                    int dishCount = SaveDishesInternal();
+                    // Optional: Show summary message? Usually silent save on close is better or just simple OK.
+                    // But if errors occur, exceptions are thrown.
+                }
+                catch (Exception ex)
+                {
+                    Logger.Error("Ошибка при сохранении перед выходом", ex);
+                    MessageBox.Show($"Ошибка при сохранении: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                    e.Cancel = true; // Отменяем выход, если ошибка
+                }
             }
             else if (result == MessageBoxResult.Cancel)
             {

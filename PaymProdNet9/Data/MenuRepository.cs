@@ -339,7 +339,9 @@ public class MenuRepository
                    CASE 
                        WHEN md.Id_delic < 0 THEN p.Name
                        ELSE d.Del_Name
-                   END as Del_Name
+                   END as Del_Name,
+                   md.Markup,
+                   COALESCE(d.DefaultMarkup, 200) as DefaultMarkup
             FROM Menu_Delicates md
             LEFT JOIN Delicates d ON d.Del_id = md.Id_delic AND md.Id_delic > 0
             LEFT JOIN Producrs p ON p.Prod_ID = -md.Id_delic AND md.Id_delic < 0
@@ -442,13 +444,16 @@ public class MenuRepository
 
             var menuDel = new MenuDel_act
             {
-                Idmen = reader.GetInt32(0),
+                Id = reader.GetInt32(0),
+                Idmen = reader.GetInt32(1),
                 Del_id = delId,
                 Countpor = reader.GetInt32(3),
                 Del = delName,
                 Lcomp = components,
                 IsModified = isModified,
-                HideInMenu = hideInMenu
+                HideInMenu = hideInMenu,
+                Markup = reader.IsDBNull(5) ? null : reader.GetDecimal(5),
+                DefaultMarkup = isProduct ? 200 : (reader.IsDBNull(6) ? 200 : reader.GetDecimal(6))
             };
 
             // Формируем состав
@@ -568,16 +573,35 @@ public class MenuRepository
 
             try
             {
-        var command = connection.CreateCommand();
-                command.Transaction = transaction;
-        command.CommandText = @"
-            INSERT INTO Menu_Delicates (Id_men, Id_delic, Delcount) 
-            VALUES (@menuId, @delicateId, @count);
-            SELECT last_insert_rowid();";
+            var command = connection.CreateCommand();
+            command.Transaction = transaction;
 
-        command.Parameters.AddWithValue("@menuId", menuId);
-        command.Parameters.AddWithValue("@delicateId", delicateId); // Сохраняем отрицательный ID для продуктов
-        command.Parameters.AddWithValue("@count", count);
+            command.Parameters.AddWithValue("@menuId", menuId);
+            command.Parameters.AddWithValue("@delicateId", delicateId); // Сохраняем отрицательный ID для продуктов
+            command.Parameters.AddWithValue("@count", count);
+
+            // Получаем DefaultMarkup для блюда и сохраняем его в Markup
+            if (!isProduct)
+            {
+                var markupCmd = connection.CreateCommand();
+            markupCmd.Transaction = transaction;
+            markupCmd.CommandText = "SELECT DefaultMarkup FROM Delicates WHERE Del_id = @delicateId";
+            markupCmd.Parameters.AddWithValue("@delicateId", delicateId);
+            var defaultMarkup = Convert.ToDouble(markupCmd.ExecuteScalarWithLog() ?? 200);
+            
+            command.CommandText = @"
+            INSERT INTO Menu_Delicates (Id_men, Id_delic, Delcount, Markup) 
+            VALUES (@menuId, @delicateId, @count, @markup);
+            SELECT last_insert_rowid();";
+            command.Parameters.AddWithValue("@markup", defaultMarkup);
+        }
+        else
+        {
+             command.CommandText = @"
+            INSERT INTO Menu_Delicates (Id_men, Id_delic, Delcount, Markup) 
+            VALUES (@menuId, @delicateId, @count, 200);
+            SELECT last_insert_rowid();";
+        }
 
                 insertedId = Convert.ToInt32(command.ExecuteScalarWithLog());
         
@@ -753,7 +777,9 @@ public class MenuRepository
                    CASE 
                        WHEN md.Id_delic < 0 THEN p.Name
                        ELSE d.Del_Name
-                   END as Del_Name
+                   END as Del_Name,
+                   md.Markup,
+                   COALESCE(d.DefaultMarkup, 200) as DefaultMarkup
             FROM Menu_Delicates md
             LEFT JOIN Delicates d ON d.Del_id = md.Id_delic AND md.Id_delic > 0
             LEFT JOIN Producrs p ON p.Prod_ID = -md.Id_delic AND md.Id_delic < 0
@@ -843,13 +869,16 @@ public class MenuRepository
 
         var menuDel = new MenuDel_act
         {
-            Idmen = reader.GetInt32(0),
+            Id = reader.GetInt32(0),
+            Idmen = reader.GetInt32(1),
             Del_id = delId,
             Countpor = reader.GetInt32(3),
             Del = delName,
             Lcomp = components,
             IsModified = isModified,
-            HideInMenu = hideInMenu
+            HideInMenu = hideInMenu,
+            Markup = reader.IsDBNull(5) ? null : reader.GetDecimal(5),
+            DefaultMarkup = isProduct ? 200 : (reader.IsDBNull(6) ? 200 : reader.GetDecimal(6))
         };
 
         // Формируем состав
@@ -892,6 +921,21 @@ public class MenuRepository
         insertCommand.Parameters.AddWithValue("@price", price);
 
         insertCommand.ExecuteNonQueryWithLog();
+    }
+
+    /// <summary>
+    /// Обновить наценку для блюда в меню
+    /// </summary>
+    public void UpdateMenuDelicateMarkup(int menuDelicateId, decimal? markup)
+    {
+        using var connection = DatabaseHelper.GetConnection();
+        connection.Open();
+
+        var command = connection.CreateCommand();
+        command.CommandText = "UPDATE Menu_Delicates SET Markup = @markup WHERE Id = @id";
+        command.Parameters.AddWithValue("@markup", (object?)markup ?? DBNull.Value);
+        command.Parameters.AddWithValue("@id", menuDelicateId);
+        command.ExecuteNonQuery();
     }
 
     /// <summary>

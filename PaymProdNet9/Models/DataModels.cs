@@ -38,6 +38,7 @@ public class Menus
 /// </summary>
 public class MenuDel_act : INotifyPropertyChanged
 {
+    private int _id;
     private int _idmen;
     private string _del = string.Empty;
     private int _del_id;
@@ -46,6 +47,16 @@ public class MenuDel_act : INotifyPropertyChanged
     private List<Components> _lcomp = new();
     private bool _isModified;
     private bool _hideInMenu;
+
+    public int Id
+    {
+        get => _id;
+        set
+        {
+            _id = value;
+            OnPropertyChanged(nameof(Id));
+        }
+    }
 
     public int Idmen
     {
@@ -131,6 +142,9 @@ public class MenuDel_act : INotifyPropertyChanged
         }
     }
 
+    public decimal? Markup { get; set; }
+    public decimal DefaultMarkup { get; set; } = 200;
+
     public event PropertyChangedEventHandler? PropertyChanged;
 
     protected void OnPropertyChanged(string propertyName)
@@ -163,6 +177,10 @@ public class DelicatesColl
     /// но не должно выводиться в отчётах меню (печать меню и т.п.).
     /// </summary>
     public bool HideInMenu { get; set; }
+    /// <summary>
+    /// Наценка по умолчанию (в процентах)
+    /// </summary>
+    public decimal DefaultMarkup { get; set; } = 200;
     public List<Components> Lcomp { get; set; } = new();
 
     /// <summary>
@@ -659,6 +677,92 @@ public class ProductView : INotifyPropertyChanged
     {
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
     }
+}
+
+/// <summary>
+/// Модель для редактирования наценки на блюда
+/// </summary>
+public class DishMarkupView : INotifyPropertyChanged
+{
+    private int _id;
+    private string _name = string.Empty;
+    private string _shortComposition = string.Empty;
+    private decimal _defaultMarkup;
+    private decimal _markup;
+    private bool _saveToDefault;
+    private bool _isModified;
+    private string _type = string.Empty;
+    private int _typeId;
+
+    public int Id
+    {
+        get => _id;
+        set { _id = value; OnPropertyChanged(nameof(Id)); }
+    }
+
+    public string Name
+    {
+        get => _name;
+        set { _name = value; OnPropertyChanged(nameof(Name)); }
+    }
+
+    public string ShortComposition
+    {
+        get => _shortComposition;
+        set { _shortComposition = value; OnPropertyChanged(nameof(ShortComposition)); }
+    }
+
+    public string Type
+    {
+        get => _type;
+        set { _type = value; OnPropertyChanged(nameof(Type)); }
+    }
+
+    public int TypeId
+    {
+        get => _typeId;
+        set { _typeId = value; OnPropertyChanged(nameof(TypeId)); }
+    }
+
+    /// <summary>
+    /// Наценка по умолчанию (из справочника)
+    /// </summary>
+    public decimal DefaultMarkup
+    {
+        get => _defaultMarkup;
+        set { _defaultMarkup = value; OnPropertyChanged(nameof(DefaultMarkup)); }
+    }
+
+    /// <summary>
+    /// Текущая наценка (для меню)
+    /// </summary>
+    public decimal Markup
+    {
+        get => _markup;
+        set 
+        { 
+            _markup = value; 
+            _isModified = true;
+            OnPropertyChanged(nameof(Markup)); 
+            OnPropertyChanged(nameof(IsModified));
+        }
+    }
+
+    public bool SaveToDefault
+    {
+        get => _saveToDefault;
+        set { _saveToDefault = value; OnPropertyChanged(nameof(SaveToDefault)); }
+    }
+
+    public bool IsModified
+    {
+        get => _isModified;
+        set { _isModified = value; OnPropertyChanged(nameof(IsModified)); }
+    }
+
+    public event PropertyChangedEventHandler? PropertyChanged;
+    protected void OnPropertyChanged(string propertyName) => 
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
 }
 
 /// <summary>

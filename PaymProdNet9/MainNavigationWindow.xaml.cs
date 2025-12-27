@@ -393,7 +393,8 @@ public partial class MainNavigationWindow : Window
                     Count = md.Countpor,
                     Lcomp = md.Lcomp,
                     Type = delicate?.Type ?? "Без типа",
-                    TypeSortOrder = delicate?.TypeSortOrder ?? 0
+                    TypeSortOrder = delicate?.TypeSortOrder ?? 0,
+                    DefaultMarkup = md.Markup ?? md.DefaultMarkup // Передаем наценку для печати
                 });
             }
 
