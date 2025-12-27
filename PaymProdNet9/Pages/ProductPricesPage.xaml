@@ -215,7 +215,8 @@
                               IsReadOnly="False"
                               materialDesign:DataGridAssist.CellPadding="8"
                               materialDesign:DataGridAssist.ColumnHeaderPadding="8"
-                              FontSize="13">
+                              FontSize="13"
+                              PreviewKeyDown="DishMarkupDataGrid_PreviewKeyDown">
                         <DataGrid.RowStyle>
                             <Style TargetType="DataGridRow">
                                 <Style.Triggers>

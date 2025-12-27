@@ -232,6 +232,7 @@ public partial class ProductPricesPage : Page
 
             var filtered = menuDelicates.Where(d => 
             {
+                if (d.HideInMenu) return false;
                 if (_currentDishTypeFilter == "%") return true;
                 if (allDelicatesDict.TryGetValue(d.Del_id, out var type))
                 {
@@ -674,6 +675,94 @@ public partial class ProductPricesPage : Page
             {
                 e.Cancel = true;
                 return;
+            }
+        }
+    }
+
+    private void DishMarkupDataGrid_PreviewKeyDown(object sender, KeyEventArgs e)
+    {
+        var dataGrid = sender as DataGrid;
+        if (dataGrid == null) return;
+
+        // Находим редактируемую колонку (Надбавка %)
+        var markupColumn = dataGrid.Columns
+            .OfType<DataGridTextColumn>()
+            .FirstOrDefault(c => c.Header?.ToString() == "Надбавка %");
+
+        if (markupColumn == null) return;
+
+        // Получаем текущую позицию
+        var currentRow = dataGrid.Items.IndexOf(dataGrid.CurrentItem);
+        var currentColumn = dataGrid.CurrentColumn;
+
+        if (currentRow < 0 || currentColumn == null) return;
+
+        if (e.Key == Key.Enter || e.Key == Key.Tab)
+        {
+            // Завершаем редактирование текущей ячейки
+            dataGrid.CommitEdit(DataGridEditingUnit.Row, true);
+
+            // Переходим на следующую строку
+            var nextRow = currentRow + 1;
+            if (nextRow < dataGrid.Items.Count)
+            {
+                // Используем Dispatcher для выполнения после завершения редактирования
+                Dispatcher.BeginInvoke(new Action(() =>
+                {
+                    dataGrid.SelectedIndex = nextRow;
+                    dataGrid.CurrentCell = new DataGridCellInfo(dataGrid.Items[nextRow], markupColumn);
+                    
+                    // Начинаем редактирование
+                    dataGrid.BeginEdit();
+                }), System.Windows.Threading.DispatcherPriority.Input);
+                
+                e.Handled = true;
+            }
+        }
+        else if (e.Key == Key.Down)
+        {
+            // Завершаем редактирование текущей ячейки
+            dataGrid.CommitEdit(DataGridEditingUnit.Row, true);
+
+            // Переходим на следующую строку
+            var nextRow = currentRow + 1;
+            if (nextRow < dataGrid.Items.Count)
+            {
+                Dispatcher.BeginInvoke(new Action(() =>
+                {
+                    dataGrid.SelectedIndex = nextRow;
+                    dataGrid.CurrentCell = new DataGridCellInfo(dataGrid.Items[nextRow], currentColumn);
+                    
+                    if (currentColumn == markupColumn)
+                    {
+                        dataGrid.BeginEdit();
+                    }
+                }), System.Windows.Threading.DispatcherPriority.Input);
+                
+                e.Handled = true;
+            }
+        }
+        else if (e.Key == Key.Up)
+        {
+            // Завершаем редактирование текущей ячейки
+            dataGrid.CommitEdit(DataGridEditingUnit.Row, true);
+
+            // Переходим на предыдущую строку
+            var prevRow = currentRow - 1;
+            if (prevRow >= 0)
+            {
+                Dispatcher.BeginInvoke(new Action(() =>
+                {
+                    dataGrid.SelectedIndex = prevRow;
+                    dataGrid.CurrentCell = new DataGridCellInfo(dataGrid.Items[prevRow], currentColumn);
+                    
+                    if (currentColumn == markupColumn)
+                    {
+                        dataGrid.BeginEdit();
+                    }
+                }), System.Windows.Threading.DispatcherPriority.Input);
+                
+                e.Handled = true;
             }
         }
     }
