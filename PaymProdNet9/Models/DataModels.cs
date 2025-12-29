@@ -13,6 +13,7 @@ public class Menus
     public int CountP { get; set; }
     public string DateBan { get; set; } = string.Empty;
     public string Detail { get; set; } = string.Empty;
+    public decimal? ServicePercent { get; set; }
 
     /// <summary>
     /// Вспомогательное поле для корректной сортировки по дате в таблицах (SavedMenusPage и др.).

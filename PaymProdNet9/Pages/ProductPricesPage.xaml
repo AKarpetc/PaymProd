@@ -291,7 +291,7 @@
                         </Grid.ColumnDefinitions>
                         
                         <TextBlock Grid.Column="1" FontSize="16">
-                            <Run Text="Сумма блюд: " FontWeight="Normal"/>
+                            <Run Text="Итого по меню: " FontWeight="Normal"/>
                             <Run x:Name="TotalDishesRun" Text="0" FontWeight="Bold"/>
                             <Run Text=" тг" FontWeight="Normal"/>
                         </TextBlock>

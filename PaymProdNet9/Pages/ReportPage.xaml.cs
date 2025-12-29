@@ -20,6 +20,7 @@ public partial class ReportPage : Page
     private List<string> _banquetInfo;
     private readonly List<DelicatesCollForSvod> _summaryData;
     private readonly MenuPrinter _menuPrinter;
+    private readonly MenuPriceService _menuPriceService;
 
     public ObservableCollection<MenuDel_act>? MenuDelicates { get; set; }
     public List<string>? BanquetInfo { get; set; }
@@ -32,6 +33,7 @@ public partial class ReportPage : Page
         _banquetInfo = new List<string>();
         _summaryData = new List<DelicatesCollForSvod>();
         _menuPrinter = new MenuPrinter();
+        _menuPriceService = new MenuPriceService();
     }
 
     private void Page_Loaded(object sender, RoutedEventArgs e)
@@ -218,6 +220,7 @@ public partial class ReportPage : Page
             foreach (var component in delicate.Lcomp)
             {
                 var totalWeight = component.Ves * delicate.Countpor;
+                var priceInfo = _menuPriceService.GetComponentPriceInfo(delicate.Idmen, component, delicate.Countpor);
 
                 var item = new DelicatesCollForSvod
                 {
@@ -234,7 +237,8 @@ public partial class ReportPage : Page
                     Itog = totalWeight,
                     ItogFass = component.Fass > 0
                         ? totalWeight / component.Fass
-                        : 0
+                        : 0,
+                    TotalPrice = priceInfo.TotalPrice
                 };
 
                 _summaryData.Add(item);

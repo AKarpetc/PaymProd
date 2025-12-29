@@ -25,7 +25,7 @@ public class MenuRepository
         connection.Open();
 
         var command = connection.CreateCommand();
-        command.CommandText = "SELECT Id, Name, Count_people, Dateban, Deteils FROM Menus ORDER BY Datew DESC";
+        command.CommandText = "SELECT Id, Name, Count_people, Dateban, Deteils, ServicePercent FROM Menus ORDER BY Datew DESC";
 
         using var reader = command.ExecuteReader();
         while (reader.Read())
@@ -39,7 +39,8 @@ public class MenuRepository
                 Name = NormalizeMenuName(rawName, dateBan),
                 CountP = reader.GetInt32(2),
                 DateBan = dateBan,
-                Detail = reader.IsDBNull(4) ? string.Empty : reader.GetString(4)
+                Detail = reader.IsDBNull(4) ? string.Empty : reader.GetString(4),
+                ServicePercent = reader.IsDBNull(5) ? null : reader.GetDecimal(5)
             });
         }
 
@@ -55,7 +56,7 @@ public class MenuRepository
         connection.Open();
 
         var command = connection.CreateCommand();
-        command.CommandText = "SELECT Id, Name, Count_people, Dateban, Deteils FROM Menus WHERE Isopen = 1 LIMIT 1";
+        command.CommandText = "SELECT Id, Name, Count_people, Dateban, Deteils, ServicePercent FROM Menus WHERE Isopen = 1 LIMIT 1";
 
         using var reader = command.ExecuteReader();
         if (reader.Read())
@@ -69,7 +70,40 @@ public class MenuRepository
                 Name = NormalizeMenuName(rawName, dateBan),
                 CountP = reader.GetInt32(2),
                 DateBan = dateBan,
-                Detail = reader.IsDBNull(4) ? string.Empty : reader.GetString(4)
+                Detail = reader.IsDBNull(4) ? string.Empty : reader.GetString(4),
+                ServicePercent = reader.IsDBNull(5) ? null : reader.GetDecimal(5)
+            };
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Получить меню по ID
+    /// </summary>
+    public Menus? GetMenuById(int id)
+    {
+        using var connection = DatabaseHelper.GetConnection();
+        connection.Open();
+
+        var command = connection.CreateCommand();
+        command.CommandText = "SELECT Id, Name, Count_people, Dateban, Deteils, ServicePercent FROM Menus WHERE Id = @id";
+        command.Parameters.AddWithValue("@id", id);
+
+        using var reader = command.ExecuteReader();
+        if (reader.Read())
+        {
+            var rawName = reader.IsDBNull(1) ? string.Empty : reader.GetString(1);
+            var dateBan = reader.IsDBNull(3) ? string.Empty : reader.GetString(3);
+
+            return new Menus
+            {
+                Id = reader.GetInt32(0),
+                Name = NormalizeMenuName(rawName, dateBan),
+                CountP = reader.GetInt32(2),
+                DateBan = dateBan,
+                Detail = reader.IsDBNull(4) ? string.Empty : reader.GetString(4),
+                ServicePercent = reader.IsDBNull(5) ? null : reader.GetDecimal(5)
             };
         }
 
@@ -96,6 +130,22 @@ public class MenuRepository
         command.Parameters.AddWithValue("@dateban", dateBan);
 
         var menuId = Convert.ToInt32(command.ExecuteScalar());
+
+        // Сохраняем текущий процент обслуживания в созданное меню
+        // Используем SQL для получения настройки, чтобы не создавать зависимость от SettingsRepository здесь
+        // (или если SettingsRepository легкий, можно использовать его, но прямой SQL надежнее внутри транзакции/скрипта)
+        var updateServicePercentCmd = connection.CreateCommand();
+        updateServicePercentCmd.CommandText = @"
+            UPDATE Menus 
+            SET ServicePercent = (SELECT ServicePercent FROM Settings WHERE Id = 1)
+            WHERE Id = @menuId;
+            
+            -- Если настройки не найдены, ставим дефолт 10
+            UPDATE Menus 
+            SET ServicePercent = 10 
+            WHERE Id = @menuId AND ServicePercent IS NULL;";
+        updateServicePercentCmd.Parameters.AddWithValue("@menuId", menuId);
+        updateServicePercentCmd.ExecuteNonQuery();
 
         // Автоматически добавляем продукты с Avtomat = 1
         // В старом приложении продукты с AutoAdd добавлялись автоматически независимо от Priz_menu

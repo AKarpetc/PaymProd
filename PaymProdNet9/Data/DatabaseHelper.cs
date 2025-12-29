@@ -466,6 +466,31 @@ public static class DatabaseHelper
             // Колонка уже существует/ошибка обновления
         }
 
+        // Миграция: добавляем ServicePercent для меню
+        try
+        {
+            command.CommandText = "ALTER TABLE Menus ADD COLUMN ServicePercent REAL";
+            command.ExecuteNonQuery();
+
+            // Если колонка добавлена, заполняем её дефолтным значением из настроек (или 10%, если настроек нет)
+            // Но лучше оставить NULL для старых меню, чтобы знать, что для них нужно использовать глобальную настройку?
+            // Нет, требование пользователя: "если мы открыли старое меню ... мы должны видеть процент который был тогда".
+            // Значит, для старых меню нужно проставить текущий процент, чтобы зафиксировать его состояние "на момент сейчас",
+            // либо, если мы считаем, что раньше процент был 10, то 10.
+            // Проще всего: заполнить текущим глобальным значением.
+            
+            command.CommandText = "UPDATE Menus SET ServicePercent = (SELECT ServicePercent FROM Settings WHERE Id = 1)";
+            command.ExecuteNonQuery();
+            
+            // Если Settings пуст, ставим 10
+            command.CommandText = "UPDATE Menus SET ServicePercent = 10 WHERE ServicePercent IS NULL";
+            command.ExecuteNonQuery();
+        }
+        catch
+        {
+            // Колонка уже существует
+        }
+
         // Создание таблицы настроек
         command.CommandText = @"
             CREATE TABLE IF NOT EXISTS Settings (

@@ -1,6 +1,7 @@
 using PaymProdNet9.Enums;
 using PaymProdNet9.Models;
 using PaymProdNet9.Services;
+using PaymProdNet9.Data;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -19,6 +20,8 @@ public partial class PrintMenuPage : Page
 
     private readonly MenuPrinter _menuPrinter;
     private readonly MenuPriceService _menuPriceService;
+    private readonly SettingsRepository _settingsRepository;
+    private readonly MenuRepository _menuRepository;
     private ReportMode? _currentReportMode;
 
     public PrintMenuPage()
@@ -26,6 +29,8 @@ public partial class PrintMenuPage : Page
         InitializeComponent();
         _menuPrinter = new MenuPrinter();
         _menuPriceService = new MenuPriceService();
+        _settingsRepository = new SettingsRepository();
+        _menuRepository = new MenuRepository();
     }
 
     private void Page_Loaded(object sender, RoutedEventArgs e)
@@ -124,6 +129,7 @@ public partial class PrintMenuPage : Page
             table.Columns.Add(new TableColumn { Width = new GridLength(150) });
 
         var rowGroup = new TableRowGroup();
+        decimal totalReportSum = 0;
 
         foreach (var group in groupedDelicates)
         {
@@ -190,9 +196,118 @@ public partial class PrintMenuPage : Page
                         TextAlignment = TextAlignment.Right
                     };
                     row.Cells.Add(priceCell);
+                    
+                    // Накапливаем итоговую сумму
+                    totalReportSum += dishPrice;
                 }
 
                 rowGroup.Rows.Add(row);
+            }
+        }
+
+        // Добавляем строки итогов (только если есть колонка цен)
+        if (showPriceColumn && Delicates.Any())
+        {
+            var settings = _settingsRepository.GetSettings();
+            decimal effectiveServicePercent = settings.ServicePercent;
+
+            if (MenuId > 0)
+            {
+                var menu = _menuRepository.GetMenuById(MenuId);
+                if (menu?.ServicePercent != null)
+                {
+                    effectiveServicePercent = menu.ServicePercent.Value;
+                }
+            }
+
+            // 1. Подитог (Сумма без обслуживания)
+            var subtotalRow = new TableRow();
+            // Объединяем ячейки названия и состава
+            var subtotalTitleCell = new TableCell(new Paragraph(new Run("Итого по меню") { FontWeight = FontWeights.Bold }))
+            {
+                ColumnSpan = 2,
+                Padding = new Thickness(4),
+                TextAlignment = TextAlignment.Right
+            };
+            subtotalRow.Cells.Add(subtotalTitleCell);
+            
+            var subtotalValueCell = new TableCell(new Paragraph(new Run(FormatCurrency(totalReportSum)) { FontWeight = FontWeights.Bold }))
+            {
+                Padding = new Thickness(4),
+                BorderBrush = Brushes.Black,
+                BorderThickness = new Thickness(1),
+                TextAlignment = TextAlignment.Right
+            };
+            subtotalRow.Cells.Add(subtotalValueCell);
+            rowGroup.Rows.Add(subtotalRow);
+
+            // 2. Обслуживание
+            if (reportMode == ReportMode.Price) // Обычно обслуживание показывается только в Price отчете, но если и в Cost, то убрать условие
+            {
+                decimal serviceSum = totalReportSum * (effectiveServicePercent / 100);
+                
+                var serviceRow = new TableRow();
+                var serviceTitleCell = new TableCell(new Paragraph(new Run($"За обслуживание ({effectiveServicePercent:G}%)")) { FontWeight = FontWeights.Bold })
+                {
+                    ColumnSpan = 2,
+                    Padding = new Thickness(4),
+                    TextAlignment = TextAlignment.Right
+                };
+                serviceRow.Cells.Add(serviceTitleCell);
+
+                var serviceValueCell = new TableCell(new Paragraph(new Run(FormatCurrency(serviceSum)) { FontWeight = FontWeights.Bold }))
+                {
+                    Padding = new Thickness(4),
+                    BorderBrush = Brushes.Black,
+                    BorderThickness = new Thickness(1),
+                    TextAlignment = TextAlignment.Right
+                };
+                serviceRow.Cells.Add(serviceValueCell);
+                rowGroup.Rows.Add(serviceRow);
+
+                // 3. ИТОГ
+                decimal grandTotal = totalReportSum + serviceSum;
+                
+                var totalRow = new TableRow();
+                var totalTitleCell = new TableCell(new Paragraph(new Run("ИТОГ") { FontWeight = FontWeights.Bold, Foreground = Brushes.DarkGreen, FontSize = 16 }))
+                {
+                    ColumnSpan = 2,
+                    Padding = new Thickness(4),
+                    TextAlignment = TextAlignment.Right
+                };
+                totalRow.Cells.Add(totalTitleCell);
+
+                var totalValueCell = new TableCell(new Paragraph(new Run(FormatCurrency(grandTotal)) { FontWeight = FontWeights.Bold, Foreground = Brushes.DarkGreen, FontSize = 16 }))
+                {
+                    Padding = new Thickness(4),
+                    BorderBrush = Brushes.Black,
+                    BorderThickness = new Thickness(1),
+                    TextAlignment = TextAlignment.Right
+                };
+                totalRow.Cells.Add(totalValueCell);
+                rowGroup.Rows.Add(totalRow);
+            }
+            else if (reportMode == ReportMode.Cost)
+            {
+                 // Для отчета по себестоимости тоже можно вывести ИТОГ (сумму себестоимостей)
+                 var totalRow = new TableRow();
+                var totalTitleCell = new TableCell(new Paragraph(new Run("ИТОГ") { FontWeight = FontWeights.Bold }))
+                {
+                    ColumnSpan = 2,
+                    Padding = new Thickness(4),
+                    TextAlignment = TextAlignment.Right
+                };
+                totalRow.Cells.Add(totalTitleCell);
+
+                var totalValueCell = new TableCell(new Paragraph(new Run(FormatCurrency(totalReportSum)) { FontWeight = FontWeights.Bold }))
+                {
+                    Padding = new Thickness(4),
+                    BorderBrush = Brushes.Black,
+                    BorderThickness = new Thickness(1),
+                    TextAlignment = TextAlignment.Right
+                };
+                totalRow.Cells.Add(totalValueCell);
+                rowGroup.Rows.Add(totalRow);
             }
         }
 

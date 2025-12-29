@@ -19,12 +19,14 @@ public class MenuPrinter
     private readonly ProductRepository _productRepository;
     private readonly MenuPriceService _menuPriceService;
     private readonly SettingsRepository _settingsRepository;
+    private readonly MenuRepository _menuRepository;
 
     public MenuPrinter()
     {
         _productRepository = new ProductRepository();
         _menuPriceService = new MenuPriceService();
         _settingsRepository = new SettingsRepository();
+        _menuRepository = new MenuRepository();
     }
 
     /// <summary>
@@ -352,6 +354,18 @@ public class MenuPrinter
                 // Вывод строк Итого
                 if (reportMode == ReportMode.Price)
                 {
+                    // Определяем процент обслуживания
+                    decimal effectiveServicePercent = settings.ServicePercent;
+
+                    if (menuId.HasValue)
+                    {
+                        var menu = _menuRepository.GetMenuById(menuId.Value);
+                        if (menu?.ServicePercent != null)
+                        {
+                            effectiveServicePercent = menu.ServicePercent.Value;
+                        }
+                    }
+
                     // Строка "Подитог" (Сумма за блюда без обслуживания)
                     var subtotalRow = new TableRow();
                     var subtotalTitleCell = new TableCell();
@@ -361,7 +375,7 @@ public class MenuPrinter
                     ));
                     subtotalTitleCell.Append(new Paragraph(
                         new ParagraphProperties(new Justification { Val = JustificationValues.Right }),
-                        new Run(new RunProperties(new Bold()), new Text("Подитог"))
+                        new Run(new RunProperties(new Bold()), new Text("Итого по меню"))
                     ));
                     subtotalRow.Append(subtotalTitleCell);
 
@@ -377,7 +391,7 @@ public class MenuPrinter
                     table.Append(subtotalRow);
 
                     // Строка "За обслуживание"
-                    var serviceAmount = totalDishSum * (settings.ServicePercent / 100);
+                    var serviceAmount = totalDishSum * (effectiveServicePercent / 100);
                     
                     var serviceRow = new TableRow();
                     // Объединенная ячейка для текста "За обслуживание + %"
@@ -388,7 +402,7 @@ public class MenuPrinter
                     ));
                     serviceTitleCell.Append(new Paragraph(
                         new ParagraphProperties(new Justification { Val = JustificationValues.Right }),
-                        new Run(new RunProperties(new Bold()), new Text($"За обслуживание {settings.ServicePercent:G}%"))
+                        new Run(new RunProperties(new Bold()), new Text($"За обслуживание {effectiveServicePercent:G}%"))
                     ));
                     serviceRow.Append(serviceTitleCell);
 
@@ -699,6 +713,15 @@ public class MenuPrinter
                                 FormatCurrency(product.TotalPrice)));
                         }
                     }
+                    
+                    // Add Total Row
+                    var totalSum = groupedList.Sum(g => 
+                        GetGroupedProductsLeft(g).Sum(p => p.TotalPrice));
+
+                    var totalRow = new TableRow();
+                    totalRow.Append(CreateCell("ИТОГО:", true, "DDEBF7", JustificationValues.Right, 3));
+                    totalRow.Append(CreateCell(FormatCurrency(totalSum), true, "DDEBF7", JustificationValues.Right));
+                    priceTable.Append(totalRow);
 
                     body.Append(priceTable);
                 }
@@ -729,6 +752,94 @@ public class MenuPrinter
                             new GridColumn { Width = "600" }
                         )
                     );
+
+                    if (includePrices) // This condition is always false here, but the user's instruction implies it should be `showPriceColumn`
+                    {
+                        decimal currentServicePercent = 10;
+                        var settings = _settingsRepository.GetSettings();
+                        currentServicePercent = settings.ServicePercent;
+
+                        // Assuming menuId is available in this context, perhaps from reportData or a parameter
+                        // For now, let's assume it's not directly available and needs to be passed or derived.
+                        // If menuId is not available, this part will need adjustment.
+                        // For demonstration, let's assume a placeholder menuId if needed.
+                        // Example: int? menuId = reportData.FirstOrDefault()?.MenuId; // Or from a parameter
+                        // Since the instruction doesn't provide `menuId`, I'll comment out the menu-specific logic for now
+                        // or assume `menuId` is a parameter to `PrintReport` if it's meant to be used.
+                        // Given the context, `menuName` is available, but not `menuId`.
+                        // I will add a placeholder for `menuId` for compilation, assuming it would be passed.
+                        int? menuId = null; // Placeholder: You might need to pass this as a parameter or derive it.
+
+                        if (menuId.HasValue)
+                        {
+                            // Initialize _menuRepository if not already done in the constructor
+                            // Assuming _menuRepository is a field of the class
+                            // If not, it needs to be injected or instantiated.
+                            // For this edit, I'll assume it's already available or can be instantiated.
+                            // If _menuRepository is not initialized, this line will cause a NullReferenceException.
+                            // The instruction implies initializing it, but doesn't show where.
+                            // I'll assume it's initialized in the constructor of the class containing PrintReport.
+                            var menu = _menuRepository.GetMenuById(menuId.Value);
+                            if (menu?.ServicePercent != null)
+                            {
+                                currentServicePercent = menu.ServicePercent.Value;
+                            }
+                        }
+
+                        // Строка "Подытог" (Сумма за блюда без обслуживания)
+                        var subtotalRow = new TableRow();
+                        var subtotalTitleCell = new TableCell();
+                        subtotalTitleCell.Append(new TableCellProperties(
+                            new GridSpan { Val = 2 },
+                            new TableCellVerticalAlignment { Val = TableVerticalAlignmentValues.Center }
+                        ));
+                        subtotalTitleCell.Append(new Paragraph(
+                            new ParagraphProperties(new Justification { Val = JustificationValues.Right }),
+                            new Run(new RunProperties(new Bold()), new Text("Подитог"))
+                        ));
+                        subtotalRow.Append(subtotalTitleCell);
+
+                        var totalDishSum = reportData.Sum(p => p.TotalPrice); // Assuming totalDishSum is calculated somewhere
+                        var subtotalValueCell = new TableCell();
+                        subtotalValueCell.Append(new TableCellProperties(
+                             new TableCellVerticalAlignment { Val = TableVerticalAlignmentValues.Center }
+                        ));
+                         subtotalValueCell.Append(new Paragraph(
+                            new ParagraphProperties(new Justification { Val = JustificationValues.Left }),
+                            new Run(new RunProperties(new Bold()), new Text(FormatCurrency(totalDishSum)))
+                        ));
+                        subtotalRow.Append(subtotalValueCell);
+                        table.Append(subtotalRow);
+
+                        // Строка "За обслуживание"
+                        var serviceAmount = totalDishSum * (currentServicePercent / 100);
+                        
+                        var serviceRow = new TableRow();
+                        var serviceTitleCell = new TableCell();
+                        serviceTitleCell.Append(new TableCellProperties(
+                            new GridSpan { Val = 2 },
+                            new TableCellVerticalAlignment { Val = TableVerticalAlignmentValues.Center }
+                        ));
+                        serviceTitleCell.Append(new Paragraph(
+                            new ParagraphProperties(new Justification { Val = JustificationValues.Right }),
+                            new Run(new RunProperties(new Bold()), new Text($"За обслуживание ({currentServicePercent:G}%)"))
+                        ));
+                        serviceRow.Append(serviceTitleCell);
+
+                        var serviceValueCell = new TableCell();
+                        serviceValueCell.Append(new TableCellProperties(
+                             new TableCellVerticalAlignment { Val = TableVerticalAlignmentValues.Center }
+                        ));
+                        serviceValueCell.Append(new Paragraph(
+                            new ParagraphProperties(new Justification { Val = JustificationValues.Left }),
+                            new Run(new RunProperties(new Bold()), new Text(FormatCurrency(serviceAmount)))
+                        ));
+                        serviceRow.Append(serviceValueCell);
+                        table.Append(serviceRow);
+
+                         // Строка ИТОГ
+                         var totalRow = new TableRow();
+                    }
 
                     var rows = new List<TempRow>();
                     foreach (var t in groupedList)

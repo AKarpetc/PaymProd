@@ -25,6 +25,7 @@ public partial class ProductPricesPage : Page
 
     private string _currentDishTypeFilter = "%";
     private int? _menuId; // Если null - редактирование общих цен, иначе - цены для конкретного меню
+    private decimal _currentServicePercent;
 
     public ProductPricesPage(int? menuId = null)
     {
@@ -250,7 +251,17 @@ public partial class ProductPricesPage : Page
             Logger.Debug($"LoadDishes: Loading {filtered.Count} dishes. MenuId={_menuId}");
 
             var settings = _settingsRepository.GetSettings();
-            ServicePercentRun.Text = $"{settings.ServicePercent:G}%";
+            _currentServicePercent = settings.ServicePercent;
+
+            if (_menuId.HasValue)
+            {
+                var menu = _menuRepository.GetMenuById(_menuId.Value);
+                if (menu?.ServicePercent != null)
+                {
+                    _currentServicePercent = menu.ServicePercent.Value;
+                }
+            }
+            ServicePercentRun.Text = $"{_currentServicePercent:G}%";
 
             foreach (var md in filtered)
             {
@@ -310,9 +321,7 @@ public partial class ProductPricesPage : Page
         try
         {
             if (!_menuId.HasValue) return;
-
             decimal totalDishesSum = 0;
-            var settings = _settingsRepository.GetSettings();
 
             foreach (var dish in _allDishes)
             {
@@ -338,7 +347,7 @@ public partial class ProductPricesPage : Page
                 totalDishesSum += dishPrice;
             }
 
-            decimal serviceCharge = totalDishesSum * (settings.ServicePercent / 100);
+            decimal serviceCharge = totalDishesSum * (_currentServicePercent / 100);
             decimal grandTotal = totalDishesSum + serviceCharge;
 
             TotalDishesRun.Text = FormatCurrency(totalDishesSum);
