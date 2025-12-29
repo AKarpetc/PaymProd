@@ -18,11 +18,13 @@ public class MenuPrinter
 {
     private readonly ProductRepository _productRepository;
     private readonly MenuPriceService _menuPriceService;
+    private readonly SettingsRepository _settingsRepository;
 
     public MenuPrinter()
     {
         _productRepository = new ProductRepository();
         _menuPriceService = new MenuPriceService();
+        _settingsRepository = new SettingsRepository();
     }
 
     /// <summary>
@@ -114,6 +116,12 @@ public class MenuPrinter
                         new RightBorder { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 6 },
                         new InsideHorizontalBorder { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 6 },
                         new InsideVerticalBorder { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 6 }
+                    ),
+                    new TableCellMarginDefault(
+                        new TopMargin { Width = "50", Type = TableWidthUnitValues.Dxa },
+                        new StartMargin { Width = "100", Type = TableWidthUnitValues.Dxa },
+                        new BottomMargin { Width = "50", Type = TableWidthUnitValues.Dxa },
+                        new EndMargin { Width = "100", Type = TableWidthUnitValues.Dxa }
                     )
                 );
                 table.AppendChild(tableProperties);
@@ -276,6 +284,183 @@ public class MenuPrinter
 
                         table.Append(row);
                     }
+                }
+
+                // --- Добавляем итоговые строки ---
+                var settings = _settingsRepository.GetSettings();
+                decimal totalDishSum = 0;
+
+                // Пересчитываем сумму всех блюд для итога
+                foreach (var group in groupedDelicates)
+                {
+                    foreach (var delicate in group)
+                    {
+                        var components = delicate.Lcomp ?? new List<Components>();
+                        decimal dishTotal = 0;
+                        if (components.Any())
+                        {
+                            foreach (var component in components)
+                            {
+                                var priceInfo = _menuPriceService.GetComponentPriceInfo(menuId ?? 0, component, delicate.Count);
+                                dishTotal += priceInfo.TotalPrice;
+                            }
+                        }
+
+                        // Применяем наценку если нужно (только для Price режима, т.к. в Cost мы считаем себестоимость)
+                        if (delicate.DefaultMarkup > 0)
+                        {
+                            // Если режим Price - наценка уже применена при отображении, 
+                            // нам нужно получить ту же цифру для суммы
+                            dishTotal = dishTotal * (delicate.DefaultMarkup / 100);
+                        }
+                        
+                        // В режиме Cost нам нужна просто сумма себестоимостей (без наценки)
+                        if (reportMode == ReportMode.Cost && delicate.DefaultMarkup > 0)
+                        {
+                             // Откат наценки (если она была применена в логике выше, но здесь мы считаем заново)
+                             // В данном цикле мы считаем dishTotal = Sum(ComponentPrices).
+                             // В блоке выше мы умножили на markup. 
+                             // Для Cost отчета нам нужна "чистая" сумма.
+                             // Исправим: для Cost отчета мы НЕ должны умножать на markup.
+                             dishTotal = dishTotal / (delicate.DefaultMarkup / 100); 
+                        }
+
+                         // Более чистая логика суммирования:
+                         // 1. Считаем чистую себестоимость (cost)
+                         decimal currentDishCost = 0;
+                         foreach (var component in components)
+                         {
+                             var priceInfo = _menuPriceService.GetComponentPriceInfo(menuId ?? 0, component, delicate.Count);
+                             currentDishCost += priceInfo.TotalPrice; 
+                         }
+
+                         // 2. В зависимости от режима добавляем к общей сумме
+                         if (reportMode == ReportMode.Price)
+                         {
+                             // Цена продажи = Себестоимость * Наценка
+                             decimal markupMultiplier = (delicate.DefaultMarkup > 0) ? (delicate.DefaultMarkup / 100) : 1;
+                             totalDishSum += currentDishCost * markupMultiplier;
+                         }
+                         else
+                         {
+                             // Себестоимость
+                             totalDishSum += currentDishCost;
+                         }
+                    }
+                }
+
+                // Вывод строк Итого
+                if (reportMode == ReportMode.Price)
+                {
+                    // Строка "Подытог" (Сумма за блюда без обслуживания)
+                    var subtotalRow = new TableRow();
+                    var subtotalTitleCell = new TableCell();
+                    subtotalTitleCell.Append(new TableCellProperties(
+                        new GridSpan { Val = 2 },
+                        new TableCellVerticalAlignment { Val = TableVerticalAlignmentValues.Center }
+                    ));
+                    subtotalTitleCell.Append(new Paragraph(
+                        new ParagraphProperties(new Justification { Val = JustificationValues.Right }),
+                        new Run(new RunProperties(new Bold()), new Text("Подытог"))
+                    ));
+                    subtotalRow.Append(subtotalTitleCell);
+
+                    var subtotalValueCell = new TableCell();
+                    subtotalValueCell.Append(new TableCellProperties(
+                         new TableCellVerticalAlignment { Val = TableVerticalAlignmentValues.Center }
+                    ));
+                     subtotalValueCell.Append(new Paragraph(
+                        new ParagraphProperties(new Justification { Val = JustificationValues.Left }),
+                        new Run(new RunProperties(new Bold()), new Text(FormatCurrency(totalDishSum)))
+                    ));
+                    subtotalRow.Append(subtotalValueCell);
+                    table.Append(subtotalRow);
+
+                    // Строка "За обслуживание"
+                    var serviceAmount = totalDishSum * (settings.ServicePercent / 100);
+                    
+                    var serviceRow = new TableRow();
+                    // Объединенная ячейка для текста "За обслуживание + %"
+                    var serviceTitleCell = new TableCell();
+                    serviceTitleCell.Append(new TableCellProperties(
+                        new GridSpan { Val = 2 },
+                        new TableCellVerticalAlignment { Val = TableVerticalAlignmentValues.Center }
+                    ));
+                    serviceTitleCell.Append(new Paragraph(
+                        new ParagraphProperties(new Justification { Val = JustificationValues.Right }),
+                        new Run(new RunProperties(new Bold()), new Text($"За обслуживание {settings.ServicePercent:G}%"))
+                    ));
+                    serviceRow.Append(serviceTitleCell);
+
+                    // Ячейка суммы
+                    var serviceValueCell = new TableCell();
+                    serviceValueCell.Append(new TableCellProperties(
+                         new TableCellVerticalAlignment { Val = TableVerticalAlignmentValues.Center }
+                    ));
+                     serviceValueCell.Append(new Paragraph(
+                        new ParagraphProperties(new Justification { Val = JustificationValues.Left }),
+                        new Run(new RunProperties(new Bold()), new Text(FormatCurrency(serviceAmount)))
+                    ));
+                    serviceRow.Append(serviceValueCell);
+                    table.Append(serviceRow);
+
+                    // Строка "ИТОГ"
+                    var grandTotal = totalDishSum + serviceAmount;
+                     
+                    var totalRow = new TableRow();
+                    var totalTitleCell = new TableCell();
+                    totalTitleCell.Append(new TableCellProperties(
+                        new GridSpan { Val = 2 },
+                        new Shading { Fill = "D3D3D3" }, 
+                        new TableCellVerticalAlignment { Val = TableVerticalAlignmentValues.Center }
+                    ));
+                    totalTitleCell.Append(new Paragraph(
+                        new ParagraphProperties(new Justification { Val = JustificationValues.Right }),
+                        new Run(new RunProperties(new Bold(), new FontSize { Val = "24" }), new Text("ИТОГ"))
+                    ));
+                    totalRow.Append(totalTitleCell);
+
+                    var totalValueCell = new TableCell();
+                    totalValueCell.Append(new TableCellProperties(
+                        new Shading { Fill = "D3D3D3" },
+                        new TableCellVerticalAlignment { Val = TableVerticalAlignmentValues.Center }
+                    ));
+                    totalValueCell.Append(new Paragraph(
+                        new ParagraphProperties(new Justification { Val = JustificationValues.Left }),
+                        new Run(new RunProperties(new Bold(), new FontSize { Val = "24" }), new Text(FormatCurrency(grandTotal)))
+                    ));
+                    totalRow.Append(totalValueCell);
+                    table.Append(totalRow);
+                }
+                else if (reportMode == ReportMode.NoPrices) // Это CostReport (себестоимость)
+                {
+                    // Строка "ИТОГ" (только сумма блюд)
+                    var totalRow = new TableRow();
+                    var totalTitleCell = new TableCell();
+                    totalTitleCell.Append(new TableCellProperties(
+                        new GridSpan { Val = 1 }, 
+                        new Shading { Fill = "D3D3D3" }, 
+                        new TableCellVerticalAlignment { Val = TableVerticalAlignmentValues.Center }
+                    ));
+                    
+                    totalTitleCell.Append(new Paragraph(
+                        new ParagraphProperties(new Justification { Val = JustificationValues.Right }),
+                        new Run(new RunProperties(new Bold(), new FontSize { Val = "24" }), new Text("ИТОГ"))
+                    ));
+                    totalRow.Append(totalTitleCell);
+
+                    var totalValueCell = new TableCell();
+                    totalValueCell.Append(new TableCellProperties(
+                        new Shading { Fill = "D3D3D3" },
+                        new TableCellVerticalAlignment { Val = TableVerticalAlignmentValues.Center }
+                    ));
+                    
+                    totalValueCell.Append(new Paragraph(
+                        new ParagraphProperties(new Justification { Val = JustificationValues.Left }),
+                        new Run(new RunProperties(new Bold(), new FontSize { Val = "24" }), new Text(FormatCurrency(totalDishSum)))
+                    ));
+                    totalRow.Append(totalValueCell);
+                    table.Append(totalRow);
                 }
 
                 body.Append(table);
