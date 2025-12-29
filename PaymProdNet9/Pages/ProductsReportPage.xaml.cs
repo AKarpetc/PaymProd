@@ -234,6 +234,8 @@ public partial class ProductsReportPage : Page
         var group = new TableRowGroup();
         table.RowGroups.Add(group);
 
+        decimal grandTotal = 0;
+
         foreach (var typeGroup in groupedByType)
         {
             var headerRow = new TableRow();
@@ -255,6 +257,7 @@ public partial class ProductsReportPage : Page
                 
                 // Пересчитываем цену на основе округленного количества
                 var recalculatedPrice = RecalculatePrice(product, roundedAmount, measures);
+                grandTotal += recalculatedPrice;
                 var priceText = FormatPrice(recalculatedPrice);
 
                 var dataRow = new TableRow();
@@ -265,6 +268,37 @@ public partial class ProductsReportPage : Page
                 group.Rows.Add(dataRow);
             }
         }
+
+        // Add Grand Total Row
+        var totalRow = new TableRow();
+        // Remove duplicate line
+        // "ИТОГО" usually right aligned? CreateHeaderCell is centered.
+        // Let's customize it or reuse logic. 
+        // CreateHeaderCell uses colspan, bold, centered, gray background.
+        // Maybe better to create custom cells for total to align right.
+        
+        var totalTitleCell = new TableCell(new Paragraph(new Run("ИТОГО") { FontWeight = FontWeights.Bold }))
+        {
+            ColumnSpan = 3,
+            TextAlignment = TextAlignment.Right,
+            Background = new SolidColorBrush(Color.FromRgb(221, 235, 247)), // DDEBF7 matches title cell
+            BorderBrush = Brushes.Black,
+            BorderThickness = new Thickness(1),
+            Padding = new Thickness(4)
+        };
+
+        var totalValueCell = new TableCell(new Paragraph(new Run(FormatPrice(grandTotal)) { FontWeight = FontWeights.Bold }))
+        {
+            TextAlignment = TextAlignment.Right,
+            Background = new SolidColorBrush(Color.FromRgb(221, 235, 247)),
+            BorderBrush = Brushes.Black,
+            BorderThickness = new Thickness(1),
+            Padding = new Thickness(4)
+        };
+
+        totalRow.Cells.Add(totalTitleCell);
+        totalRow.Cells.Add(totalValueCell);
+        group.Rows.Add(totalRow);
 
         AddTableToDocument(table);
     }
