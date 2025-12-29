@@ -352,7 +352,7 @@ public class MenuPrinter
                 // Вывод строк Итого
                 if (reportMode == ReportMode.Price)
                 {
-                    // Строка "Подытог" (Сумма за блюда без обслуживания)
+                    // Строка "Подитог" (Сумма за блюда без обслуживания)
                     var subtotalRow = new TableRow();
                     var subtotalTitleCell = new TableCell();
                     subtotalTitleCell.Append(new TableCellProperties(
@@ -361,7 +361,7 @@ public class MenuPrinter
                     ));
                     subtotalTitleCell.Append(new Paragraph(
                         new ParagraphProperties(new Justification { Val = JustificationValues.Right }),
-                        new Run(new RunProperties(new Bold()), new Text("Подытог"))
+                        new Run(new RunProperties(new Bold()), new Text("Подитог"))
                     ));
                     subtotalRow.Append(subtotalTitleCell);
 
