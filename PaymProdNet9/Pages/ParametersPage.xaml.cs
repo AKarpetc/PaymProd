@@ -56,6 +56,57 @@ public partial class ParametersPage : Page
         }
     }
 
+    private void ApplyMarkupToAll_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            if (!decimal.TryParse(DefaultMarkupTextBox.Text, out var markup))
+            {
+                MessageBox.Show("Введите корректное значение надбавки.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            var result = MessageBox.Show(
+                $"Вы действительно хотите установить надбавку {markup}% для ВСЕХ блюд?\n\n" +
+                "Это действие обновит:\n" +
+                "1. Все блюда в справочнике.\n" +
+                "2. Все блюда в текущем открытом меню.\n\n" +
+                "Продолжить?",
+                "Подтверждение массового обновления",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning);
+
+            if (result != MessageBoxResult.Yes) return;
+
+            // 1. Обновляем справочник
+            var delicateRepo = new DelicateRepository();
+            var updatedCatalog = delicateRepo.UpdateAllDefaultMarkups(markup);
+
+            // 2. Обновляем текущее меню
+            var menuRepo = new MenuRepository();
+            var openMenu = menuRepo.GetOpenMenu();
+            var updatedMenu = 0;
+            
+            if (openMenu != null)
+            {
+                updatedMenu = menuRepo.UpdateMarkupForMenu(openMenu.Id, markup);
+            }
+
+            MessageBox.Show(
+                $"Обновление завершено!\n\n" +
+                $"Обновлено блюд в справочнике: {updatedCatalog}\n" +
+                $"Обновлено блюд в текущем меню: {updatedMenu}",
+                "Успех",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            Logger.Error("Ошибка при массовом обновлении надбавки", ex);
+            MessageBox.Show($"Ошибка: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
     private void SaveSettings_Click(object sender, RoutedEventArgs e)
     {
         try

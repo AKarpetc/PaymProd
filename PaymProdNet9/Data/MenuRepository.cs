@@ -1810,4 +1810,21 @@ public class MenuRepository
 
         return "Меню без названия";
     }
+
+
+    /// <summary>
+    /// Обновить наценку для всех блюд в конкретном меню
+    /// </summary>
+    public int UpdateMarkupForMenu(int menuId, decimal newMarkup)
+    {
+        using var connection = DatabaseHelper.GetConnection();
+        connection.Open();
+
+        using var command = connection.CreateCommand();
+        command.CommandText = "UPDATE Menu_Delicates SET Markup = @markup WHERE Menu_id = @menuId";
+        command.Parameters.AddWithValue("@markup", newMarkup);
+        command.Parameters.AddWithValue("@menuId", menuId);
+
+        return command.ExecuteNonQuery();
+    }
 }

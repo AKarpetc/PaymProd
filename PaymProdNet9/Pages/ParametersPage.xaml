@@ -185,6 +185,14 @@
                                              PreviewTextInput="NumericTextBox_PreviewTextInput"
                                              LostFocus="ValidateNumeric_LostFocus"
                                              ToolTip="Значение надбавки, которое будет использоваться для новых блюд" />
+
+                                    <Button Grid.Column="1" 
+                                            Content="Применить ко всем блюдам" 
+                                            HorizontalAlignment="Right" 
+                                            Margin="120,0,0,0"
+                                            Style="{StaticResource InfoButton}"
+                                            Click="ApplyMarkupToAll_Click"
+                                            ToolTip="Применить эту надбавку ко всем блюдам в справочнике и в текущем меню" />
                                 </Grid>
                                 
                                 <Button Content="Сохранить настройки" HorizontalAlignment="Left" Click="SaveSettings_Click" Margin="0,10,0,0" />

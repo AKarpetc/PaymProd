@@ -634,4 +634,20 @@ public class DelicateRepository
 
         return result;
     }
+
+
+    /// <summary>
+    /// Обновить наценку по умолчанию для всех блюд в справочнике
+    /// </summary>
+    public int UpdateAllDefaultMarkups(decimal newMarkup)
+    {
+        using var connection = DatabaseHelper.GetConnection();
+        connection.Open();
+
+        using var command = connection.CreateCommand();
+        command.CommandText = "UPDATE Delicates SET DefaultMarkup = @markup";
+        command.Parameters.AddWithValue("@markup", newMarkup);
+
+        return command.ExecuteNonQuery();
+    }
 }
