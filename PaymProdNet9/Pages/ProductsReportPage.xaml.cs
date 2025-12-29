@@ -522,7 +522,7 @@ public partial class ProductsReportPage : Page
     {
         var summaryData = new List<DelicatesCollForSvod>();
 
-        foreach (var delicate in _menuDelicates.Where(d => d.Lcomp != null && d.Lcomp.Any()))
+        foreach (var delicate in _menuDelicates.Where(d => d.Lcomp != null && d.Lcomp.Any() && !d.HideInProductReport))
         foreach (var component in delicate.Lcomp)
         {
             // Для продуктов, добавленных напрямую (отрицательный Del_id), component.Ves уже содержит итоговое количество на банкет

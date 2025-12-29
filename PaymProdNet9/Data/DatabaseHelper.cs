@@ -298,6 +298,17 @@ public static class DatabaseHelper
             // Колонка уже существует, игнорируем ошибку
         }
 
+        // Миграция: добавляем HideInProductReport для блюд, если его нет
+        try
+        {
+            command.CommandText = "ALTER TABLE Delicates ADD COLUMN HideInProductReport INTEGER DEFAULT 0";
+            command.ExecuteNonQuery();
+        }
+        catch
+        {
+            // Колонка уже существует, игнорируем ошибку
+        }
+
         // Создание таблицы компонентов
         command.CommandText = @"
             CREATE TABLE IF NOT EXISTS Components (

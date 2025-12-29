@@ -30,6 +30,7 @@ public class DelicateRepository
                    COALESCE(td.Type_del_opis, ''), td.Type_Del_ID, COALESCE(td.SortOrder, 0),
                    d.LinkedProductId, COALESCE(d.AutoAdd, 0),
                    COALESCE(d.HideInMenu, 0),
+                   COALESCE(d.HideInProductReport, 0),
                    COALESCE(d.IsDeleted, 0),
                    COALESCE(d.DefaultMarkup, 200)
             FROM Delicates d
@@ -54,8 +55,9 @@ public class DelicateRepository
                 LinkedProductId = reader.IsDBNull(8) ? null : reader.GetInt32(8),
                 AutoAdd = !reader.IsDBNull(9) && reader.GetInt32(9) == 1,
                 HideInMenu = !reader.IsDBNull(10) && reader.GetInt32(10) == 1,
-                IsDeleted = !reader.IsDBNull(11) && reader.GetInt32(11) == 1,
-                DefaultMarkup = reader.IsDBNull(12) ? 200 : reader.GetDecimal(12),
+                HideInProductReport = !reader.IsDBNull(11) && reader.GetInt32(11) == 1,
+                IsDeleted = !reader.IsDBNull(12) && reader.GetInt32(12) == 1,
+                DefaultMarkup = reader.IsDBNull(13) ? 200 : reader.GetDecimal(13),
                 Lcomp = allComponents.Where(c => c.Delid == delId).ToList()
             };
 
@@ -120,6 +122,7 @@ public class DelicateRepository
                    COALESCE(td.Type_del_opis, ''), td.Type_Del_ID, COALESCE(td.SortOrder, 0),
                    d.LinkedProductId, COALESCE(d.AutoAdd, 0),
                    COALESCE(d.HideInMenu, 0),
+                   COALESCE(d.HideInProductReport, 0),
                    COALESCE(d.IsDeleted, 0),
                    COALESCE(d.DefaultMarkup, 200)
             FROM Delicates d
@@ -143,8 +146,9 @@ public class DelicateRepository
                 LinkedProductId = reader.IsDBNull(8) ? null : reader.GetInt32(8),
                 AutoAdd = !reader.IsDBNull(9) && reader.GetInt32(9) == 1,
                 HideInMenu = !reader.IsDBNull(10) && reader.GetInt32(10) == 1,
-                IsDeleted = !reader.IsDBNull(11) && reader.GetInt32(11) == 1,
-                DefaultMarkup = reader.IsDBNull(12) ? 200 : reader.GetDecimal(12),
+                HideInProductReport = !reader.IsDBNull(11) && reader.GetInt32(11) == 1,
+                IsDeleted = !reader.IsDBNull(12) && reader.GetInt32(12) == 1,
+                DefaultMarkup = reader.IsDBNull(13) ? 200 : reader.GetDecimal(13),
                 Lcomp = components
             };
 
@@ -202,7 +206,7 @@ public class DelicateRepository
     /// <summary>
     /// Добавить блюдо
     /// </summary>
-    public int AddDelicate(int typeId, string name, decimal ves, decimal count, bool autoAdd, bool hideInMenu = false)
+    public int AddDelicate(int typeId, string name, decimal ves, decimal count, bool autoAdd, bool hideInMenu = false, bool hideInProductReport = false)
     {
         using var connection = DatabaseHelper.GetConnection();
         connection.Open();
@@ -214,8 +218,8 @@ public class DelicateRepository
 
         var command = connection.CreateCommand();
         command.CommandText = @"
-            INSERT INTO Delicates (Del_Type, Del_Name, Del_Ves, Del_count, Datew, AutoAdd, HideInMenu, DefaultMarkup) 
-            VALUES (@type, @name, @ves, @count, datetime('now'), @autoAdd, @hideInMenu, @defaultMarkup);
+            INSERT INTO Delicates (Del_Type, Del_Name, Del_Ves, Del_count, Datew, AutoAdd, HideInMenu, HideInProductReport, DefaultMarkup) 
+            VALUES (@type, @name, @ves, @count, datetime('now'), @autoAdd, @hideInMenu, @hideInProductReport, @defaultMarkup);
             SELECT last_insert_rowid();";
 
         command.Parameters.AddWithValue("@type", typeId);
@@ -224,6 +228,7 @@ public class DelicateRepository
         command.Parameters.AddWithValue("@count", (double)count);
         command.Parameters.AddWithValue("@autoAdd", autoAdd ? 1 : 0);
         command.Parameters.AddWithValue("@hideInMenu", hideInMenu ? 1 : 0);
+        command.Parameters.AddWithValue("@hideInProductReport", hideInProductReport ? 1 : 0);
         command.Parameters.AddWithValue("@defaultMarkup", defaultMarkup);
 
         return Convert.ToInt32(command.ExecuteScalar());
@@ -232,7 +237,7 @@ public class DelicateRepository
     /// <summary>
     /// Обновить блюдо
     /// </summary>
-    public void UpdateDelicate(int id, int typeId, string name, decimal ves, decimal count, bool autoAdd, bool hideInMenu = false)
+    public void UpdateDelicate(int id, int typeId, string name, decimal ves, decimal count, bool autoAdd, bool hideInMenu = false, bool hideInProductReport = false)
     {
         using var connection = DatabaseHelper.GetConnection();
         connection.Open();
@@ -241,7 +246,7 @@ public class DelicateRepository
         command.CommandText = @"
             UPDATE Delicates 
             SET Del_Name = @name, Del_Type = @type, Del_Ves = @ves, Del_count = @count, Datew = datetime('now'),
-                AutoAdd = @autoAdd, HideInMenu = @hideInMenu
+                AutoAdd = @autoAdd, HideInMenu = @hideInMenu, HideInProductReport = @hideInProductReport
             WHERE Del_id = @id";
 
         command.Parameters.AddWithValue("@id", id);
@@ -251,6 +256,7 @@ public class DelicateRepository
         command.Parameters.AddWithValue("@count", (double)count);
         command.Parameters.AddWithValue("@autoAdd", autoAdd ? 1 : 0);
         command.Parameters.AddWithValue("@hideInMenu", hideInMenu ? 1 : 0);
+        command.Parameters.AddWithValue("@hideInProductReport", hideInProductReport ? 1 : 0);
 
         command.ExecuteNonQuery();
     }

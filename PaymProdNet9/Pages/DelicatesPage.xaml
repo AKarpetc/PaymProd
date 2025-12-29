@@ -182,7 +182,19 @@
                                                                  Height="18"
                                                                  Foreground="#F44336"
                                                                  Visibility="{Binding HideInMenu, Converter={StaticResource BooleanToVisibilityConverter}}"
-                                                                 ToolTip="Блюдо будет отображаться только в отчете по продуктам, но не в отчете меню" />
+                                                                 ToolTip="Блюдо скрыто из меню" />
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Header="Не показывать в отчете" Width="*">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <materialDesign:PackIcon Kind="FileHidden"
+                                                                 Width="18"
+                                                                 Height="18"
+                                                                 Foreground="#FF9800"
+                                                                 Visibility="{Binding HideInProductReport, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                                                 ToolTip="Блюдо скрыто из отчета по продуктам" />
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
@@ -274,9 +286,13 @@
                                           ToolTip="Если отмечено, блюдо будет автоматически добавляться в новое меню с количеством, равным числу гостей.">
                                     <TextBlock Text="Автоматически добавлять в новое меню"/>
                                 </CheckBox>
-                                <CheckBox x:Name="DelicateHideInMenuCheckBox" Margin="0,5"
+                                <CheckBox x:Name="DelicateHideInMenuCheckBox" Margin="0,5,15,5"
                                           ToolTip="Если отмечено, блюдо не выводится в отчете меню, но учитывается в отчете по продуктам.">
-                                    <TextBlock Text="Не показывать это блюдо в меню"/>
+                                    <TextBlock Text="Не показывать в меню"/>
+                                </CheckBox>
+                                <CheckBox x:Name="DelicateHideInProductReportCheckBox" Margin="0,5"
+                                          ToolTip="Если отмечено, блюдо не выводится в отчете по продуктам и не участвует в подсчете итогов.">
+                                    <TextBlock Text="Не показывать в отчете по продуктам"/>
                                 </CheckBox>
                             </StackPanel>
                     </Grid>

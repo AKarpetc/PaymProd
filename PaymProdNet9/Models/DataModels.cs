@@ -48,6 +48,7 @@ public class MenuDel_act : INotifyPropertyChanged
     private List<Components> _lcomp = new();
     private bool _isModified;
     private bool _hideInMenu;
+    private bool _hideInProductReport;
 
     public int Id
     {
@@ -143,6 +144,19 @@ public class MenuDel_act : INotifyPropertyChanged
         }
     }
 
+    /// <summary>
+    /// Флаг "не показывать в отчете по продуктам".
+    /// </summary>
+    public bool HideInProductReport
+    {
+        get => _hideInProductReport;
+        set
+        {
+            _hideInProductReport = value;
+            OnPropertyChanged(nameof(HideInProductReport));
+        }
+    }
+
     public decimal? Markup { get; set; }
     public decimal DefaultMarkup { get; set; } = 200;
 
@@ -178,6 +192,11 @@ public class DelicatesColl
     /// но не должно выводиться в отчётах меню (печать меню и т.п.).
     /// </summary>
     public bool HideInMenu { get; set; }
+    /// <summary>
+    /// Флаг "не показывать в отчете по продуктам".
+    /// Если true, блюдо и его компоненты не учитываются в сводном отчете по продуктам.
+    /// </summary>
+    public bool HideInProductReport { get; set; }
     /// <summary>
     /// Наценка по умолчанию (в процентах)
     /// </summary>

@@ -391,7 +391,8 @@ public class MenuRepository
                        ELSE d.Del_Name
                    END as Del_Name,
                    md.Markup,
-                   COALESCE(d.DefaultMarkup, 200) as DefaultMarkup
+                   COALESCE(d.DefaultMarkup, 200) as DefaultMarkup,
+                   CASE WHEN md.Id_delic > 0 THEN COALESCE(d.HideInProductReport, 0) ELSE 0 END as HideInProductReport
             FROM Menu_Delicates md
             LEFT JOIN Delicates d ON d.Del_id = md.Id_delic AND md.Id_delic > 0
             LEFT JOIN Producrs p ON p.Prod_ID = -md.Id_delic AND md.Id_delic < 0
@@ -502,6 +503,7 @@ public class MenuRepository
                 Lcomp = components,
                 IsModified = isModified,
                 HideInMenu = hideInMenu,
+                HideInProductReport = !reader.IsDBNull(7) && reader.GetInt32(7) == 1,
                 Markup = reader.IsDBNull(5) ? null : reader.GetDecimal(5),
                 DefaultMarkup = isProduct ? 200 : (reader.IsDBNull(6) ? 200 : reader.GetDecimal(6))
             };
