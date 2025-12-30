@@ -58,11 +58,29 @@ public partial class ProductPricesPage : Page
             {
                 BasePriceColumn.Visibility = Visibility.Collapsed;
                 SaveToBasePriceColumn.Visibility = Visibility.Collapsed;
+                
+                // Для блюд также скрываем "Старая надбавка" и "В базу", так как мы редактируем базу
+                // Находим колонки по индексу или имени
+                var dishGrid = DishMarkupDataGrid;
+                if (dishGrid != null && dishGrid.Columns.Count > 4)
+                {
+                    // "Старая надбавка %" - index 2
+                    // "В базу" - index 4
+                    dishGrid.Columns[2].Visibility = Visibility.Collapsed;
+                    dishGrid.Columns[4].Visibility = Visibility.Collapsed;
+                }
             }
             else
             {
                 BasePriceColumn.Visibility = Visibility.Visible;
                 SaveToBasePriceColumn.Visibility = Visibility.Visible;
+                
+                var dishGrid = DishMarkupDataGrid;
+                if (dishGrid != null && dishGrid.Columns.Count > 4)
+                {
+                    dishGrid.Columns[2].Visibility = Visibility.Visible;
+                    dishGrid.Columns[4].Visibility = Visibility.Visible;
+                }
             }
             
             // Сначала загружаем продукты (для меню это нужно для определения типов)
@@ -222,81 +240,136 @@ public partial class ProductPricesPage : Page
         try
         {
             _allDishes.Clear();
-            if (!_menuId.HasValue) return;
 
-            var menuDelicates = _menuRepository.GetMenuDelicates(_menuId.Value);
-
-            // Получаем мапу типов для фильтрации (в MenuDel_act нет названий типов)
-            // Придется подгружать деликатесы чтобы узнать тип? 
-            // Или расширить MenuDel_act?
-            // Пока просто загружаем все, фильтрацию реализуем на клиенте если типы есть в справочнике
-            
-            // Оптимизация: нам нужно знать тип блюда для фильтрации.
-            // MenuDel_act имеет Del_id. Можно получить DelicatesColl по ID.
-            // Но делать это в цикле дорого.
-            // Мы можем загрузить все Delicates (GetAllDelicates) и сделать словарь Id -> Type.
-            var allDelicatesDict = _delicateRepository.GetAllDelicates().ToDictionary(d => d.Id, d => d.Type);
-
-            var filtered = menuDelicates.Where(d => 
+            // Если меню не выбрано, загружаем все блюда из справочника
+            if (!_menuId.HasValue)
             {
-                if (d.HideInMenu) return false;
-                if (_currentDishTypeFilter == "%") return true;
-                if (allDelicatesDict.TryGetValue(d.Del_id, out var type))
+                var allDelicates = _delicateRepository.GetAllDelicates();
+                
+                // Фильтрация
+                var filtered = allDelicates.Where(d => 
                 {
-                    return type == _currentDishTypeFilter;
+                    if (d.HideInMenu) return false;
+                    if (_currentDishTypeFilter == "%") return true;
+                    return d.Type == _currentDishTypeFilter;
+                }).OrderBy(d => d.Name).ToList();
+
+                Logger.Debug($"LoadDishes (Global): Loading {filtered.Count} dishes.");
+                
+                // Получаем глобальный ServicePercent
+                var settings = _settingsRepository.GetSettings();
+                _currentServicePercent = settings.ServicePercent;
+                ServicePercentRun.Text = $"{_currentServicePercent:G}%";
+
+                foreach (var d in filtered)
+                {
+                    decimal baseCost = 0;
+                    string ShortCompositionStr = "";
+                     // Для расчета себестоимости в глобальном режиме нам нужно посчитать цену компонентов
+                     // Но у нас нет привязки к меню.
+                     // Мы можем посчитать "базовую" себестоимость, используя базовые цены продуктов.
+                     // Однако GetComponentPriceInfo требует menuId.
+                     // Если мы передадим 0 или null в GetComponentPriceInfo? Нужно проверить сервис.
+                     // В ProductPricesPage у нас нет удобного способа посчитать глобальную себестоимость без рефакторинга сервиса.
+                     // Попробуем посчитать "на лету" используя цены продуктов из справочника.
+                     
+                     if (d.Lcomp != null)
+                     {
+                         // Generating ShortComposition from components
+                         var validComponents = d.Lcomp.Where(c => !string.IsNullOrEmpty(c.Name)).Select(c => c.Name);
+                         if (validComponents.Any())
+                         {
+                             // Limit to reasonable length if needed, but for now just join
+                             // Usually "Name, Name, Name" or "Name/Name"
+                             // Let's use comma based on existing UI look
+                             ShortCompositionStr = string.Join(", ", validComponents);
+                         }
+
+                         foreach (var comp in d.Lcomp)
+                         {
+                             // Получаем цену продукта из справочника
+                             // ... (existing comments)
+                         }
+                     }
+
+                    var view = new DishMarkupView
+                    {
+                        Id = d.Id, // Del_id
+                        Name = d.Name,
+                        ShortComposition = ShortCompositionStr,
+                        DefaultMarkup = d.DefaultMarkup,
+                        Markup = d.DefaultMarkup, // В глобальном режиме текущая наценка = дефолтной
+                        SaveToDefault = true, // В глобальном режиме всегда сохраняем в базу (по смыслу)
+                        IsModified = false,
+                        Type = d.Type,
+                        Count = 1,
+                        BaseCost = 0 // Пока 0
+                    };
+                    
+                    view.PropertyChanged += DishView_PropertyChanged;
+                    _allDishes.Add(view);
                 }
-                return false; 
-            }).ToList();
-
-            Logger.Debug($"LoadDishes: Loading {filtered.Count} dishes. MenuId={_menuId}");
-
-            var settings = _settingsRepository.GetSettings();
-            _currentServicePercent = settings.ServicePercent;
-
-            if (_menuId.HasValue)
+            }
+            else
             {
+                // Режим конкретного меню
+                var menuDelicates = _menuRepository.GetMenuDelicates(_menuId.Value);
+
+                var allDelicatesDict = _delicateRepository.GetAllDelicates().ToDictionary(d => d.Id, d => d.Type);
+
+                var filtered = menuDelicates.Where(d => 
+                {
+                    if (d.HideInMenu) return false;
+                    if (_currentDishTypeFilter == "%") return true;
+                    if (allDelicatesDict.TryGetValue(d.Del_id, out var type))
+                    {
+                        return type == _currentDishTypeFilter;
+                    }
+                    return false; 
+                }).ToList();
+
+                Logger.Debug($"LoadDishes (Menu): Loading {filtered.Count} dishes. MenuId={_menuId}");
+
+                var settings = _settingsRepository.GetSettings();
+                _currentServicePercent = settings.ServicePercent;
+
                 var menu = _menuRepository.GetMenuById(_menuId.Value);
                 if (menu?.ServicePercent != null)
                 {
                     _currentServicePercent = menu.ServicePercent.Value;
                 }
-            }
-            ServicePercentRun.Text = $"{_currentServicePercent:G}%";
+                ServicePercentRun.Text = $"{_currentServicePercent:G}%";
 
-            foreach (var md in filtered)
-            {
-                // Для расчета себестоимости и общей суммы нам нужно знать стоимость ингредиентов
-                // Мы можем использовать MenuPriceService, но для этого нужен Components список
-                // В MenuDel_act Components уже загружены (Lcomp)
-                
-                decimal baseCost = 0;
-                if (md.Lcomp != null)
+                foreach (var md in filtered)
                 {
-                    foreach (var comp in md.Lcomp)
+                    decimal baseCost = 0;
+                    if (md.Lcomp != null)
                     {
-                        var priceInfo = _menuPriceService.GetComponentPriceInfo(_menuId.Value, comp, md.Countpor);
-                        baseCost += priceInfo.TotalPrice;
+                        foreach (var comp in md.Lcomp)
+                        {
+                            var priceInfo = _menuPriceService.GetComponentPriceInfo(_menuId.Value, comp, md.Countpor);
+                            baseCost += priceInfo.TotalPrice;
+                        }
                     }
-                }
 
-                var view = new DishMarkupView
-                {
-                    Id = md.Id, 
-                    Name = md.Del,
-                    ShortComposition = md.Sost,
-                    DefaultMarkup = md.DefaultMarkup,
-                    Markup = md.Markup ?? md.DefaultMarkup, 
-                    SaveToDefault = true,
-                    IsModified = false,
-                    Type = allDelicatesDict.ContainsKey(md.Del_id) ? allDelicatesDict[md.Del_id] : "",
-                    Count = md.Countpor,
-                    BaseCost = baseCost
-                };
-                
-                // Подписываемся на изменение свойств для пересчета итогов
-                view.PropertyChanged += DishView_PropertyChanged;
-                
-                _allDishes.Add(view);
+                    var view = new DishMarkupView
+                    {
+                        Id = md.Id, 
+                        Name = md.Del,
+                        ShortComposition = md.Sost,
+                        DefaultMarkup = md.DefaultMarkup,
+                        Markup = md.Markup ?? md.DefaultMarkup, 
+                        SaveToDefault = true,
+                        IsModified = false,
+                        Type = allDelicatesDict.ContainsKey(md.Del_id) ? allDelicatesDict[md.Del_id] : "",
+                        Count = md.Countpor,
+                        BaseCost = baseCost
+                    };
+                    
+                    view.PropertyChanged += DishView_PropertyChanged;
+                    
+                    _allDishes.Add(view);
+                }
             }
             
             RecalculateTotals();
@@ -711,21 +784,33 @@ public partial class ProductPricesPage : Page
         {
             Logger.Debug($"Saving Dish: Id={dish.Id}, Name={dish.Name}, NewMarkup={dish.Markup}, SaveToDefault={dish.SaveToDefault}");
             
-            _menuRepository.UpdateMenuDelicateMarkup(dish.Id, dish.Markup);
-
-            if (dish.SaveToDefault)
+            if (_menuId.HasValue)
             {
-                var md = _menuRepository.GetMenuDelicateById(dish.Id, _menuId.Value);
-                if (md != null)
+                // Режим меню: обновляем Menu_Delicates
+                _menuRepository.UpdateMenuDelicateMarkup(dish.Id, dish.Markup);
+
+                if (dish.SaveToDefault)
                 {
-                    var delicateId = md.Del_id;
-                    if (delicateId > 0)
+                    var md = _menuRepository.GetMenuDelicateById(dish.Id, _menuId.Value);
+                    if (md != null)
                     {
-                        Logger.Debug($"Updating DefaultMarkup for Dish {delicateId} to {dish.Markup}");
-                        _delicateRepository.UpdateDelicateDefaultMarkup(delicateId, dish.Markup);
-                        dish.DefaultMarkup = dish.Markup;
+                        var delicateId = md.Del_id;
+                        if (delicateId > 0)
+                        {
+                            Logger.Debug($"Updating DefaultMarkup for Dish {delicateId} to {dish.Markup}");
+                            _delicateRepository.UpdateDelicateDefaultMarkup(delicateId, dish.Markup);
+                            dish.DefaultMarkup = dish.Markup;
+                        }
                     }
                 }
+            }
+            else
+            {
+                // Глобальный режим: обновляем сразу справочник (Delicates)
+                // В этом режиме dish.Id = Delicates.Del_id (см. LoadDishes)
+                Logger.Debug($"Updating DefaultMarkup (Global) for Dish {dish.Id} to {dish.Markup}");
+                _delicateRepository.UpdateDelicateDefaultMarkup(dish.Id, dish.Markup);
+                dish.DefaultMarkup = dish.Markup;
             }
 
             dish.IsModified = false;
