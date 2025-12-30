@@ -112,12 +112,12 @@ public class MenuPrinter
                 var tableProperties = new TableProperties(
                     new TableWidth { Type = TableWidthUnitValues.Pct, Width = "5000" },
                     new TableBorders(
-                        new TopBorder { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 6 },
-                        new BottomBorder { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 6 },
-                        new LeftBorder { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 6 },
-                        new RightBorder { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 6 },
-                        new InsideHorizontalBorder { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 6 },
-                        new InsideVerticalBorder { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 6 }
+                        new TopBorder { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 12, Color = "000000" },
+                        new BottomBorder { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 12, Color = "000000" },
+                        new LeftBorder { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 12, Color = "000000" },
+                        new RightBorder { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 12, Color = "000000" },
+                        new InsideHorizontalBorder { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 12, Color = "000000" },
+                        new InsideVerticalBorder { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 12, Color = "000000" }
                     ),
                     new TableCellMarginDefault(
                         new TopMargin { Width = "50", Type = TableWidthUnitValues.Dxa },
