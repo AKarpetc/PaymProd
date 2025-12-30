@@ -238,75 +238,11 @@ public class MenuRepository
 
             command.ExecuteNonQueryWithLog();
 
-            // Пересчитываем количество блюд, если количество человек изменилось
-            if (oldCountPeople > 0 && oldCountPeople != countPeople)
-            {
-                var ratio = (decimal)countPeople / oldCountPeople;
+            command.ExecuteNonQueryWithLog();
 
-                // Получаем все блюда из меню
-                var getDishesCommand = connection.CreateCommand();
-                getDishesCommand.Transaction = transaction;
-                getDishesCommand.CommandText = @"
-                    SELECT md.Id, md.Id_delic, md.Delcount
-                    FROM Menu_Delicates md
-                    WHERE md.Id_men = @menuId";
-                getDishesCommand.Parameters.AddWithValue("@menuId", id);
-
-                var dishesToUpdate = new List<(int MenuDelicateId, int DelicateId, int NewCount)>();
-                using (var reader = getDishesCommand.ExecuteReaderWithLog())
-                {
-                    while (reader.Read())
-                    {
-                        var menuDelicateId = reader.GetInt32(0);
-                        var delicateId = reader.GetInt32(1);
-                        var oldDelcount = reader.GetInt32(2);
-
-                        // Для обычных блюд (не продуктов) получаем Del_count из Delicates
-                        if (delicateId > 0)
-                        {
-                            var getDelCountCommand = connection.CreateCommand();
-                            getDelCountCommand.Transaction = transaction;
-                            getDelCountCommand.CommandText = "SELECT COALESCE(Del_count, 0) FROM Delicates WHERE Del_id = @delicateId";
-                            getDelCountCommand.Parameters.AddWithValue("@delicateId", delicateId);
-                            var delCount = Convert.ToDecimal(getDelCountCommand.ExecuteScalarWithLog());
-
-                            int newCount;
-                            if (delCount > 0)
-                            {
-                                // Используем Del_count для расчета: новое количество = Del_count * новое количество человек
-                                newCount = (int)Math.Ceiling(delCount * countPeople);
-                            }
-                            else
-                            {
-                                // Если Del_count = 0, пересчитываем пропорционально
-                                newCount = (int)Math.Ceiling(oldDelcount * ratio);
-                            }
-
-                            dishesToUpdate.Add((menuDelicateId, delicateId, newCount));
-                        }
-                        else
-                        {
-                            // Для продуктов (отрицательный ID) пересчитываем пропорционально
-                            var newCount = (int)Math.Ceiling(oldDelcount * ratio);
-                            dishesToUpdate.Add((menuDelicateId, delicateId, newCount));
-                        }
-                    }
-                }
-
-                // Обновляем количество для каждого блюда
-                foreach (var (menuDelicateId, delicateId, newCount) in dishesToUpdate)
-                {
-                    var updateCommand = connection.CreateCommand();
-                    updateCommand.Transaction = transaction;
-                    updateCommand.CommandText = @"
-                        UPDATE Menu_Delicates 
-                        SET Delcount = @newCount 
-                        WHERE Id = @menuDelicateId";
-                    updateCommand.Parameters.AddWithValue("@newCount", newCount);
-                    updateCommand.Parameters.AddWithValue("@menuDelicateId", menuDelicateId);
-                    updateCommand.ExecuteNonQueryWithLog();
-                }
-            }
+            // Автоматический пересчет блюд здесь УДАЛЕН.
+            // Теперь пересчет выполняется явно через метод UpdateMenuDelicateCount из UI (CurrentMenuPage.xaml.cs),
+            // чтобы пользователь мог контролировать процесс и сохранять ручные правки.
 
             transaction.Commit();
         }
@@ -1827,9 +1763,29 @@ public class MenuRepository
     }
 
     /// <summary>
+    /// Добавить блюдо в меню
+    /// </summary>
+    public int AddDelicateToMenu(int menuId, int delicateId, decimal count)
+    {
+        using var connection = DatabaseHelper.GetConnection();
+        connection.Open();
+
+        var command = connection.CreateCommand();
+        command.CommandText = @"
+            INSERT INTO Menu_Delicates (Id_men, Id_delic, Delcount, IsModified)
+            VALUES (@menuId, @delicateId, @count, 0);
+            SELECT last_insert_rowid();";
+        command.Parameters.AddWithValue("@menuId", menuId);
+        command.Parameters.AddWithValue("@delicateId", delicateId);
+        command.Parameters.AddWithValue("@count", count);
+
+        return Convert.ToInt32(command.ExecuteScalar());
+    }
+
+    /// <summary>
     /// Обновить количество блюда в меню
     /// </summary>
-    public void UpdateMenuDelicateCount(int menuId, int delicateId, int count)
+    public void UpdateMenuDelicateCount(int menuId, int delicateId, decimal count)
     {
         using var connection = DatabaseHelper.GetConnection();
         connection.Open();

@@ -101,54 +101,57 @@
             </Grid.RowDefinitions>
 
             <!-- БЛОК 1: Информация о банкете (ВВЕРХУ) -->
-            <materialDesign:Card Grid.Row="0" Margin="10,10,10,0" Padding="0">
-                <Expander x:Name="BanquetInfoExpander" IsExpanded="True">
-                    <Expander.Header>
-                        <Grid Height="20" VerticalAlignment="Center" Margin="5,0">
-                            <TextBlock x:Name="BanquetInfoHeader" Text="" 
-                                       VerticalAlignment="Center" />
-                        </Grid>
-                    </Expander.Header>
-                    <Grid Margin="15,10,15,15">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
+            <materialDesign:Card Grid.Row="0" Margin="10,10,10,0" Padding="15">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
 
-                        <TextBox Grid.Column="0" x:Name="BanquetNameTextBox"
-                                 materialDesign:HintAssist.Hint="Банкет"
-                                 LostFocus="BanquetInfo_LostFocus" Margin="0,0,10,0" />
-
-                        <TextBox Grid.Column="1" x:Name="PeopleCountTextBox"
-                                 materialDesign:HintAssist.Hint="Количество"
-                                 PreviewTextInput="NumericTextBox_PreviewTextInput"
-                                 LostFocus="BanquetInfo_LostFocus" Margin="0,0,10,0" />
-
-                        <controls:DateTimePicker Grid.Column="2" x:Name="BanquetDatePicker"
-                                                 SelectedDateTimeChanged="BanquetInfo_Changed" Margin="0,0,10,0" />
-
-                        <TextBox Grid.Column="3" x:Name="DescriptionTextBox"
-                                 materialDesign:HintAssist.Hint="Описание"
-                                 LostFocus="BanquetInfo_LostFocus" Margin="0,0,10,0" />
-
-                        <StackPanel Grid.Column="4" Orientation="Horizontal">
-                            <Button Style="{StaticResource MaterialDesignFloatingActionMiniButton}"
-                                    Click="StartMenu_Click"
-                                    ToolTip="Перейти к заполнению"
-                                    Margin="0,0,5,0">
-                                <materialDesign:PackIcon Kind="PlayCircle" />
-                            </Button>
-                            <Button Style="{StaticResource MaterialDesignFloatingActionMiniButton}"
-                                    Click="NewMenu_Click"
-                                    ToolTip="Новое меню">
-                                <materialDesign:PackIcon Kind="Plus" />
-                            </Button>
+                    <!-- Информация о меню (отображается если меню открыто) -->
+                    <StackPanel x:Name="MenuInfoPanel" Orientation="Horizontal" VerticalAlignment="Center">
+                        <StackPanel Margin="0,0,25,0">
+                            <TextBlock Text="Банкет" Style="{StaticResource MaterialDesignCaptionTextBlock}" Opacity="0.6"/>
+                            <TextBlock x:Name="BanquetNameText" Text="-" FontWeight="Bold" FontSize="16" TextTrimming="CharacterEllipsis" MaxWidth="250"/>
                         </StackPanel>
-                    </Grid>
-                </Expander>
+
+                        <StackPanel Margin="0,0,25,0">
+                            <TextBlock Text="Гостей" Style="{StaticResource MaterialDesignCaptionTextBlock}" Opacity="0.6"/>
+                            <TextBlock x:Name="PeopleCountText" Text="0" FontWeight="Bold" FontSize="16"/>
+                        </StackPanel>
+
+                        <StackPanel Margin="0,0,25,0">
+                            <TextBlock Text="Дата" Style="{StaticResource MaterialDesignCaptionTextBlock}" Opacity="0.6"/>
+                            <TextBlock x:Name="BanquetDateText" Text="-" FontWeight="Bold" FontSize="16"/>
+                        </StackPanel>
+                        
+                        <StackPanel VerticalAlignment="Center">
+                             <TextBlock x:Name="DescriptionText" Text="" FontStyle="Italic" Opacity="0.7" TextTrimming="CharacterEllipsis" MaxWidth="300" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <!-- Заглушка, если меню не выбрано -->
+                    <TextBlock x:Name="NoMenuText" Text="Нет активного меню. Нажмите +, чтобы создать." 
+                               VerticalAlignment="Center" FontSize="16" Opacity="0.5" 
+                               Visibility="Collapsed"/>
+
+                    <!-- Кнопки управления -->
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                        <Button Style="{StaticResource MaterialDesignFloatingActionMiniButton}"
+                                x:Name="EditMenuButton"
+                                Click="EditMenu_Click"
+                                ToolTip="Редактировать параметры меню"
+                                Margin="0,0,10,0">
+                            <materialDesign:PackIcon Kind="Pencil" />
+                        </Button>
+                        <Button Style="{StaticResource MaterialDesignFloatingActionMiniButton}"
+                                x:Name="NewMenuButton"
+                                Click="NewMenu_Click"
+                                ToolTip="Создать новое меню">
+                            <materialDesign:PackIcon Kind="Plus" />
+                        </Button>
+                    </StackPanel>
+                </Grid>
             </materialDesign:Card>
 
             <!-- БЛОК 2: Доступные блюда (СЕРЕДИНА - равная высота) -->

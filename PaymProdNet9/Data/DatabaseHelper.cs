@@ -477,6 +477,17 @@ public static class DatabaseHelper
             // Колонка уже существует/ошибка обновления
         }
 
+        // Миграция: добавляем IsModified для блюд в меню (флаг ручного изменения состава)
+        try
+        {
+            command.CommandText = "ALTER TABLE Menu_Delicates ADD COLUMN IsModified INTEGER DEFAULT 0";
+            command.ExecuteNonQuery();
+        }
+        catch
+        {
+            // Колонка уже существует
+        }
+
         // Миграция: добавляем ServicePercent для меню
         try
         {

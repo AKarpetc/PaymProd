@@ -182,15 +182,26 @@ public partial class CurrentMenuPage : Page
             ShowLoading(true);
 
             _currentMenuId = menuId;
-            var menu = _menuRepository.GetOpenMenu();
-            if (menu == null) return;
+            var menu = _menuRepository.GetMenuById(menuId); // Используем GetMenuById вместо GetOpenMenu, т.к. menuId уже известен
+            if (menu == null)
+            {
+                // Если меню не найдено, показываем заглушку
+                MenuInfoPanel.Visibility = Visibility.Collapsed;
+                NoMenuText.Visibility = Visibility.Visible;
+                DelicatesPanel.IsEnabled = false;
+                return;
+            }
 
-            // Заполняем информацию о банкете
-            BanquetNameTextBox.Text = menu.Name;
-            PeopleCountTextBox.Text = menu.CountP.ToString();
-            DescriptionTextBox.Text = menu.Detail;
-
-            if (DateTime.TryParse(menu.DateBan, out var date)) BanquetDatePicker.SelectedDateTime = date;
+            // Заполняем информацию о банкете (Только чтение)
+            MenuInfoPanel.Visibility = Visibility.Visible;
+            NoMenuText.Visibility = Visibility.Collapsed;
+            
+            BanquetNameText.Text = menu.Name;
+            PeopleCountText.Text = menu.CountP.ToString();
+            DescriptionText.Text = menu.Detail;
+            BanquetDateText.Text = DateTime.TryParse(menu.DateBan, out var date) 
+                ? date.ToString("dd.MM.yyyy HH:mm") 
+                : menu.DateBan;
 
             // Загружаем блюда меню
             _currentMenuDelicates.Clear();
@@ -199,12 +210,6 @@ public partial class CurrentMenuPage : Page
 
             // Применяем фильтр "Показать товары"
             UpdateMenuFilter();
-
-            // Сворачиваем Expander если название и количество заполнены
-            if (!string.IsNullOrWhiteSpace(menu.Name) && menu.CountP > 0)
-            {
-                BanquetInfoExpander.IsExpanded = false;
-            }
 
             // Включаем панель добавления блюд
             DelicatesPanel.IsEnabled = true;
@@ -252,7 +257,7 @@ public partial class CurrentMenuPage : Page
 
         view.Refresh();
     }
-
+    
     /// <summary>
     /// Загрузка доступных блюд для добавления
     /// </summary>
@@ -294,7 +299,7 @@ public partial class CurrentMenuPage : Page
                     DelicateId = d.Id,
                     DefaultCount = d.LinkedProductDefaultCount.HasValue
                         ? d.LinkedProductDefaultCount.Value.ToString(CultureInfo.CurrentCulture)
-                        : PeopleCountTextBox.Text
+                        : PeopleCountText.Text // UPDATED to PeopleCountText
                 };
             }).ToList();
 
@@ -445,84 +450,6 @@ public partial class CurrentMenuPage : Page
     }
 
     /// <summary>
-    /// Начать заполнение меню
-    /// </summary>
-    private void StartMenu_Click(object sender, RoutedEventArgs e)
-    {
-        try
-        {
-            if (string.IsNullOrWhiteSpace(BanquetNameTextBox.Text) ||
-                string.IsNullOrWhiteSpace(PeopleCountTextBox.Text))
-            {
-                MessageBox.Show("Заполните название банкета и количество человек!",
-                    "Внимание", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-
-            if (_currentMenuId.HasValue)
-            {
-                MessageBox.Show("Сначала закончите данное меню и нажмите 'Начать новое'!",
-                    "Внимание", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-
-            // Создаем новое меню
-            var menuId = _menuRepository.CreateMenu(
-                BanquetNameTextBox.Text,
-                int.Parse(PeopleCountTextBox.Text),
-                DescriptionTextBox.Text,
-                BanquetDatePicker.SelectedDateTime?.ToString("yyyy-MM-dd HH:mm") ?? DateTime.Now.ToString("yyyy-MM-dd HH:mm")
-            );
-
-            // Выделяем кнопку "Все" как активную при создании нового меню
-            var panel = AllTypesButton.Parent as StackPanel;
-            if (panel != null)
-            {
-                foreach (Button btn in panel.Children.OfType<Button>())
-                {
-                    btn.ClearValue(Button.ForegroundProperty); // Сбрасываем локальное значение, возвращаем стиль по умолчанию
-                }
-            }
-            AllTypesButton.Foreground = Brushes.White;
-
-            LoadMenu(menuId);
-        }
-        catch (Exception ex)
-        {
-            MessageBox.Show($"Ошибка при создании меню: {ex.Message}",
-                "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
-        }
-    }
-
-    /// <summary>
-    /// Начать новое меню
-    /// </summary>
-    private void NewMenu_Click(object sender, RoutedEventArgs e)
-    {
-        try
-        {
-            if (_currentMenuId.HasValue) _menuRepository.CloseMenu(_currentMenuId.Value);
-
-            // Очищаем форму
-            BanquetNameTextBox.Clear();
-            PeopleCountTextBox.Clear();
-            DescriptionTextBox.Clear();
-            BanquetDatePicker.SelectedDateTime = DateTime.Now;
-
-            _currentMenuId = null;
-            _currentMenuDelicates.Clear();
-            BanquetInfoHeader.Text = "";
-            BanquetInfoExpander.IsExpanded = true;
-            DelicatesPanel.IsEnabled = false;
-        }
-        catch (Exception ex)
-        {
-            MessageBox.Show($"Ошибка: {ex.Message}",
-                "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
-        }
-    }
-
-    /// <summary>
     /// Двойной клик по карточке блюда - добавление в меню
     /// </summary>
     private void DelicateCard_MouseDoubleClick(object sender, MouseButtonEventArgs e)
@@ -541,7 +468,7 @@ public partial class CurrentMenuPage : Page
             var textBox = FindVisualChild<TextBox>(card);
             if (textBox == null || string.IsNullOrWhiteSpace(textBox.Text)) return;
 
-            if (!int.TryParse(textBox.Text, out var count) || count <= 0)
+            if (!decimal.TryParse(textBox.Text, out var count) || count <= 0)
             {
                 MessageBox.Show("Некорректно введено количество!",
                     "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
@@ -623,9 +550,9 @@ public partial class CurrentMenuPage : Page
         // Устанавливаем значение по умолчанию только если поле пустое
         if (string.IsNullOrWhiteSpace(textBox.Text))
         {
-            // Получаем значение из PeopleCountTextBox
-            if (!string.IsNullOrWhiteSpace(PeopleCountTextBox.Text) &&
-                int.TryParse(PeopleCountTextBox.Text, out var peopleCount) && peopleCount > 0)
+            // Получаем значение из PeopleCountText
+            if (!string.IsNullOrWhiteSpace(PeopleCountText.Text) &&
+                int.TryParse(PeopleCountText.Text, out var peopleCount) && peopleCount > 0)
             {
                 textBox.Text = peopleCount.ToString();
                 
@@ -722,7 +649,7 @@ public partial class CurrentMenuPage : Page
                 return;
             }
 
-            if (!int.TryParse(textBox.Text, out var count) || count <= 0)
+            if (!decimal.TryParse(textBox.Text, out var count) || count <= 0)
             {
                 MessageBox.Show("Некорректно введено количество!",
                     "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
@@ -907,7 +834,7 @@ public partial class CurrentMenuPage : Page
                 DelicateId = delicate.Id,
                 DefaultCount = delicate.LinkedProductDefaultCount.HasValue
                     ? delicate.LinkedProductDefaultCount.Value.ToString(CultureInfo.CurrentCulture)
-                    : PeopleCountTextBox.Text
+                    : PeopleCountText.Text
             };
 
             // Добавляем в полный список и применяем фильтры
@@ -1126,7 +1053,7 @@ public partial class CurrentMenuPage : Page
                 _editingDelicateComponents.ToList());
 
             // Сохраняем количество, если оно было изменено
-            if (int.TryParse(EditDelicateCountTextBox.Text, out var newCount) && newCount > 0)
+            if (decimal.TryParse(EditDelicateCountTextBox.Text, out var newCount) && newCount > 0)
             {
                 _menuRepository.UpdateMenuDelicateCount(
                     _currentMenuId.Value,
@@ -1164,37 +1091,123 @@ public partial class CurrentMenuPage : Page
     }
 
     /// <summary>
-    /// Обновление информации о банкете
+    /// Редактирование параметров меню (Название, Гости, Дата)
     /// </summary>
-    private void BanquetInfo_LostFocus(object sender, RoutedEventArgs e)
+    private void EditMenu_Click(object sender, RoutedEventArgs e)
     {
-        try
-        {
-            if (!_currentMenuId.HasValue || !DelicatesPanel.IsEnabled) return;
+        if (!_currentMenuId.HasValue) return;
+        var menu = _menuRepository.GetMenuById(_currentMenuId.Value);
+        if (menu == null) return;
 
+        var oldGuests = menu.CountP;
+
+        var window = new EditMenuWindow(
+            menu.Name, 
+            menu.CountP, 
+            menu.DateBanParsed ?? DateTime.Now, 
+            menu.Detail);
+
+        if (window.ShowDialog() == true)
+        {
+            var newGuests = window.GuestCount;
+            
+            // Если изменилось количество гостей, предлагаем пересчитать
+            if (oldGuests != newGuests && oldGuests > 0 && newGuests > 0)
+            {
+                var result = MessageBox.Show(
+                    $"Количество гостей изменилось с {oldGuests} на {newGuests}.\nПересчитать количество блюд пропорционально?",
+                    "Пересчет меню", MessageBoxButton.YesNo, MessageBoxImage.Question);
+                
+                if (result == MessageBoxResult.Yes)
+                {
+                    RecalculateMenuQuantities(oldGuests, newGuests);
+                }
+            }
+
+            // Обновляем данные меню
             _menuRepository.UpdateMenu(
                 _currentMenuId.Value,
-                BanquetNameTextBox.Text,
-                int.Parse(PeopleCountTextBox.Text),
-                DescriptionTextBox.Text,
-                BanquetDatePicker.SelectedDateTime?.ToString("yyyy-MM-dd HH:mm") ?? DateTime.Now.ToString("yyyy-MM-dd HH:mm")
-            );
+                window.BanquetName,
+                window.GuestCount,
+                window.Description,
+                window.SelectedDate.ToString("yyyy-MM-dd HH:mm"));
 
-            // Сворачиваем Expander если название и количество заполнены
-            if (!string.IsNullOrWhiteSpace(BanquetNameTextBox.Text) && 
-                int.TryParse(PeopleCountTextBox.Text, out var count) && count > 0)
-            {
-                BanquetInfoExpander.IsExpanded = false;
-            }
-        }
-        catch
-        {
+            LoadMenu(_currentMenuId.Value);
+            _isDataChanged = true;
         }
     }
 
-    private void BanquetInfo_Changed(object sender, RoutedEventArgs e)
+    private void RecalculateMenuQuantities(int oldGuests, int newGuests)
     {
-        BanquetInfo_LostFocus(sender, new RoutedEventArgs());
+        try
+        {
+            ShowLoading(true);
+
+            // Fetch fresh data from DB
+            var menuDelicates = _menuRepository.GetMenuDelicates(_currentMenuId.Value);
+
+            foreach (var item in menuDelicates)
+            {
+                // Логика пересчета:
+                // 1. Если количество порций совпадает со старым количеством гостей -> это блюдо "на человека", обновляем до нового количества гостей.
+                // 2. Если количество отличается -> это либо "блюдо на банкет" (фиксированное), либо вручную измененное значение. Не трогаем.
+                
+                // Используем небольшую погрешность для сравнения decimal
+                if (Math.Abs(item.Countpor - oldGuests) < 0.01m)
+                {
+                    // Это блюдо 1 к 1 на человека. Ставим новое количество гостей.
+                    decimal newCount = newGuests;
+                    _menuRepository.UpdateMenuDelicateCount(_currentMenuId.Value, item.Del_id, newCount);
+                }
+                // Иначе ничего не делаем (сохраняем ручные изменения или фиксированные значения)
+            }
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Ошибка при пересчете: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+        finally
+        {
+            ShowLoading(false);
+        }
+    }
+
+    /// <summary>
+    /// Создание нового меню (через диалог)
+    /// </summary>
+    private void NewMenu_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+             // Если есть несохраненные изменения, спрашиваем
+            if (_isDataChanged)
+            {
+                 var result = MessageBox.Show("Есть несохраненные изменения. При создании нового меню они будут потеряны (если не нажать Сохранить сейчас). Продолжить?", 
+                                              "Внимание", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+                 if (result == MessageBoxResult.No) return;
+            }
+
+            var window = new EditMenuWindow("Новый банкет", 0, DateTime.Now, "");
+            if (window.ShowDialog() == true)
+            {
+                 if (_currentMenuId.HasValue) _menuRepository.CloseMenu(_currentMenuId.Value);
+
+                var menuId = _menuRepository.CreateMenu(
+                    window.BanquetName,
+                    window.GuestCount,
+                    window.Description,
+                    window.SelectedDate.ToString("yyyy-MM-dd HH:mm")
+                );
+
+                // Load the new menu
+                LoadMenu(menuId);
+            }
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Ошибка при создании меню: {ex.Message}",
+                "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
     }
 
     /// <summary>

@@ -19,6 +19,12 @@ public partial class ProductsReportPage : Page
     private readonly MenuPrinter _menuPrinter;
     private readonly MenuPriceService _menuPriceService;
     private bool? _currentReportWithPrices;
+    private List<int> _lastSelectedMenuIds = new();
+    
+    // Backups for single menu data
+    private ObservableCollection<MenuDel_act> _singleMenuDelicates;
+    private List<string> _singleBanquetInfo;
+    private int _singleMenuId;
 
     public ObservableCollection<MenuDel_act>? MenuDelicates { get; set; }
     public List<string>? BanquetInfo { get; set; }
@@ -37,8 +43,21 @@ public partial class ProductsReportPage : Page
     private void Page_Loaded(object sender, RoutedEventArgs e)
     {
         // If data was set from navigation
-        if (MenuDelicates != null) _menuDelicates = MenuDelicates;
-        if (BanquetInfo != null) _banquetInfo = BanquetInfo;
+        if (MenuDelicates != null) 
+        {
+            _menuDelicates = MenuDelicates;
+            // Backup for restoration
+            _singleMenuDelicates = new ObservableCollection<MenuDel_act>(MenuDelicates);
+        }
+        
+        if (BanquetInfo != null) 
+        {
+            _banquetInfo = BanquetInfo;
+             // Backup
+            _singleBanquetInfo = new List<string>(BanquetInfo);
+        }
+
+        _singleMenuId = MenuId;
 
         ShowPlaceholder();
     }
@@ -56,14 +75,81 @@ public partial class ProductsReportPage : Page
         _currentReportWithPrices = null;
     }
 
+    private void RestoreSingleMenuState()
+    {
+        if (_singleMenuDelicates != null)
+        {
+             _menuDelicates.Clear();
+             foreach(var item in _singleMenuDelicates) _menuDelicates.Add(item);
+        }
+        
+        if (_singleBanquetInfo != null)
+             _banquetInfo = new List<string>(_singleBanquetInfo);
+             
+        MenuId = _singleMenuId;
+    }
+
     private void GenerateReportWithPrices_Click(object sender, RoutedEventArgs e)
     {
+        RestoreSingleMenuState();
         GenerateReport(true);
     }
 
     private void GenerateReportWithoutPrices_Click(object sender, RoutedEventArgs e)
     {
+        RestoreSingleMenuState();
         GenerateReport(false);
+    }
+    
+    // ... GenerateReport ...
+
+    private void GenerateMultiMenuReport_Click(object sender, RoutedEventArgs e)
+    {
+        var window = new MultiMenuSelectionWindow(_lastSelectedMenuIds);
+        if (window.ShowDialog() == true)
+        {
+            _lastSelectedMenuIds = window.SelectedMenuIds;
+            var includePrices = window.IncludePrices;
+
+            LoadMultipleMenus(_lastSelectedMenuIds);
+            GenerateReport(includePrices);
+        }
+    }
+
+    private void LoadMultipleMenus(List<int> menuIds)
+    {
+        _menuDelicates.Clear();
+        var repo = new MenuRepository();
+        var menus = new List<Menus>();
+
+        foreach (var id in menuIds)
+        {
+            var m = repo.GetMenuById(id);
+            if (m != null) menus.Add(m);
+
+            var items = repo.GetMenuDelicates(id);
+            foreach (var item in items)
+            {
+                _menuDelicates.Add(item);
+            }
+        }
+
+        var names = string.Join(" + ", menus.Select(m => m.Name));
+        if (names.Length > 50) names = names.Substring(0, 47) + "...";
+
+        var totalGuests = menus.Sum(m => m.CountP);
+
+        // Update BanquetInfo to reflect multiple menus
+        // Format: Name, Guests, Date
+        _banquetInfo = new List<string>
+        {
+            $"Сводный: {names}",
+            totalGuests.ToString(),
+            DateTime.Now.ToString("dd.MM.yyyy HH:mm")
+        };
+        
+        // Reset MenuId to ensure we don't rely on a single menu context
+        MenuId = 0;
     }
 
     /// <summary>
@@ -561,13 +647,15 @@ public partial class ProductsReportPage : Page
                     : 0
             };
 
-            if (MenuId > 0)
+            if (delicate.Idmen > 0 || MenuId > 0)
             {
+                var priceMenuId = delicate.Idmen > 0 ? delicate.Idmen : MenuId;
+
                 // Для продуктов, добавленных напрямую (отрицательный Del_id), рассчитываем цену на основе итогового количества
                 if (delicate.Del_id < 0)
                 {
                     // Получаем цену за единицу и умножаем на итоговое количество
-                    var unitPrice = _menuPriceService.GetUnitPrice(MenuId, component.Prodid);
+                    var unitPrice = _menuPriceService.GetUnitPrice(priceMenuId, component.Prodid);
                     if (component.Fass > 0)
                     {
                         // Если есть фасовка, рассчитываем количество упаковок
@@ -583,7 +671,7 @@ public partial class ProductsReportPage : Page
                 else
                 {
                     // Для компонентов блюд используем стандартный расчет
-                    var priceInfo = _menuPriceService.GetComponentPriceInfo(MenuId, component, dishCountForPrice);
+                    var priceInfo = _menuPriceService.GetComponentPriceInfo(priceMenuId, component, dishCountForPrice);
                     item.TotalPrice = priceInfo.TotalPrice;
                 }
             }
@@ -884,7 +972,7 @@ public partial class ProductsReportPage : Page
     }
 
 
+
     private string FormatPrice(decimal value) =>
         value > 0 ? value.ToString("N0", CultureInfo.CurrentCulture) : "—";
-
 }

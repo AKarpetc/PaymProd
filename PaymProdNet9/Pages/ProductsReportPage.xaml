@@ -17,10 +17,19 @@
                     HorizontalAlignment="Left">
             <Button Style="{StaticResource MaterialDesignRaisedButton}"
                     Padding="20,8"
+                    Click="GenerateMultiMenuReport_Click">
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <materialDesign:PackIcon Kind="FileDocumentMultiple" Margin="0,0,8,0"/>
+                    <TextBlock Text="Печать нескольких меню" VerticalAlignment="Center"/>
+                </StackPanel>
+            </Button>
+            <Button Style="{StaticResource MaterialDesignRaisedButton}"
+                    Padding="20,8"
+                    Margin="10,0,0,0"
                     Click="GenerateReportWithPrices_Click">
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                     <materialDesign:PackIcon Kind="CashMultiple" Margin="0,0,8,0"/>
-                    <TextBlock Text="Отчет с ценами" VerticalAlignment="Center"/>
+                    <TextBlock Text="Текущий с ценами" VerticalAlignment="Center"/>
                 </StackPanel>
             </Button>
             <Button Style="{StaticResource MaterialDesignRaisedButton}"
@@ -29,7 +38,7 @@
                     Click="GenerateReportWithoutPrices_Click">
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                     <materialDesign:PackIcon Kind="FileDocumentOutline" Margin="0,0,8,0"/>
-                    <TextBlock Text="Отчет без цен" VerticalAlignment="Center"/>
+                    <TextBlock Text="Текущий без цен" VerticalAlignment="Center"/>
                 </StackPanel>
             </Button>
             <Button x:Name="SaveToWordButton"
