@@ -331,22 +331,22 @@
                                 MaxWidth="500">
 
 
-                            <TextBlock x:Name="UserNameText"
-                                       Text="Пользователь"
-                                       VerticalAlignment="Center"
-                                       Foreground="#7F8C8D"
-                                       FontSize="15"
-                                       Width="250px"
-                                       TextAlignment="Right"
-                                       FontWeight="SemiBold"
-                                       TextWrapping="NoWrap"
-                                       ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}" />
-                            <materialDesign:PackIcon Kind="Account"
-                                                     Width="26"
-                                                     Height="26"
-                                                     VerticalAlignment="Center"
-                                                     Margin="0,0,10,0"
-                                                     Foreground="#7F8C8D" />
+                        <TextBlock x:Name="UserNameText"
+                                   Text="Пользователь"
+                                   VerticalAlignment="Center"
+                                   Foreground="#7F8C8D"
+                                   FontSize="15"
+                                   Width="250px"
+                                   TextAlignment="Right"
+                                   FontWeight="SemiBold"
+                                   TextWrapping="NoWrap"
+                                   ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}" />
+                        <materialDesign:PackIcon Kind="Account"
+                                                 Width="26"
+                                                 Height="26"
+                                                 VerticalAlignment="Center"
+                                                 Margin="0,0,10,0"
+                                                 Foreground="#7F8C8D" />
                     </StackPanel>
                 </Grid>
             </Border>

@@ -183,24 +183,29 @@ public class DelicatesColl
     public int TypeSortOrder { get; set; }
     public int? LinkedProductId { get; set; }
     public decimal? LinkedProductDefaultCount { get; set; }
+
     /// <summary>
     /// Флаг "автоматически добавлять в меню" (при создании нового меню).
     /// </summary>
     public bool AutoAdd { get; set; }
+
     /// <summary>
     /// Флаг "не показывать в меню". Такое блюдо отображается только в отчёте по продуктам,
     /// но не должно выводиться в отчётах меню (печать меню и т.п.).
     /// </summary>
     public bool HideInMenu { get; set; }
+
     /// <summary>
     /// Флаг "не показывать в отчете по продуктам".
     /// Если true, блюдо и его компоненты не учитываются в сводном отчете по продуктам.
     /// </summary>
     public bool HideInProductReport { get; set; }
+
     /// <summary>
     /// Наценка по умолчанию (в процентах)
     /// </summary>
     public decimal DefaultMarkup { get; set; } = 200;
+
     public List<Components> Lcomp { get; set; } = new();
 
     /// <summary>
@@ -717,31 +722,51 @@ public class DishMarkupView : INotifyPropertyChanged
     public int Id
     {
         get => _id;
-        set { _id = value; OnPropertyChanged(nameof(Id)); }
+        set
+        {
+            _id = value;
+            OnPropertyChanged(nameof(Id));
+        }
     }
 
     public string Name
     {
         get => _name;
-        set { _name = value; OnPropertyChanged(nameof(Name)); }
+        set
+        {
+            _name = value;
+            OnPropertyChanged(nameof(Name));
+        }
     }
 
     public string ShortComposition
     {
         get => _shortComposition;
-        set { _shortComposition = value; OnPropertyChanged(nameof(ShortComposition)); }
+        set
+        {
+            _shortComposition = value;
+            OnPropertyChanged(nameof(ShortComposition));
+        }
     }
 
     public string Type
     {
         get => _type;
-        set { _type = value; OnPropertyChanged(nameof(Type)); }
+        set
+        {
+            _type = value;
+            OnPropertyChanged(nameof(Type));
+        }
     }
 
     public int TypeId
     {
         get => _typeId;
-        set { _typeId = value; OnPropertyChanged(nameof(TypeId)); }
+        set
+        {
+            _typeId = value;
+            OnPropertyChanged(nameof(TypeId));
+        }
     }
 
     public decimal BaseCost { get; set; }
@@ -753,7 +778,11 @@ public class DishMarkupView : INotifyPropertyChanged
     public decimal DefaultMarkup
     {
         get => _defaultMarkup;
-        set { _defaultMarkup = value; OnPropertyChanged(nameof(DefaultMarkup)); }
+        set
+        {
+            _defaultMarkup = value;
+            OnPropertyChanged(nameof(DefaultMarkup));
+        }
     }
 
     /// <summary>
@@ -762,11 +791,11 @@ public class DishMarkupView : INotifyPropertyChanged
     public decimal Markup
     {
         get => _markup;
-        set 
-        { 
-            _markup = value; 
+        set
+        {
+            _markup = value;
             _isModified = true;
-            OnPropertyChanged(nameof(Markup)); 
+            OnPropertyChanged(nameof(Markup));
             OnPropertyChanged(nameof(IsModified));
         }
     }
@@ -774,18 +803,29 @@ public class DishMarkupView : INotifyPropertyChanged
     public bool SaveToDefault
     {
         get => _saveToDefault;
-        set { _saveToDefault = value; OnPropertyChanged(nameof(SaveToDefault)); }
+        set
+        {
+            _saveToDefault = value;
+            OnPropertyChanged(nameof(SaveToDefault));
+        }
     }
 
     public bool IsModified
     {
         get => _isModified;
-        set { _isModified = value; OnPropertyChanged(nameof(IsModified)); }
+        set
+        {
+            _isModified = value;
+            OnPropertyChanged(nameof(IsModified));
+        }
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;
-    protected void OnPropertyChanged(string propertyName) => 
+
+    protected void OnPropertyChanged(string propertyName)
+    {
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+    }
 }
 
 /// <summary>

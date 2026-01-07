@@ -50,7 +50,7 @@ public partial class GoogleDriveAuthWindow : Window
     private void SaveTokenButton_Click(object sender, RoutedEventArgs e)
     {
         var token = TokenTextBox.Text?.Trim();
-        
+
         if (string.IsNullOrWhiteSpace(token))
         {
             MessageBox.Show("Введите OAuth токен!",
@@ -62,11 +62,11 @@ public partial class GoogleDriveAuthWindow : Window
         {
             GoogleDriveService.SaveToken(token);
             MessageBox.Show("Токен успешно сохранен!\n\n" +
-                           "Теперь загрузка на Google Drive будет автоматической.",
+                            "Теперь загрузка на Google Drive будет автоматической.",
                 "Успех",
                 MessageBoxButton.OK,
                 MessageBoxImage.Information);
-            
+
             DialogResult = true;
             Close();
         }
@@ -83,4 +83,3 @@ public partial class GoogleDriveAuthWindow : Window
         Close();
     }
 }
-

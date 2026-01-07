@@ -12,18 +12,12 @@ public partial class UpdateDownloadWindow : Window
 
     public void SetTitle(string title)
     {
-        Dispatcher.Invoke(() =>
-        {
-            TitleTextBlock.Text = title;
-        });
+        Dispatcher.Invoke(() => { TitleTextBlock.Text = title; });
     }
 
     public void SetSubtitle(string text)
     {
-        Dispatcher.Invoke(() =>
-        {
-            VersionTextBlock.Text = text;
-        });
+        Dispatcher.Invoke(() => { VersionTextBlock.Text = text; });
     }
 
     public void SetVersion(string version)
@@ -51,13 +45,9 @@ public partial class UpdateDownloadWindow : Window
 
     private static string FormatBytes(long bytes)
     {
-        if (bytes <= 0)
-        {
-            return "0 МБ";
-        }
+        if (bytes <= 0) return "0 МБ";
 
         var mb = bytes / 1024d / 1024d;
         return $"{mb:F2} МБ";
     }
 }
-

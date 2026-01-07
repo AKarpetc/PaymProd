@@ -20,4 +20,3 @@ public partial class SplashScreen : Window
         StatusText.Text = status;
     }
 }
-

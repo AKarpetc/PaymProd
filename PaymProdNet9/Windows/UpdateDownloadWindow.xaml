@@ -10,22 +10,22 @@
         ShowInTaskbar="False">
     <Grid Margin="15">
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
         <TextBlock x:Name="TitleTextBlock"
                    Text="Скачивание обновления"
                    FontSize="16"
-                   FontWeight="SemiBold"/>
+                   FontWeight="SemiBold" />
 
         <TextBlock x:Name="VersionTextBlock"
                    Grid.Row="1"
                    Margin="0,8,0,0"
                    FontSize="13"
-                   Foreground="Gray"/>
+                   Foreground="Gray" />
 
         <ProgressBar x:Name="DownloadProgressBar"
                      Grid.Row="2"
@@ -33,7 +33,7 @@
                      Height="22"
                      Minimum="0"
                      Maximum="100"
-                     IsIndeterminate="True"/>
+                     IsIndeterminate="True" />
 
         <TextBlock x:Name="DetailsTextBlock"
                    Grid.Row="3"
@@ -43,4 +43,3 @@
                    Text="Подготовка к загрузке..." />
     </Grid>
 </Window>
-

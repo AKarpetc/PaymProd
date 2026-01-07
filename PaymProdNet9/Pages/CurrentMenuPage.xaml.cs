@@ -182,7 +182,8 @@ public partial class CurrentMenuPage : Page
             ShowLoading(true);
 
             _currentMenuId = menuId;
-            var menu = _menuRepository.GetMenuById(menuId); // Используем GetMenuById вместо GetOpenMenu, т.к. menuId уже известен
+            var menu = _menuRepository
+                .GetMenuById(menuId); // Используем GetMenuById вместо GetOpenMenu, т.к. menuId уже известен
             if (menu == null)
             {
                 // Если меню не найдено, показываем заглушку
@@ -195,12 +196,12 @@ public partial class CurrentMenuPage : Page
             // Заполняем информацию о банкете (Только чтение)
             MenuInfoPanel.Visibility = Visibility.Visible;
             NoMenuText.Visibility = Visibility.Collapsed;
-            
+
             BanquetNameText.Text = menu.Name;
             PeopleCountText.Text = menu.CountP.ToString();
             DescriptionText.Text = menu.Detail;
-            BanquetDateText.Text = DateTime.TryParse(menu.DateBan, out var date) 
-                ? date.ToString("dd.MM.yyyy HH:mm") 
+            BanquetDateText.Text = DateTime.TryParse(menu.DateBan, out var date)
+                ? date.ToString("dd.MM.yyyy HH:mm")
                 : menu.DateBan;
 
             // Загружаем блюда меню
@@ -243,21 +244,17 @@ public partial class CurrentMenuPage : Page
         if (view == null) return;
 
         if (_showHiddenItems)
-        {
             view.Filter = null;
-        }
         else
-        {
             view.Filter = item =>
             {
                 if (item is not MenuDel_act m) return true;
                 return !m.HideInMenu;
             };
-        }
 
         view.Refresh();
     }
-    
+
     /// <summary>
     /// Загрузка доступных блюд для добавления
     /// </summary>
@@ -284,12 +281,12 @@ public partial class CurrentMenuPage : Page
                 var fullComposition = d.Lcomp.Any()
                     ? "Состав: " + string.Join(", ", d.Lcomp.Select(c => c.Name))
                     : "Без состава";
-                
+
                 // Обрезаем состав до ~100 символов для компактного отображения
                 var shortComposition = fullComposition.Length > 100
                     ? fullComposition.Substring(0, 97) + "..."
                     : fullComposition;
-                
+
                 return new
                 {
                     Del = d.Name,
@@ -339,10 +336,7 @@ public partial class CurrentMenuPage : Page
 
             // Обновляем коллекцию для отображения
             _availableDelicates.Clear();
-            foreach (var item in filtered)
-            {
-                _availableDelicates.Add(item);
-            }
+            foreach (var item in filtered) _availableDelicates.Add(item);
 
             AvailableDelicatesPanel.ItemsSource = _availableDelicates;
         }
@@ -362,20 +356,20 @@ public partial class CurrentMenuPage : Page
         if (button?.Tag == null) return;
 
         _currentTypeFilter = button.Tag.ToString() ?? "%";
-        
+
         // Сбрасываем цвет текста всех кнопок фильтров
         var panel = AllTypesButton.Parent as StackPanel;
         if (panel != null)
         {
-            foreach (Button btn in panel.Children.OfType<Button>())
-            {
-                btn.ClearValue(Button.ForegroundProperty); // Сбрасываем локальное значение, возвращаем стиль по умолчанию
-            }
-            
+            foreach (var btn in
+                     panel.Children.OfType<Button>())
+                btn.ClearValue(Button
+                    .ForegroundProperty); // Сбрасываем локальное значение, возвращаем стиль по умолчанию
+
             // Выделяем активную кнопку белым цветом текста
             button.Foreground = Brushes.White;
         }
-        
+
         LoadAvailableDelicates(_currentTypeFilter);
     }
 
@@ -428,7 +422,7 @@ public partial class CurrentMenuPage : Page
     private void PerformSearch()
     {
         _currentSearchText = DelicateSearchBox.Text ?? "";
-        
+
         // Показываем/скрываем кнопку очистки
         DelicateSearchClearButton.Visibility = string.IsNullOrWhiteSpace(_currentSearchText)
             ? Visibility.Collapsed
@@ -477,16 +471,18 @@ public partial class CurrentMenuPage : Page
 
             // Добавляем блюдо в меню
             var delicateId = (int)data.DelicateId;
-            Services.Logger.Debug($"Попытка добавить блюдо в меню: MenuId={_currentMenuId.Value}, DelicateId={delicateId}, Count={count}");
-            
+            Logger.Debug(
+                $"Попытка добавить блюдо в меню: MenuId={_currentMenuId.Value}, DelicateId={delicateId}, Count={count}");
+
             // Показываем лоадер
             ShowLoading(true);
-            
+
             try
             {
                 // Сохраняем в БД и получаем ID добавленной записи
                 var menuDelicateId = _menuRepository.AddDelicateToMenu(_currentMenuId.Value, delicateId, count);
-                Services.Logger.Debug($"Блюдо успешно добавлено в меню: DelicateId={delicateId}, MenuDelicateId={menuDelicateId}");
+                Logger.Debug(
+                    $"Блюдо успешно добавлено в меню: DelicateId={delicateId}, MenuDelicateId={menuDelicateId}");
 
                 // Загружаем только что добавленное блюдо и добавляем в коллекцию в памяти
                 var newDelicate = _menuRepository.GetMenuDelicateById(menuDelicateId, _currentMenuId.Value);
@@ -494,21 +490,23 @@ public partial class CurrentMenuPage : Page
                 {
                     // Добавляем в коллекцию с учетом сортировки (скрытые в конце)
                     var insertIndex = _currentMenuDelicates.Count;
-                    for (int i = 0; i < _currentMenuDelicates.Count; i++)
+                    for (var i = 0; i < _currentMenuDelicates.Count; i++)
                     {
                         if (_currentMenuDelicates[i].HideInMenu && !newDelicate.HideInMenu)
                         {
                             insertIndex = i;
                             break;
                         }
+
                         if (!_currentMenuDelicates[i].HideInMenu && newDelicate.HideInMenu)
                         {
                             insertIndex = i;
                             break;
                         }
                     }
+
                     _currentMenuDelicates.Insert(insertIndex, newDelicate);
-                    
+
                     // Применяем фильтр
                     UpdateMenuFilter();
                 }
@@ -533,7 +531,7 @@ public partial class CurrentMenuPage : Page
         }
         catch (Exception ex)
         {
-            Services.Logger.Error("Ошибка при добавлении блюда в меню", ex);
+            Logger.Error("Ошибка при добавлении блюда в меню", ex);
             MessageBox.Show($"Ошибка при добавлении блюда: {ex.Message}",
                 "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
         }
@@ -549,25 +547,20 @@ public partial class CurrentMenuPage : Page
 
         // Устанавливаем значение по умолчанию только если поле пустое
         if (string.IsNullOrWhiteSpace(textBox.Text))
-        {
             // Получаем значение из PeopleCountText
             if (!string.IsNullOrWhiteSpace(PeopleCountText.Text) &&
                 int.TryParse(PeopleCountText.Text, out var peopleCount) && peopleCount > 0)
             {
                 textBox.Text = peopleCount.ToString();
-                
+
                 // Включаем кнопку добавления, так как значение установлено
                 var parent = textBox.Parent as FrameworkElement;
                 if (parent != null)
                 {
                     var addButton = FindAddButton(parent);
-                    if (addButton != null)
-                    {
-                        addButton.IsEnabled = true;
-                    }
+                    if (addButton != null) addButton.IsEnabled = true;
                 }
             }
-        }
     }
 
     /// <summary>
@@ -598,9 +591,9 @@ public partial class CurrentMenuPage : Page
     /// </summary>
     private Button? FindAddButton(DependencyObject parent)
     {
-        for (var i = 0; i < System.Windows.Media.VisualTreeHelper.GetChildrenCount(parent); i++)
+        for (var i = 0; i < VisualTreeHelper.GetChildrenCount(parent); i++)
         {
-            var child = System.Windows.Media.VisualTreeHelper.GetChild(parent, i);
+            var child = VisualTreeHelper.GetChild(parent, i);
 
             if (child is Button button)
             {
@@ -658,10 +651,10 @@ public partial class CurrentMenuPage : Page
 
             // Добавляем блюдо в меню
             var delicateId = (int)data.DelicateId;
-            
+
             // Показываем лоадер
             ShowLoading(true);
-            
+
             try
             {
                 // Сохраняем в БД и получаем ID добавленной записи
@@ -673,21 +666,23 @@ public partial class CurrentMenuPage : Page
                 {
                     // Добавляем в коллекцию с учетом сортировки (скрытые в конце)
                     var insertIndex = _currentMenuDelicates.Count;
-                    for (int i = 0; i < _currentMenuDelicates.Count; i++)
+                    for (var i = 0; i < _currentMenuDelicates.Count; i++)
                     {
                         if (_currentMenuDelicates[i].HideInMenu && !newDelicate.HideInMenu)
                         {
                             insertIndex = i;
                             break;
                         }
+
                         if (!_currentMenuDelicates[i].HideInMenu && newDelicate.HideInMenu)
                         {
                             insertIndex = i;
                             break;
                         }
                     }
+
                     _currentMenuDelicates.Insert(insertIndex, newDelicate);
-                    
+
                     // Применяем фильтр
                     UpdateMenuFilter();
                 }
@@ -769,9 +764,7 @@ public partial class CurrentMenuPage : Page
                 // Если это блюдо или продукт, связанный с авто-добавляемым продуктом (AutoAdd),
                 // запоминаем факт ручного удаления, чтобы больше не добавлять его автоматически в это меню.
                 if (_currentMenuId.HasValue)
-                {
                     _menuRepository.RegisterAutoProductManualRemoval(_currentMenuId.Value, delicateId);
-                }
 
                 _menuRepository.RemoveDelicateFromMenu(delicate.Idmen);
                 _currentMenuDelicates.Remove(delicate);
@@ -877,7 +870,8 @@ public partial class CurrentMenuPage : Page
             // Продукты (ID < 0) нельзя редактировать
             if (delicate.Del_id < 0)
             {
-                MessageBox.Show("Этот продукт доступен только для чтения. Для редактирования используйте справочник продуктов.",
+                MessageBox.Show(
+                    "Этот продукт доступен только для чтения. Для редактирования используйте справочник продуктов.",
                     "Информация", MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
@@ -1005,7 +999,9 @@ public partial class CurrentMenuPage : Page
                 Prodid = selectedProduct.ID,
                 NameT = selectedProduct.Name,
                 Ves = 0,
-                Mera = !string.IsNullOrWhiteSpace(selectedProduct.Ves) ? selectedProduct.Ves : "г", // Основная единица измерения
+                Mera = !string.IsNullOrWhiteSpace(selectedProduct.Ves)
+                    ? selectedProduct.Ves
+                    : "г", // Основная единица измерения
                 FassIz = selectedProduct.IzName,
                 MenuRoundingPrecision = GetMenuPrecision(
                     !string.IsNullOrWhiteSpace(selectedProduct.Ves) ? selectedProduct.Ves : "г")
@@ -1054,12 +1050,10 @@ public partial class CurrentMenuPage : Page
 
             // Сохраняем количество, если оно было изменено
             if (decimal.TryParse(EditDelicateCountTextBox.Text, out var newCount) && newCount > 0)
-            {
                 _menuRepository.UpdateMenuDelicateCount(
                     _currentMenuId.Value,
                     _editingDelicateId.Value,
                     newCount);
-            }
 
             // Закрываем панель редактирования
             EditDelicateInMenuPanel.Visibility = Visibility.Collapsed;
@@ -1102,27 +1096,24 @@ public partial class CurrentMenuPage : Page
         var oldGuests = menu.CountP;
 
         var window = new EditMenuWindow(
-            menu.Name, 
-            menu.CountP, 
-            menu.DateBanParsed ?? DateTime.Now, 
+            menu.Name,
+            menu.CountP,
+            menu.DateBanParsed ?? DateTime.Now,
             menu.Detail);
         window.Title = "Редактирование банкета";
 
         if (window.ShowDialog() == true)
         {
             var newGuests = window.GuestCount;
-            
+
             // Если изменилось количество гостей, предлагаем пересчитать
             if (oldGuests != newGuests && oldGuests > 0 && newGuests > 0)
             {
                 var result = MessageBox.Show(
                     $"Количество гостей изменилось с {oldGuests} на {newGuests}.\nПересчитать количество блюд пропорционально?",
                     "Пересчет меню", MessageBoxButton.YesNo, MessageBoxImage.Question);
-                
-                if (result == MessageBoxResult.Yes)
-                {
-                    RecalculateMenuQuantities(oldGuests, newGuests);
-                }
+
+                if (result == MessageBoxResult.Yes) RecalculateMenuQuantities(oldGuests, newGuests);
             }
 
             // Обновляем данные меню
@@ -1148,11 +1139,9 @@ public partial class CurrentMenuPage : Page
             var menuDelicates = _menuRepository.GetMenuDelicates(_currentMenuId.Value);
 
             foreach (var item in menuDelicates)
-            {
                 // Логика пересчета:
                 // 1. Если количество порций совпадает со старым количеством гостей -> это блюдо "на человека", обновляем до нового количества гостей.
                 // 2. Если количество отличается -> это либо "блюдо на банкет" (фиксированное), либо вручную измененное значение. Не трогаем.
-                
                 // Используем небольшую погрешность для сравнения decimal
                 if (Math.Abs(item.Countpor - oldGuests) < 0.01m)
                 {
@@ -1160,12 +1149,12 @@ public partial class CurrentMenuPage : Page
                     decimal newCount = newGuests;
                     _menuRepository.UpdateMenuDelicateCount(_currentMenuId.Value, item.Del_id, newCount);
                 }
-                // Иначе ничего не делаем (сохраняем ручные изменения или фиксированные значения)
-            }
+            // Иначе ничего не делаем (сохраняем ручные изменения или фиксированные значения)
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Ошибка при пересчете: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+            MessageBox.Show($"Ошибка при пересчете: {ex.Message}", "Ошибка", MessageBoxButton.OK,
+                MessageBoxImage.Error);
         }
         finally
         {
@@ -1180,19 +1169,20 @@ public partial class CurrentMenuPage : Page
     {
         try
         {
-             // Если есть несохраненные изменения, спрашиваем
+            // Если есть несохраненные изменения, спрашиваем
             if (_isDataChanged)
             {
-                 var result = MessageBox.Show("Есть несохраненные изменения. При создании нового меню они будут потеряны (если не нажать Сохранить сейчас). Продолжить?", 
-                                              "Внимание", MessageBoxButton.YesNo, MessageBoxImage.Warning);
-                 if (result == MessageBoxResult.No) return;
+                var result = MessageBox.Show(
+                    "Есть несохраненные изменения. При создании нового меню они будут потеряны (если не нажать Сохранить сейчас). Продолжить?",
+                    "Внимание", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+                if (result == MessageBoxResult.No) return;
             }
 
             var window = new EditMenuWindow("", 0, DateTime.Now, "");
             window.Title = "Создание банкета";
             if (window.ShowDialog() == true)
             {
-                 if (_currentMenuId.HasValue) _menuRepository.CloseMenu(_currentMenuId.Value);
+                if (_currentMenuId.HasValue) _menuRepository.CloseMenu(_currentMenuId.Value);
 
                 var menuId = _menuRepository.CreateMenu(
                     window.BanquetName,
@@ -1217,17 +1207,17 @@ public partial class CurrentMenuPage : Page
     /// </summary>
     private void NumericTextBox_PreviewTextInput(object sender, TextCompositionEventArgs e)
     {
-        Services.InputValidationHelper.NumericOnly_PreviewTextInput(sender, e);
+        InputValidationHelper.NumericOnly_PreviewTextInput(sender, e);
     }
 
     private void NumericField_LostFocus(object sender, RoutedEventArgs e)
     {
-        Services.InputValidationHelper.ValidateNumericField_LostFocus(sender, e);
+        InputValidationHelper.ValidateNumericField_LostFocus(sender, e);
     }
 
     private void TextField_LostFocus(object sender, RoutedEventArgs e)
     {
-        Services.InputValidationHelper.ValidateTextField_LostFocus(sender, e);
+        InputValidationHelper.ValidateTextField_LostFocus(sender, e);
     }
 
     /// <summary>
@@ -1336,9 +1326,9 @@ public partial class CurrentMenuPage : Page
     /// </summary>
     private static T? FindVisualChild<T>(DependencyObject parent) where T : DependencyObject
     {
-        for (var i = 0; i < System.Windows.Media.VisualTreeHelper.GetChildrenCount(parent); i++)
+        for (var i = 0; i < VisualTreeHelper.GetChildrenCount(parent); i++)
         {
-            var child = System.Windows.Media.VisualTreeHelper.GetChild(parent, i);
+            var child = VisualTreeHelper.GetChild(parent, i);
             if (child is T typedChild) return typedChild;
 
             var result = FindVisualChild<T>(child);
@@ -1353,6 +1343,6 @@ public partial class CurrentMenuPage : Page
     /// </summary>
     private void NumericOnly_PreviewTextInput(object sender, TextCompositionEventArgs e)
     {
-        Services.InputValidationHelper.IntegerOnly_PreviewTextInput(sender, e);
+        InputValidationHelper.IntegerOnly_PreviewTextInput(sender, e);
     }
 }

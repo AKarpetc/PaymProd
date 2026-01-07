@@ -1,9 +1,8 @@
-namespace PaymProdNet9.Enums
+namespace PaymProdNet9.Enums;
+
+public enum ReportMode
 {
-    public enum ReportMode
-    {
-        NoPrices,
-        Cost,
-        Price
-    }
+    NoPrices,
+    Cost,
+    Price
 }

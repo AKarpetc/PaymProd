@@ -8,18 +8,18 @@
             <ColumnDefinition Width="Auto" />
             <ColumnDefinition Width="Auto" />
         </Grid.ColumnDefinitions>
-        
+
         <DatePicker Grid.Column="0" x:Name="DatePickerControl"
                     SelectedDateChanged="DatePicker_SelectedDateChanged"
                     materialDesign:HintAssist.Hint="Начала" />
-        
+
         <ComboBox Grid.Column="1" x:Name="HoursComboBox"
                   materialDesign:HintAssist.Hint="Час"
                   Width="70"
                   Margin="5,0,2,0"
                   SelectionChanged="TimeSelectionChanged"
                   VerticalAlignment="Center" />
-        
+
         <ComboBox Grid.Column="2" x:Name="MinutesComboBox"
                   materialDesign:HintAssist.Hint="Мин"
                   Width="70"
@@ -28,4 +28,3 @@
                   VerticalAlignment="Center" />
     </Grid>
 </UserControl>
-

@@ -11,26 +11,26 @@
         WindowStartupLocation="CenterScreen">
     <Grid Margin="10">
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
         <!-- Выбор базы данных -->
         <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,10">
-            <TextBlock Text="База данных:" VerticalAlignment="Center" Margin="0,0,5,0"/>
-            <TextBox x:Name="DbPathTextBox" Width="500" Margin="0,0,5,0" VerticalAlignment="Center"/>
-            <Button Content="По умолчанию" Width="110" Margin="0,0,5,0" Click="UseDefaultDb_Click"/>
-            <Button Content="Выбрать..." Width="90" Margin="0,0,5,0" Click="BrowseDb_Click"/>
-            <Button Content="Обновить" Width="90" Click="ReloadData_Click"/>
+            <TextBlock Text="База данных:" VerticalAlignment="Center" Margin="0,0,5,0" />
+            <TextBox x:Name="DbPathTextBox" Width="500" Margin="0,0,5,0" VerticalAlignment="Center" />
+            <Button Content="По умолчанию" Width="110" Margin="0,0,5,0" Click="UseDefaultDb_Click" />
+            <Button Content="Выбрать..." Width="90" Margin="0,0,5,0" Click="BrowseDb_Click" />
+            <Button Content="Обновить" Width="90" Click="ReloadData_Click" />
         </StackPanel>
 
         <!-- Кнопки операций -->
         <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,10">
-            <Button Content="Показать продукты" Width="140" Margin="0,0,5,0" Click="LoadProducts_Click"/>
-            <Button Content="Поменять флаги Priz_menu / Avtomat" Width="230" Margin="0,0,5,0" Click="SwapFlags_Click"/>
-            <Button Content="Скачать стартовую базу" Width="170" Margin="0,0,5,0" Click="DownloadStartDb_Click"/>
-            <Button Content="Сохранить базу как..." Width="150" Margin="0,0,5,0" Click="SaveDbAs_Click"/>
+            <Button Content="Показать продукты" Width="140" Margin="0,0,5,0" Click="LoadProducts_Click" />
+            <Button Content="Поменять флаги Priz_menu / Avtomat" Width="230" Margin="0,0,5,0" Click="SwapFlags_Click" />
+            <Button Content="Скачать стартовую базу" Width="170" Margin="0,0,5,0" Click="DownloadStartDb_Click" />
+            <Button Content="Сохранить базу как..." Width="150" Margin="0,0,5,0" Click="SaveDbAs_Click" />
         </StackPanel>
 
         <!-- Вкладки: таблицы и произвольный SQL -->
@@ -38,15 +38,15 @@
             <TabItem Header="Таблицы">
                 <Grid Margin="0,5,0,0">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="220"/>
-                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="220" />
+                        <ColumnDefinition Width="*" />
                     </Grid.ColumnDefinitions>
 
                     <DockPanel Grid.Column="0" Margin="0,0,5,0">
-                        <TextBlock Text="Таблицы:" FontWeight="Bold" Margin="0,0,0,5"/>
+                        <TextBlock Text="Таблицы:" FontWeight="Bold" Margin="0,0,0,5" />
                         <ListBox x:Name="TablesListBox"
                                  Margin="0,20,0,0"
-                                 SelectionChanged="TablesListBox_SelectionChanged"/>
+                                 SelectionChanged="TablesListBox_SelectionChanged" />
                     </DockPanel>
 
                     <DataGrid x:Name="ProductsGrid"
@@ -56,16 +56,16 @@
                               CanUserAddRows="False"
                               AutoGeneratingColumn="ProductsGrid_AutoGeneratingColumn"
                               RowEditEnding="ProductsGrid_RowEditEnding"
-                              CellEditEnding="ProductsGrid_CellEditEnding"/>
+                              CellEditEnding="ProductsGrid_CellEditEnding" />
                 </Grid>
             </TabItem>
 
             <TabItem Header="Произвольный SQL">
                 <Grid Margin="0,5,0,0">
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="2*"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="2*" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
                     </Grid.RowDefinitions>
 
                     <TextBox x:Name="SqlTextBox"
@@ -75,18 +75,18 @@
                              HorizontalScrollBarVisibility="Auto"
                              TextWrapping="NoWrap"
                              FontFamily="Consolas"
-                             FontSize="13"/>
+                             FontSize="13" />
 
                     <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,5,0,5">
-                        <Button Content="Выполнить SQL" Width="130" Margin="0,0,5,0" Click="ExecuteSql_Click"/>
-                        <TextBlock x:Name="SqlStatusTextBlock" VerticalAlignment="Center" Foreground="DarkGreen"/>
+                        <Button Content="Выполнить SQL" Width="130" Margin="0,0,5,0" Click="ExecuteSql_Click" />
+                        <TextBlock x:Name="SqlStatusTextBlock" VerticalAlignment="Center" Foreground="DarkGreen" />
                     </StackPanel>
 
                     <DataGrid x:Name="SqlResultGrid"
                               Grid.Row="2"
                               AutoGenerateColumns="True"
                               IsReadOnly="True"
-                              CanUserAddRows="False"/>
+                              CanUserAddRows="False" />
                 </Grid>
             </TabItem>
         </TabControl>

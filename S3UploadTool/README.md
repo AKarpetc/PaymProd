@@ -24,7 +24,8 @@ Create `s3config.json` file in the same directory as the executable with the fol
 
 **Note:** `BucketName` is optional. If not specified, defaults to `"menu-db"`.
 
-**Note:** The default `s3config.json` file is included with placeholder credentials. Make sure to update it with your actual credentials.
+**Note:** The default `s3config.json` file is included with placeholder credentials. Make sure to update it with your
+actual credentials.
 
 ## Usage
 
@@ -70,9 +71,9 @@ S3UploadTool.exe "path\to\your\folder"
 1. The tool reads configuration from `s3config.json`
 2. Scans all files in the source folder (default: `Installer\auto_update_files`)
 3. For each file:
-   - Checks if the file exists in S3
-   - Compares last modified dates
-   - Uploads only if the local file is newer or doesn't exist in S3
+    - Checks if the file exists in S3
+    - Compares last modified dates
+    - Uploads only if the local file is newer or doesn't exist in S3
 4. Displays a summary of uploaded, skipped, and error files
 
 ## Output
@@ -106,7 +107,8 @@ Errors: 0
 
 ## S3 Bucket Configuration
 
-The bucket name can be configured in `s3config.json` using the `BucketName` property. If not specified, it defaults to `"menu-db"`.
+The bucket name can be configured in `s3config.json` using the `BucketName` property. If not specified, it defaults to
+`"menu-db"`.
 
 ## Security Note
 

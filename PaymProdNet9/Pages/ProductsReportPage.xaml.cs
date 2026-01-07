@@ -20,7 +20,7 @@ public partial class ProductsReportPage : Page
     private readonly MenuPriceService _menuPriceService;
     private bool? _currentReportWithPrices;
     private List<int> _lastSelectedMenuIds = new();
-    
+
     // Backups for single menu data
     private ObservableCollection<MenuDel_act> _singleMenuDelicates;
     private List<string> _singleBanquetInfo;
@@ -43,17 +43,17 @@ public partial class ProductsReportPage : Page
     private void Page_Loaded(object sender, RoutedEventArgs e)
     {
         // If data was set from navigation
-        if (MenuDelicates != null) 
+        if (MenuDelicates != null)
         {
             _menuDelicates = MenuDelicates;
             // Backup for restoration
             _singleMenuDelicates = new ObservableCollection<MenuDel_act>(MenuDelicates);
         }
-        
-        if (BanquetInfo != null) 
+
+        if (BanquetInfo != null)
         {
             _banquetInfo = BanquetInfo;
-             // Backup
+            // Backup
             _singleBanquetInfo = new List<string>(BanquetInfo);
         }
 
@@ -79,13 +79,13 @@ public partial class ProductsReportPage : Page
     {
         if (_singleMenuDelicates != null)
         {
-             _menuDelicates.Clear();
-             foreach(var item in _singleMenuDelicates) _menuDelicates.Add(item);
+            _menuDelicates.Clear();
+            foreach (var item in _singleMenuDelicates) _menuDelicates.Add(item);
         }
-        
+
         if (_singleBanquetInfo != null)
-             _banquetInfo = new List<string>(_singleBanquetInfo);
-             
+            _banquetInfo = new List<string>(_singleBanquetInfo);
+
         MenuId = _singleMenuId;
     }
 
@@ -100,7 +100,7 @@ public partial class ProductsReportPage : Page
         RestoreSingleMenuState();
         GenerateReport(false);
     }
-    
+
     // ... GenerateReport ...
 
     private void GenerateMultiMenuReport_Click(object sender, RoutedEventArgs e)
@@ -128,10 +128,7 @@ public partial class ProductsReportPage : Page
             if (m != null) menus.Add(m);
 
             var items = repo.GetMenuDelicates(id);
-            foreach (var item in items)
-            {
-                _menuDelicates.Add(item);
-            }
+            foreach (var item in items) _menuDelicates.Add(item);
         }
 
         var names = string.Join(" + ", menus.Select(m => m.Name));
@@ -147,7 +144,7 @@ public partial class ProductsReportPage : Page
             totalGuests.ToString(),
             DateTime.Now.ToString("dd.MM.yyyy HH:mm")
         };
-        
+
         // Reset MenuId to ensure we don't rely on a single menu context
         MenuId = 0;
     }
@@ -340,7 +337,7 @@ public partial class ProductsReportPage : Page
             foreach (var product in groupedProducts)
             {
                 var (amountText, unitText, roundedAmount) = FormatAmountWithRoundedValue(product, measures);
-                
+
                 // Пересчитываем цену на основе округленного количества
                 var recalculatedPrice = RecalculatePrice(product, roundedAmount, measures);
                 grandTotal += recalculatedPrice;
@@ -362,7 +359,7 @@ public partial class ProductsReportPage : Page
         // Let's customize it or reuse logic. 
         // CreateHeaderCell uses colspan, bold, centered, gray background.
         // Maybe better to create custom cells for total to align right.
-        
+
         var totalTitleCell = new TableCell(new Paragraph(new Run("ИТОГО") { FontWeight = FontWeights.Bold }))
         {
             ColumnSpan = 3,
@@ -373,14 +370,15 @@ public partial class ProductsReportPage : Page
             Padding = new Thickness(4)
         };
 
-        var totalValueCell = new TableCell(new Paragraph(new Run(FormatPrice(grandTotal)) { FontWeight = FontWeights.Bold }))
-        {
-            TextAlignment = TextAlignment.Right,
-            Background = new SolidColorBrush(Color.FromRgb(221, 235, 247)),
-            BorderBrush = Brushes.Black,
-            BorderThickness = new Thickness(1),
-            Padding = new Thickness(4)
-        };
+        var totalValueCell =
+            new TableCell(new Paragraph(new Run(FormatPrice(grandTotal)) { FontWeight = FontWeights.Bold }))
+            {
+                TextAlignment = TextAlignment.Right,
+                Background = new SolidColorBrush(Color.FromRgb(221, 235, 247)),
+                BorderBrush = Brushes.Black,
+                BorderThickness = new Thickness(1),
+                Padding = new Thickness(4)
+            };
 
         totalRow.Cells.Add(totalTitleCell);
         totalRow.Cells.Add(totalValueCell);
@@ -526,11 +524,13 @@ public partial class ProductsReportPage : Page
         if (string.IsNullOrWhiteSpace(measureUnit))
             return null;
 
-        static Measure? PickPreferred(IEnumerable<Measure> candidates) =>
-            candidates
+        static Measure? PickPreferred(IEnumerable<Measure> candidates)
+        {
+            return candidates
                 .OrderByDescending(m => m.Fass > 1 ? 1 : 0)
                 .ThenBy(m => m.Id)
                 .FirstOrDefault();
+        }
 
         var lower = measureUnit.ToLower().Trim();
 
@@ -563,7 +563,7 @@ public partial class ProductsReportPage : Page
             var summaryData = GenerateSummaryData();
             _menuPrinter.PrintReport(summaryData,
                 $"{_banquetInfo[0]}, {_banquetInfo[1]} человек, {_banquetInfo[2]}",
-                includePrices: _currentReportWithPrices.Value);
+                _currentReportWithPrices.Value);
         }
         catch (Exception ex)
         {
@@ -615,7 +615,7 @@ public partial class ProductsReportPage : Page
             // Для компонентов блюд нужно умножать на количество порций
             decimal totalWeight;
             decimal dishCountForPrice;
-            
+
             if (delicate.Del_id < 0)
             {
                 // Это продукт, добавленный напрямую - используем component.Ves как есть
@@ -699,16 +699,15 @@ public partial class ProductsReportPage : Page
             .OrderBy(p => p.Name);
     }
 
-    private (string amount, string unit, double roundedAmount) FormatAmountWithRoundedValue(GroupedProduct product, List<Measure> measures)
+    private (string amount, string unit, double roundedAmount) FormatAmountWithRoundedValue(GroupedProduct product,
+        List<Measure> measures)
     {
         var defaultUnit = !string.IsNullOrEmpty(product.Mera) ? product.Mera : "шт";
         var normalizedUnit = NormalizeUnit(defaultUnit);
         var measure = FindMeasure(measures, defaultUnit);
 
         if (!IsDiscreteUnit(normalizedUnit))
-        {
             return FormatContinuousAmountWithRoundedValue(product, defaultUnit, normalizedUnit, measure, measures);
-        }
 
         return FormatDiscreteAmountWithRoundedValue(product, defaultUnit, measure);
     }
@@ -720,15 +719,15 @@ public partial class ProductsReportPage : Page
         var measure = FindMeasure(measures, defaultUnit);
 
         if (!IsDiscreteUnit(normalizedUnit))
-        {
             return FormatContinuousAmount(product, defaultUnit, normalizedUnit, measure, measures);
-        }
 
         return FormatDiscreteAmount(product, defaultUnit, measure);
     }
 
-    private static string NormalizeUnit(string unit) =>
-        unit?.Trim().ToLowerInvariant() ?? string.Empty;
+    private static string NormalizeUnit(string unit)
+    {
+        return unit?.Trim().ToLowerInvariant() ?? string.Empty;
+    }
 
     private static bool IsDiscreteUnit(string unit)
     {
@@ -740,10 +739,7 @@ public partial class ProductsReportPage : Page
 
     private static Measure? FindChildMeasure(List<Measure> measures, string? parentUnit)
     {
-        if (string.IsNullOrWhiteSpace(parentUnit))
-        {
-            return null;
-        }
+        if (string.IsNullOrWhiteSpace(parentUnit)) return null;
 
         var normalizedParent = NormalizeUnit(parentUnit);
         return measures.FirstOrDefault(m =>
@@ -759,7 +755,8 @@ public partial class ProductsReportPage : Page
         Measure? measure,
         List<Measure> measures)
     {
-        var (formatted, displayUnit, _) = FormatContinuousAmountWithRoundedValue(product, originalUnit, normalizedUnit, measure, measures);
+        var (formatted, displayUnit, _) =
+            FormatContinuousAmountWithRoundedValue(product, originalUnit, normalizedUnit, measure, measures);
         return (formatted, displayUnit);
     }
 
@@ -783,10 +780,7 @@ public partial class ProductsReportPage : Page
             normalizedUnit = NormalizeUnit(displayUnit);
 
             currentMeasure = FindMeasure(measures, product.FassIz) ?? currentMeasure;
-            if (currentMeasure != null)
-            {
-                roundingPrecision = currentMeasure.RoundingPrecision;
-            }
+            if (currentMeasure != null) roundingPrecision = currentMeasure.RoundingPrecision;
         }
 
         if (currentMeasure != null)
@@ -799,15 +793,9 @@ public partial class ProductsReportPage : Page
                    !string.IsNullOrWhiteSpace(currentMeasure.FassIzmer))
             {
                 var parent = FindMeasure(measures, currentMeasure.FassIzmer);
-                if (parent == null)
-                {
-                    break;
-                }
+                if (parent == null) break;
 
-                if (NormalizeUnit(parent.Name) == NormalizeUnit(displayUnit))
-                {
-                    break;
-                }
+                if (NormalizeUnit(parent.Name) == NormalizeUnit(displayUnit)) break;
 
                 totalValue /= currentMeasure.Fass;
                 currentMeasure = parent;
@@ -822,15 +810,9 @@ public partial class ProductsReportPage : Page
             while (totalValue < 1 && hop++ < maxUnitHops)
             {
                 var child = FindChildMeasure(measures, normalizedUnit);
-                if (child == null || child.Fass <= 0)
-                {
-                    break;
-                }
+                if (child == null || child.Fass <= 0) break;
 
-                if (NormalizeUnit(child.Name) == normalizedUnit)
-                {
-                    break;
-                }
+                if (NormalizeUnit(child.Name) == normalizedUnit) break;
 
                 totalValue *= child.Fass;
                 currentMeasure = child;
@@ -838,10 +820,7 @@ public partial class ProductsReportPage : Page
                 roundingPrecision = child.RoundingPrecision;
                 normalizedUnit = NormalizeUnit(displayUnit);
 
-                if (totalValue >= 1)
-                {
-                    break;
-                }
+                if (totalValue >= 1) break;
             }
         }
 
@@ -934,15 +913,11 @@ public partial class ProductsReportPage : Page
             // Для непрерывных единиц: если есть фасовка, используем TotalPackages, иначе TotalWeight
             // Это соответствует логике в FormatContinuousAmount
             if (product.Fass > 0 && !string.IsNullOrWhiteSpace(product.FassIz))
-            {
                 // Исходное количество в единицах фасовки (до округления)
                 originalAmount = (double)product.TotalPackages;
-            }
             else
-            {
                 // Исходное количество в базовых единицах
                 originalAmount = (double)product.TotalWeight;
-            }
         }
         else
         {
@@ -972,7 +947,8 @@ public partial class ProductsReportPage : Page
     }
 
 
-
-    private string FormatPrice(decimal value) =>
-        value > 0 ? value.ToString("N0", CultureInfo.CurrentCulture) : "—";
+    private string FormatPrice(decimal value)
+    {
+        return value > 0 ? value.ToString("N0", CultureInfo.CurrentCulture) : "—";
+    }
 }

@@ -6,8 +6,8 @@
 
     <Grid Margin="10">
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
         <StackPanel Grid.Row="0"
@@ -20,8 +20,8 @@
                     Padding="20,5"
                     Click="GenerateReportWithPrices_Click">
                 <StackPanel Orientation="Horizontal">
-                    <materialDesign:PackIcon Kind="CashMultiple" Width="20" Height="20" Margin="0,0,10,0"/>
-                    <TextBlock Text="Отчет с себестоимостью" VerticalAlignment="Center"/>
+                    <materialDesign:PackIcon Kind="CashMultiple" Width="20" Height="20" Margin="0,0,10,0" />
+                    <TextBlock Text="Отчет с себестоимостью" VerticalAlignment="Center" />
                 </StackPanel>
             </Button>
             <Button Style="{StaticResource MaterialDesignRaisedButton}"
@@ -31,8 +31,8 @@
                     Margin="10,0,0,0"
                     Click="GenerateReportWithSalePrices_Click">
                 <StackPanel Orientation="Horizontal">
-                    <materialDesign:PackIcon Kind="TagTextOutline" Width="20" Height="20" Margin="0,0,10,0"/>
-                    <TextBlock Text="Отчет с ценой" VerticalAlignment="Center"/>
+                    <materialDesign:PackIcon Kind="TagTextOutline" Width="20" Height="20" Margin="0,0,10,0" />
+                    <TextBlock Text="Отчет с ценой" VerticalAlignment="Center" />
                 </StackPanel>
             </Button>
             <Button Style="{StaticResource MaterialDesignRaisedButton}"
@@ -42,8 +42,8 @@
                     Margin="10,0,0,0"
                     Click="GenerateReportWithoutPrices_Click">
                 <StackPanel Orientation="Horizontal">
-                    <materialDesign:PackIcon Kind="FileDocumentOutline" Width="20" Height="20" Margin="0,0,10,0"/>
-                    <TextBlock Text="Отчет без цен" VerticalAlignment="Center"/>
+                    <materialDesign:PackIcon Kind="FileDocumentOutline" Width="20" Height="20" Margin="0,0,10,0" />
+                    <TextBlock Text="Отчет без цен" VerticalAlignment="Center" />
                 </StackPanel>
             </Button>
             <Button x:Name="SaveToWordButton"
@@ -55,8 +55,8 @@
                     Click="SaveToWord_Click"
                     Visibility="Collapsed">
                 <StackPanel Orientation="Horizontal">
-                    <materialDesign:PackIcon Kind="FileWord" Width="20" Height="20" Margin="0,0,10,0"/>
-                    <TextBlock Text="Сохранить в Word" VerticalAlignment="Center"/>
+                    <materialDesign:PackIcon Kind="FileWord" Width="20" Height="20" Margin="0,0,10,0" />
+                    <TextBlock Text="Сохранить в Word" VerticalAlignment="Center" />
                 </StackPanel>
             </Button>
         </StackPanel>
@@ -73,10 +73,9 @@
                                               VerticalScrollBarVisibility="Auto"
                                               HorizontalScrollBarVisibility="Auto"
                                               HorizontalAlignment="Center"
-                                              MinHeight="600"/>
+                                              MinHeight="600" />
                 </materialDesign:Card>
             </Border>
         </Grid>
     </Grid>
 </Page>
-

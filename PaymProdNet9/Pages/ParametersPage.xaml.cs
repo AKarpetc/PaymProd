@@ -20,7 +20,7 @@ public partial class ParametersPage : Page
     {
         InitializeComponent();
         _settingsRepository = new SettingsRepository();
-        
+
         InitializeDeletedItemsSettings();
         LoadCurrentDatabaseInfo();
         LoadBackups();
@@ -52,7 +52,8 @@ public partial class ParametersPage : Page
         catch (Exception ex)
         {
             Logger.Error("Ошибка при загрузке настроек", ex);
-            MessageBox.Show($"Ошибка при загрузке настроек: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+            MessageBox.Show($"Ошибка при загрузке настроек: {ex.Message}", "Ошибка", MessageBoxButton.OK,
+                MessageBoxImage.Error);
         }
     }
 
@@ -62,7 +63,8 @@ public partial class ParametersPage : Page
         {
             if (!decimal.TryParse(DefaultMarkupTextBox.Text, out var markup))
             {
-                MessageBox.Show("Введите корректное значение надбавки.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show("Введите корректное значение надбавки.", "Ошибка", MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
                 return;
             }
 
@@ -86,11 +88,8 @@ public partial class ParametersPage : Page
             var menuRepo = new MenuRepository();
             var openMenu = menuRepo.GetOpenMenu();
             var updatedMenu = 0;
-            
-            if (openMenu != null)
-            {
-                updatedMenu = menuRepo.UpdateMarkupForMenu(openMenu.Id, markup);
-            }
+
+            if (openMenu != null) updatedMenu = menuRepo.UpdateMarkupForMenu(openMenu.Id, markup);
 
             MessageBox.Show(
                 $"Обновление завершено!\n\n" +
@@ -113,13 +112,15 @@ public partial class ParametersPage : Page
         {
             if (!decimal.TryParse(ServicePercentTextBox.Text, out var servicePercent))
             {
-                MessageBox.Show("Некорректное значение процента за обслуживание", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show("Некорректное значение процента за обслуживание", "Ошибка", MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
                 return;
             }
 
             if (!decimal.TryParse(DefaultMarkupTextBox.Text, out var defaultMarkup))
             {
-                MessageBox.Show("Некорректное значение надбавки по умолчанию", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show("Некорректное значение надбавки по умолчанию", "Ошибка", MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
                 return;
             }
 
@@ -136,10 +137,11 @@ public partial class ParametersPage : Page
         catch (Exception ex)
         {
             Logger.Error("Ошибка при сохранении настроек", ex);
-            MessageBox.Show($"Ошибка при сохранении настроек: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+            MessageBox.Show($"Ошибка при сохранении настроек: {ex.Message}", "Ошибка", MessageBoxButton.OK,
+                MessageBoxImage.Error);
         }
     }
-    
+
     // --- Database Logic (From DatabaseManagerPage) ---
 
     private void LoadCurrentDatabaseInfo()
@@ -404,10 +406,7 @@ public partial class ParametersPage : Page
         try
         {
             var currentPath = DatabaseBackupHelper.GetCurrentDatabasePath();
-            if (File.Exists(currentPath))
-            {
-                backupPath = DatabaseBackupHelper.CreateAutoBackup();
-            }
+            if (File.Exists(currentPath)) backupPath = DatabaseBackupHelper.CreateAutoBackup();
         }
         catch (Exception backupEx)
         {
@@ -417,20 +416,14 @@ public partial class ParametersPage : Page
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Warning);
 
-            if (continueResult != MessageBoxResult.Yes)
-            {
-                return;
-            }
+            if (continueResult != MessageBoxResult.Yes) return;
         }
 
         try
         {
             DatabaseBackupHelper.CreateFreshDatabase();
             var message = "Создана новая база данных.";
-            if (!string.IsNullOrWhiteSpace(backupPath))
-            {
-                message += $"\nРезервная копия: {backupPath}";
-            }
+            if (!string.IsNullOrWhiteSpace(backupPath)) message += $"\nРезервная копия: {backupPath}";
 
             message += "\n\nПерезапустите приложение, чтобы начать работу с чистой базой.";
 
@@ -458,21 +451,17 @@ public partial class ParametersPage : Page
             var downloaded = await UpdateService.TryDownloadStartDatabaseAsync(
                 currentPath,
                 window,
-                replaceExisting: true,
-                silentSuccess: false);
+                true,
+                false);
 
             if (downloaded)
-            {
                 LoadCurrentDatabaseInfo();
-            }
             else
-            {
                 MessageBox.Show(
                     "Загрузка стартовой базы данных отменена или недоступна.",
                     "Информация",
                     MessageBoxButton.OK,
                     MessageBoxImage.Information);
-            }
         }
         finally
         {
@@ -487,11 +476,11 @@ public partial class ParametersPage : Page
 
     private void NumericTextBox_PreviewTextInput(object sender, TextCompositionEventArgs e)
     {
-        Services.InputValidationHelper.NumericOnly_PreviewTextInput(sender, e);
+        InputValidationHelper.NumericOnly_PreviewTextInput(sender, e);
     }
 
     private void ValidateNumeric_LostFocus(object sender, RoutedEventArgs e)
     {
-         Services.InputValidationHelper.ValidateNumericField_LostFocus(sender, e);
+        InputValidationHelper.ValidateNumericField_LostFocus(sender, e);
     }
 }

@@ -195,15 +195,9 @@ public static class DatabaseBackupHelper
         SqliteConnection.ClearAllPools();
 
         var directory = Path.GetDirectoryName(currentDbPath);
-        if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
-        {
-            Directory.CreateDirectory(directory);
-        }
+        if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory)) Directory.CreateDirectory(directory);
 
-        if (File.Exists(currentDbPath))
-        {
-            File.Delete(currentDbPath);
-        }
+        if (File.Exists(currentDbPath)) File.Delete(currentDbPath);
 
         DatabaseHelper.InitializeDatabase(currentDbPath);
     }

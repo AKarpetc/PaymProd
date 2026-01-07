@@ -13,7 +13,3 @@ public static class DeletedItemsViewSettings
     /// </summary>
     public static bool ShowDeletedItems { get; set; }
 }
-
-
-
-

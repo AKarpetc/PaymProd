@@ -9,9 +9,9 @@
         ResizeMode="NoResize">
     <Grid Margin="20">
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
         <TextBlock Grid.Row="0"
@@ -19,36 +19,36 @@
                    FontSize="18"
                    FontWeight="Bold"
                    Margin="0,0,0,15"
-                   TextWrapping="Wrap"/>
+                   TextWrapping="Wrap" />
 
         <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
             <StackPanel>
                 <TextBlock Text="Для автоматической загрузки файлов на Google Drive необходим OAuth токен."
                            TextWrapping="Wrap"
-                           Margin="0,0,0,10"/>
+                           Margin="0,0,0,10" />
 
                 <TextBlock Text="Инструкция:"
                            FontWeight="Bold"
-                           Margin="0,10,0,5"/>
+                           Margin="0,10,0,5" />
 
                 <TextBlock Text="1. Откройте ссылку ниже в браузере"
-                           Margin="0,0,0,5"/>
+                           Margin="0,0,0,5" />
                 <TextBlock Text="2. Авторизуйтесь в Google"
-                           Margin="0,0,0,5"/>
+                           Margin="0,0,0,5" />
                 <TextBlock Text="3. Скопируйте полученный токен"
-                           Margin="0,0,0,5"/>
+                           Margin="0,0,0,5" />
                 <TextBlock Text="4. Вставьте токен в поле ниже"
-                           Margin="0,0,0,15"/>
+                           Margin="0,0,0,15" />
 
                 <Button Name="OpenAuthLinkButton"
                         Content="🔗 Открыть ссылку для получения токена"
                         Click="OpenAuthLinkButton_Click"
                         Margin="0,0,0,15"
-                        Padding="10,8"/>
+                        Padding="10,8" />
 
                 <TextBlock Text="OAuth токен:"
                            FontWeight="SemiBold"
-                           Margin="0,0,0,5"/>
+                           Margin="0,0,0,5" />
 
                 <TextBox Name="TokenTextBox"
                          materialDesign:HintAssist.Hint="Вставьте токен сюда"
@@ -56,13 +56,13 @@
                          AcceptsReturn="True"
                          MinHeight="80"
                          VerticalScrollBarVisibility="Auto"
-                         Margin="0,0,0,10"/>
+                         Margin="0,0,0,10" />
 
                 <TextBlock Text="⚠️ Токен будет сохранен локально для автоматических загрузок."
                            Foreground="Orange"
                            TextWrapping="Wrap"
                            FontSize="11"
-                           Margin="0,0,0,10"/>
+                           Margin="0,0,0,10" />
             </StackPanel>
         </ScrollViewer>
 
@@ -70,11 +70,10 @@
             <Button Content="Отмена"
                     Click="CancelButton_Click"
                     Margin="0,0,10,0"
-                    Padding="20,8"/>
+                    Padding="20,8" />
             <Button Content="Сохранить токен"
                     Click="SaveTokenButton_Click"
-                    Padding="20,8"/>
+                    Padding="20,8" />
         </StackPanel>
     </Grid>
 </Window>
-

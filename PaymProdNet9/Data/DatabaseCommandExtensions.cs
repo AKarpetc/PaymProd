@@ -60,9 +60,7 @@ public static class DatabaseCommandExtensions
                 // Ограничиваем длину значения для логирования
                 var displayValue = value?.ToString();
                 if (displayValue != null && displayValue.Length > 200)
-                {
                     displayValue = displayValue.Substring(0, 200) + "...";
-                }
                 parameters[param.ParameterName] = displayValue ?? (object?)DBNull.Value;
             }
 
@@ -74,4 +72,3 @@ public static class DatabaseCommandExtensions
         }
     }
 }
-

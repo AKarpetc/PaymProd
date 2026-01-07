@@ -17,10 +17,11 @@ public static class GoogleDriveService
 {
     // ID папки на Google Drive, куда будут загружаться файлы
     private const string GoogleDriveFolderId = "1m6KPyu7bTWK6EXOxOUrYK9vYbRAJmrZO";
-    
+
     // URL для открытия папки в браузере
-    private const string GoogleDriveFolderUrl = "https://drive.google.com/drive/folders/1m6KPyu7bTWK6EXOxOUrYK9vYbRAJmrZO";
-    
+    private const string GoogleDriveFolderUrl =
+        "https://drive.google.com/drive/folders/1m6KPyu7bTWK6EXOxOUrYK9vYbRAJmrZO";
+
     // Путь к файлу с сохраненным токеном
     private static string TokenFilePath => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
@@ -63,13 +64,11 @@ public static class GoogleDriveService
             }
 
             // Пытаемся загрузить сохраненный токен
-            string? accessToken = LoadSavedToken();
-            
+            var accessToken = LoadSavedToken();
+
             // Если токена нет, используем упрощенный метод через веб-интерфейс
             if (string.IsNullOrEmpty(accessToken))
-            {
                 return await UploadDatabaseToGoogleDriveManualAsync(databaseFilePath, owner);
-            }
 
             // Пытаемся загрузить через API
             try
@@ -102,7 +101,7 @@ public static class GoogleDriveService
             // Создаем временную копию с понятным именем
             var fileName = $"PaymProdNet9_DB_{DateTime.Now:yyyyMMdd_HHmmss}.db";
             var tempPath = Path.Combine(Path.GetTempPath(), fileName);
-            
+
             File.Copy(databaseFilePath, tempPath, true);
 
             // Открываем папку с файлом в проводнике
@@ -141,11 +140,8 @@ public static class GoogleDriveService
         try
         {
             var directory = Path.GetDirectoryName(TokenFilePath);
-            if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
-            {
-                Directory.CreateDirectory(directory);
-            }
-            
+            if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory)) Directory.CreateDirectory(directory);
+
             File.WriteAllText(TokenFilePath, token);
         }
         catch
@@ -161,16 +157,13 @@ public static class GoogleDriveService
     {
         try
         {
-            if (File.Exists(TokenFilePath))
-            {
-                return File.ReadAllText(TokenFilePath).Trim();
-            }
+            if (File.Exists(TokenFilePath)) return File.ReadAllText(TokenFilePath).Trim();
         }
         catch
         {
             // Игнорируем ошибки чтения токена
         }
-        
+
         return null;
     }
 
@@ -181,10 +174,7 @@ public static class GoogleDriveService
     {
         try
         {
-            if (File.Exists(TokenFilePath))
-            {
-                File.Delete(TokenFilePath);
-            }
+            if (File.Exists(TokenFilePath)) File.Delete(TokenFilePath);
         }
         catch
         {
@@ -197,7 +187,7 @@ public static class GoogleDriveService
     /// Этот метод можно использовать, если настроен OAuth в Google Cloud Console
     /// </summary>
     public static async Task<bool> UploadDatabaseToGoogleDriveApiAsync(
-        string databaseFilePath, 
+        string databaseFilePath,
         string accessToken,
         Window? owner = null)
     {
@@ -212,13 +202,10 @@ public static class GoogleDriveService
             }
 
             var fileName = Path.GetFileName(databaseFilePath);
-            if (string.IsNullOrEmpty(fileName))
-            {
-                fileName = $"PaymProdNet9_DB_{DateTime.Now:yyyyMMdd_HHmmss}.db";
-            }
+            if (string.IsNullOrEmpty(fileName)) fileName = $"PaymProdNet9_DB_{DateTime.Now:yyyyMMdd_HHmmss}.db";
 
             using var httpClient = new HttpClient();
-            httpClient.DefaultRequestHeaders.Authorization = 
+            httpClient.DefaultRequestHeaders.Authorization =
                 new AuthenticationHeaderValue("Bearer", accessToken);
 
             // Читаем файл
@@ -268,13 +255,10 @@ public static class GoogleDriveService
             else
             {
                 var errorContent = await response.Content.ReadAsStringAsync();
-                
+
                 // Если токен недействителен (401), удаляем его
-                if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
-                {
-                    DeleteSavedToken();
-                }
-                
+                if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized) DeleteSavedToken();
+
                 throw new Exception($"Ошибка загрузки: {response.StatusCode}\n{errorContent}");
             }
         }
@@ -293,4 +277,3 @@ public static class GoogleDriveService
         public string? Name { get; set; }
     }
 }
-

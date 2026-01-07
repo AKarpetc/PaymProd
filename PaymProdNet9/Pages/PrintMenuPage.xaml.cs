@@ -123,7 +123,7 @@ public partial class PrintMenuPage : Page
 
         var table = new Table();
         table.Columns.Add(new TableColumn { Width = new GridLength(250) });
-        bool showPriceColumn = reportMode != ReportMode.NoPrices;
+        var showPriceColumn = reportMode != ReportMode.NoPrices;
         table.Columns.Add(new TableColumn { Width = showPriceColumn ? new GridLength(500) : new GridLength(650) });
         if (showPriceColumn)
             table.Columns.Add(new TableColumn { Width = new GridLength(150) });
@@ -169,14 +169,12 @@ public partial class PrintMenuPage : Page
                 row.Cells.Add(nameCell);
 
                 var compositionParagraph = BuildCompositionParagraph(delicate, reportMode, out var dishPrice);
-                
+
                 // Применяем наценку к итоговой стоимости блюда
                 if (reportMode == ReportMode.Price && delicate.DefaultMarkup > 0)
-                {
                     // Наценка хранится в DefaultMarkup (передана из MainNavigationWindow)
                     // Считаем, что наценка - это множитель в процентах (например, 200% = x2)
                     dishPrice = dishPrice * (delicate.DefaultMarkup / 100);
-                }
                 var compositionCell = new TableCell(compositionParagraph)
                 {
                     Padding = new Thickness(4),
@@ -188,15 +186,16 @@ public partial class PrintMenuPage : Page
 
                 if (showPriceColumn)
                 {
-                    var priceCell = new TableCell(new Paragraph(new Run(dishPrice > 0 ? FormatCurrency(dishPrice) : "—")))
-                    {
-                        Padding = new Thickness(4),
-                        BorderBrush = Brushes.Black,
-                        BorderThickness = new Thickness(1),
-                        TextAlignment = TextAlignment.Right
-                    };
+                    var priceCell =
+                        new TableCell(new Paragraph(new Run(dishPrice > 0 ? FormatCurrency(dishPrice) : "—")))
+                        {
+                            Padding = new Thickness(4),
+                            BorderBrush = Brushes.Black,
+                            BorderThickness = new Thickness(1),
+                            TextAlignment = TextAlignment.Right
+                        };
                     row.Cells.Add(priceCell);
-                    
+
                     // Накапливаем итоговую сумму
                     totalReportSum += dishPrice;
                 }
@@ -209,29 +208,28 @@ public partial class PrintMenuPage : Page
         if (showPriceColumn && Delicates.Any())
         {
             var settings = _settingsRepository.GetSettings();
-            decimal effectiveServicePercent = settings.ServicePercent;
+            var effectiveServicePercent = settings.ServicePercent;
 
             if (MenuId > 0)
             {
                 var menu = _menuRepository.GetMenuById(MenuId);
-                if (menu?.ServicePercent != null)
-                {
-                    effectiveServicePercent = menu.ServicePercent.Value;
-                }
+                if (menu?.ServicePercent != null) effectiveServicePercent = menu.ServicePercent.Value;
             }
 
             // 1. Подитог (Сумма без обслуживания)
             var subtotalRow = new TableRow();
             // Объединяем ячейки названия и состава
-            var subtotalTitleCell = new TableCell(new Paragraph(new Run("Итого по меню") { FontWeight = FontWeights.Bold }))
-            {
-                ColumnSpan = 2,
-                Padding = new Thickness(4),
-                TextAlignment = TextAlignment.Right
-            };
+            var subtotalTitleCell =
+                new TableCell(new Paragraph(new Run("Итого по меню") { FontWeight = FontWeights.Bold }))
+                {
+                    ColumnSpan = 2,
+                    Padding = new Thickness(4),
+                    TextAlignment = TextAlignment.Right
+                };
             subtotalRow.Cells.Add(subtotalTitleCell);
-            
-            var subtotalValueCell = new TableCell(new Paragraph(new Run(FormatCurrency(totalReportSum)) { FontWeight = FontWeights.Bold }))
+
+            var subtotalValueCell = new TableCell(new Paragraph(new Run(FormatCurrency(totalReportSum))
+                { FontWeight = FontWeights.Bold }))
             {
                 Padding = new Thickness(4),
                 BorderBrush = Brushes.Black,
@@ -242,20 +240,24 @@ public partial class PrintMenuPage : Page
             rowGroup.Rows.Add(subtotalRow);
 
             // 2. Обслуживание
-            if (reportMode == ReportMode.Price) // Обычно обслуживание показывается только в Price отчете, но если и в Cost, то убрать условие
+            if (reportMode ==
+                ReportMode.Price) // Обычно обслуживание показывается только в Price отчете, но если и в Cost, то убрать условие
             {
-                decimal serviceSum = totalReportSum * (effectiveServicePercent / 100);
-                
+                var serviceSum = totalReportSum * (effectiveServicePercent / 100);
+
                 var serviceRow = new TableRow();
-                var serviceTitleCell = new TableCell(new Paragraph(new Run($"За обслуживание ({effectiveServicePercent:G}%)")) { FontWeight = FontWeights.Bold })
-                {
-                    ColumnSpan = 2,
-                    Padding = new Thickness(4),
-                    TextAlignment = TextAlignment.Right
-                };
+                var serviceTitleCell =
+                    new TableCell(new Paragraph(new Run($"За обслуживание ({effectiveServicePercent:G}%)"))
+                        { FontWeight = FontWeights.Bold })
+                    {
+                        ColumnSpan = 2,
+                        Padding = new Thickness(4),
+                        TextAlignment = TextAlignment.Right
+                    };
                 serviceRow.Cells.Add(serviceTitleCell);
 
-                var serviceValueCell = new TableCell(new Paragraph(new Run(FormatCurrency(serviceSum)) { FontWeight = FontWeights.Bold }))
+                var serviceValueCell = new TableCell(new Paragraph(new Run(FormatCurrency(serviceSum))
+                    { FontWeight = FontWeights.Bold }))
                 {
                     Padding = new Thickness(4),
                     BorderBrush = Brushes.Black,
@@ -266,10 +268,11 @@ public partial class PrintMenuPage : Page
                 rowGroup.Rows.Add(serviceRow);
 
                 // 3. ИТОГ
-                decimal grandTotal = totalReportSum + serviceSum;
-                
+                var grandTotal = totalReportSum + serviceSum;
+
                 var totalRow = new TableRow();
-                var totalTitleCell = new TableCell(new Paragraph(new Run("ИТОГ") { FontWeight = FontWeights.Bold, Foreground = Brushes.DarkGreen, FontSize = 16 }))
+                var totalTitleCell = new TableCell(new Paragraph(new Run("ИТОГ")
+                    { FontWeight = FontWeights.Bold, Foreground = Brushes.DarkGreen, FontSize = 16 }))
                 {
                     ColumnSpan = 2,
                     Padding = new Thickness(4),
@@ -277,7 +280,8 @@ public partial class PrintMenuPage : Page
                 };
                 totalRow.Cells.Add(totalTitleCell);
 
-                var totalValueCell = new TableCell(new Paragraph(new Run(FormatCurrency(grandTotal)) { FontWeight = FontWeights.Bold, Foreground = Brushes.DarkGreen, FontSize = 16 }))
+                var totalValueCell = new TableCell(new Paragraph(new Run(FormatCurrency(grandTotal))
+                    { FontWeight = FontWeights.Bold, Foreground = Brushes.DarkGreen, FontSize = 16 }))
                 {
                     Padding = new Thickness(4),
                     BorderBrush = Brushes.Black,
@@ -289,8 +293,8 @@ public partial class PrintMenuPage : Page
             }
             else if (reportMode == ReportMode.Cost)
             {
-                 // Для отчета по себестоимости тоже можно вывести ИТОГ (сумму себестоимостей)
-                 var totalRow = new TableRow();
+                // Для отчета по себестоимости тоже можно вывести ИТОГ (сумму себестоимостей)
+                var totalRow = new TableRow();
                 var totalTitleCell = new TableCell(new Paragraph(new Run("ИТОГ") { FontWeight = FontWeights.Bold }))
                 {
                     ColumnSpan = 2,
@@ -299,7 +303,8 @@ public partial class PrintMenuPage : Page
                 };
                 totalRow.Cells.Add(totalTitleCell);
 
-                var totalValueCell = new TableCell(new Paragraph(new Run(FormatCurrency(totalReportSum)) { FontWeight = FontWeights.Bold }))
+                var totalValueCell = new TableCell(new Paragraph(new Run(FormatCurrency(totalReportSum))
+                    { FontWeight = FontWeights.Bold }))
                 {
                     Padding = new Thickness(4),
                     BorderBrush = Brushes.Black,
@@ -376,19 +381,22 @@ public partial class PrintMenuPage : Page
             var productName = !string.IsNullOrEmpty(component.NameT) ? component.NameT : component.Name;
             var baseUnit = !string.IsNullOrWhiteSpace(component.Mera) ? component.Mera : "г";
             var count = delicate.Count > 0 ? delicate.Count : 1;
-            
+
             // Логика как в отчете по товарам: показываем основную единицу, если нет перерасчета в фасовку
             decimal displayValue;
             string displayUnit;
             var totalWeight = component.Ves * count;
-            
+
             // Локальная функция для нормализации единиц
-            string NormalizeUnitLocal(string unit) => unit?.Trim().ToLowerInvariant() ?? string.Empty;
-            
+            string NormalizeUnitLocal(string unit)
+            {
+                return unit?.Trim().ToLowerInvariant() ?? string.Empty;
+            }
+
             // Нормализуем единицы для сравнения (как в отчете по товарам)
             var baseUnitNormalized = NormalizeUnitLocal(baseUnit);
             var fassIzNormalized = NormalizeUnitLocal(component.FassIz ?? string.Empty);
-            
+
             // Если на продукте стоит флаг "не переводить в фасованные" — всегда показываем в базовой единице
             if (component.DoNotConvertToPackInMenu)
             {
@@ -399,8 +407,8 @@ public partial class PrintMenuPage : Page
             {
                 // Проверяем, нужно ли пересчитывать в фасовку (как в отчете по товарам)
                 // Пересчитываем только если: есть фасовка, единица фасовки отличается от базовой, и вес >= фасовка
-                if (component.Fass > 0 && 
-                    !string.IsNullOrWhiteSpace(component.FassIz) && 
+                if (component.Fass > 0 &&
+                    !string.IsNullOrWhiteSpace(component.FassIz) &&
                     fassIzNormalized != baseUnitNormalized &&
                     totalWeight >= component.Fass)
                 {
@@ -416,7 +424,7 @@ public partial class PrintMenuPage : Page
                     displayUnit = baseUnit;
                 }
             }
-            
+
             var formattedWeight = FormatValueOld(displayValue, displayUnit);
 
             // Считаем цену компонента всегда, чтобы накопить dishTotal
@@ -425,22 +433,19 @@ public partial class PrintMenuPage : Page
 
             string line;
             if (reportMode == ReportMode.Cost)
-            {
                 line = priceInfo.TotalPrice > 0
                     ? $"{productName} ({formattedWeight}) — {FormatCurrency(priceInfo.TotalPrice)} тг"
                     : $"{productName} ({formattedWeight}) — цена не указана";
-            }
             else
-            {
                 // Price или NoPrices - без цены
                 line = $"{productName} ({formattedWeight})";
-            }
 
             lines.Add(line);
         }
+
         return lines;
     }
-    
+
     /// <summary>
     /// Форматирование значения по логике старого приложения (Math.Round)
     /// </summary>
@@ -450,13 +455,15 @@ public partial class PrintMenuPage : Page
         // Если значение целое, показываем без дробной части
         if (value == Math.Truncate(value))
             return $"{(int)value}{unit}";
-        
+
         return $"{value:F2}{unit}";
     }
 
-    private string FormatCurrency(decimal value) =>
-        Math.Round(value, MidpointRounding.AwayFromZero)
+    private string FormatCurrency(decimal value)
+    {
+        return Math.Round(value, MidpointRounding.AwayFromZero)
             .ToString("N0", CultureInfo.CurrentCulture);
+    }
 
     private static string FormatValue(decimal value, string unit)
     {
@@ -487,8 +494,8 @@ public partial class PrintMenuPage : Page
             _menuPrinter.PrintMenu(
                 Delicates,
                 menuTitle,
-                reportMode: _currentReportMode.Value,
-                menuId: MenuId > 0 ? MenuId : null);
+                _currentReportMode.Value,
+                MenuId > 0 ? MenuId : null);
         }
         catch (Exception ex)
         {
@@ -498,4 +505,3 @@ public partial class PrintMenuPage : Page
         }
     }
 }
-

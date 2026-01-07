@@ -40,10 +40,7 @@ public class ProductRepository
             LEFT JOIN Mera mi ON mi.Mera_ID = p.Izmer";
 
         using var reader = command.ExecuteReaderWithLog();
-        while (reader.Read())
-        {
-            products.Add(BuildProductView(reader));
-        }
+        while (reader.Read()) products.Add(BuildProductView(reader));
 
         return products;
     }
@@ -51,7 +48,7 @@ public class ProductRepository
     /// <summary>
     /// Добавить продукт
     /// </summary>
-    public int AddProduct(string name, int? vesId, int typeId, double fass, int izmerId, int prizMenu = 0, 
+    public int AddProduct(string name, int? vesId, int typeId, double fass, int izmerId, int prizMenu = 0,
         decimal count = 0, bool automat = false, int countPeople = 0, bool mainCount = false, double price = 0,
         bool hideInMenu = false, bool doNotConvertToPackInMenu = false)
     {
@@ -166,16 +163,33 @@ public class ProductRepository
         verifyCommand.Parameters.AddWithValue("@id", id);
         var savedFass = Convert.ToDouble(verifyCommand.ExecuteScalar());
         Logger.Debug($"UpdateProduct: Проверка сохраненного значения Fass={savedFass} (ожидалось {fassValue})");
-        
+
         if (Math.Abs(savedFass - fassValue) > 0.001)
-        {
-            Logger.Error($"UpdateProduct: ОШИБКА! Сохраненное значение Fass={savedFass} не совпадает с ожидаемым {fassValue}");
-        }
+            Logger.Error(
+                $"UpdateProduct: ОШИБКА! Сохраненное значение Fass={savedFass} не совпадает с ожидаемым {fassValue}");
 
         if (prizMenu == 1)
             EnsureLinkedDelicate(connection, id, name, typeId, count);
         else
             RemoveLinkedDelicate(connection, id);
+
+        if (!automat)
+        {
+            // Если автодобавление отключено, удаляем продукт из всех открытых меню
+            var cleanMenuCmd = connection.CreateCommand();
+            cleanMenuCmd.CommandText = @"
+                DELETE FROM Components1 
+                WHERE Delic_id = -@productId 
+                  AND Idmen IN (SELECT Id FROM Menus WHERE Isopen = 1);
+
+                DELETE FROM Menu_Delicates 
+                WHERE Id_delic = -@productId 
+                  AND Id_men IN (SELECT Id FROM Menus WHERE Isopen = 1);";
+            cleanMenuCmd.Parameters.AddWithValue("@productId", id);
+            var removedCount = cleanMenuCmd.ExecuteNonQuery();
+            Logger.Debug(
+                $"UpdateProduct: AutoAdd отключен. Удален продукт ID={id} из открытых меню (строк: {removedCount}).");
+        }
     }
 
     /// <summary>
@@ -454,10 +468,7 @@ public class ProductRepository
 
         using (var reader = command.ExecuteReader())
         {
-            while (reader.Read())
-            {
-                productIds.Add(reader.GetInt32(0));
-            }
+            while (reader.Read()) productIds.Add(reader.GetInt32(0));
         }
 
         // Также получаем продукты из стандартных компонентов блюд, которые есть в меню
@@ -471,10 +482,7 @@ public class ProductRepository
 
         using (var reader = command.ExecuteReader())
         {
-            while (reader.Read())
-            {
-                productIds.Add(reader.GetInt32(0));
-            }
+            while (reader.Read()) productIds.Add(reader.GetInt32(0));
         }
 
         // Получаем полную информацию о продуктах
@@ -515,7 +523,7 @@ public class ProductRepository
         var productId = reader.GetInt32(0);
         var fassValue = reader.IsDBNull(6) ? 0 : reader.GetDecimal(6);
         Logger.Debug($"BuildProductView: Загрузка продукта ID={productId}, Fass из базы={fassValue}");
-        
+
         var product = new ProductView
         {
             ID = productId,
@@ -574,9 +582,11 @@ public class ProductRepository
 
             packagingName = !string.IsNullOrWhiteSpace(product.IzName)
                 ? product.IzName
-                : (!string.IsNullOrWhiteSpace(packFassIzmer)
+                : !string.IsNullOrWhiteSpace(packFassIzmer)
                     ? packFassIzmer
-                    : (string.IsNullOrWhiteSpace(baseFassIzmer) ? product.Ves : baseFassIzmer));
+                    : string.IsNullOrWhiteSpace(baseFassIzmer)
+                        ? product.Ves
+                        : baseFassIzmer;
         }
 
         // НЕ устанавливаем значение по умолчанию 1, если Fass продукта уже установлено
@@ -586,15 +596,12 @@ public class ProductRepository
 
         // Сохраняем значение Fass продукта - НЕ перезаписываем, если оно уже установлено
         if (product.Fass > 0)
-        {
             // Fass продукта уже установлено - не изменяем его
-            Logger.Debug($"ApplyPackagingDefaults: Сохраняем существующее значение Fass={product.Fass} для продукта ID={product.ID}");
-        }
+            Logger.Debug(
+                $"ApplyPackagingDefaults: Сохраняем существующее значение Fass={product.Fass} для продукта ID={product.ID}");
         else
-        {
             // Fass продукта не установлено - используем значение по умолчанию
             product.Fass = packagingFass;
-        }
         product.IzName = packagingName;
     }
 
@@ -617,13 +624,11 @@ public class ProductRepository
 
         using var reader = command.ExecuteReader();
         while (reader.Read())
-        {
             prices.Add(new MenuProductPrice
             {
                 ProductID = reader.GetInt32(0),
                 Price = reader.GetDouble(1)
             });
-        }
 
         return prices;
     }
@@ -677,7 +682,8 @@ public class ProductRepository
 
     #region Linked dishes helpers
 
-    private void EnsureLinkedDelicate(SqliteConnection connection, int productId, string productName, int productTypeId, decimal productCount)
+    private void EnsureLinkedDelicate(SqliteConnection connection, int productId, string productName, int productTypeId,
+        decimal productCount)
     {
         var delicateTypeId = EnsureLinkedDelicateType(connection, productTypeId);
         var portion = productCount > 0 ? productCount : 1m;
@@ -735,7 +741,8 @@ public class ProductRepository
         cleanCommand.ExecuteNonQuery();
 
         var selectComponent = connection.CreateCommand();
-        selectComponent.CommandText = "SELECT Comp_Id FROM Components WHERE Delic_id = @delicId AND ProductID = @productId LIMIT 1";
+        selectComponent.CommandText =
+            "SELECT Comp_Id FROM Components WHERE Delic_id = @delicId AND ProductID = @productId LIMIT 1";
         selectComponent.Parameters.AddWithValue("@delicId", delicateId);
         selectComponent.Parameters.AddWithValue("@productId", productId);
 

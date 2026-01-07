@@ -18,17 +18,15 @@ public class SettingsRepository
 
         using var reader = command.ExecuteReader();
         if (reader.Read())
-        {
             return new AppGlobalSettings
             {
                 Id = 1,
                 ServicePercent = reader.GetDecimal(0),
                 DefaultMarkup = reader.GetDecimal(1)
             };
-        }
 
         // Если настроек нет (например, только создали таблицу), возвращаем дефолтные
-        return new AppGlobalSettings(); 
+        return new AppGlobalSettings();
     }
 
     /// <summary>

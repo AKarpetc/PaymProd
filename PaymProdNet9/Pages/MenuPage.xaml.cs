@@ -174,12 +174,12 @@ public partial class MenuPage : Page
                 var fullComposition = d.Lcomp.Any()
                     ? "Состав: " + string.Join(", ", d.Lcomp.Select(c => c.Name))
                     : "Без состава";
-                
+
                 // Обрезаем состав до ~100 символов для компактного отображения
                 var shortComposition = fullComposition.Length > 100
                     ? fullComposition.Substring(0, 97) + "..."
                     : fullComposition;
-                
+
                 return new
                 {
                     Del = d.Name,
@@ -210,20 +210,20 @@ public partial class MenuPage : Page
         if (button?.Tag == null) return;
 
         var filter = button.Tag.ToString() ?? "%";
-        
+
         // Сбрасываем цвет текста всех кнопок фильтров
         var panel = AllTypesButton.Parent as StackPanel;
         if (panel != null)
         {
-            foreach (Button btn in panel.Children.OfType<Button>())
-            {
-                btn.ClearValue(Button.ForegroundProperty); // Сбрасываем локальное значение, возвращаем стиль по умолчанию
-            }
-            
+            foreach (var btn in
+                     panel.Children.OfType<Button>())
+                btn.ClearValue(Button
+                    .ForegroundProperty); // Сбрасываем локальное значение, возвращаем стиль по умолчанию
+
             // Выделяем активную кнопку белым цветом текста
             button.Foreground = Brushes.White;
         }
-        
+
         LoadAvailableDelicates(filter);
     }
 
@@ -254,7 +254,8 @@ public partial class MenuPage : Page
                 BanquetNameTextBox.Text,
                 int.Parse(PeopleCountTextBox.Text),
                 DescriptionTextBox.Text,
-                BanquetDatePicker.SelectedDateTime?.ToString("yyyy-MM-dd HH:mm") ?? DateTime.Now.ToString("yyyy-MM-dd HH:mm")
+                BanquetDatePicker.SelectedDateTime?.ToString("yyyy-MM-dd HH:mm") ??
+                DateTime.Now.ToString("yyyy-MM-dd HH:mm")
             );
 
             LoadMenu(menuId);
@@ -324,9 +325,10 @@ public partial class MenuPage : Page
 
             // Добавляем блюдо в меню
             var delicateId = (int)data.DelicateId;
-            Services.Logger.Debug($"Попытка добавить блюдо в меню: MenuId={_currentMenuId.Value}, DelicateId={delicateId}, Count={count}");
+            Logger.Debug(
+                $"Попытка добавить блюдо в меню: MenuId={_currentMenuId.Value}, DelicateId={delicateId}, Count={count}");
             _menuRepository.AddDelicateToMenu(_currentMenuId.Value, delicateId, count);
-            Services.Logger.Debug($"Блюдо успешно добавлено в меню: DelicateId={delicateId}");
+            Logger.Debug($"Блюдо успешно добавлено в меню: DelicateId={delicateId}");
 
             // Обновляем список
             LoadMenu(_currentMenuId.Value);
@@ -334,7 +336,7 @@ public partial class MenuPage : Page
         }
         catch (Exception ex)
         {
-            Services.Logger.Error("Ошибка при добавлении блюда в меню", ex);
+            Logger.Error("Ошибка при добавлении блюда в меню", ex);
             MessageBox.Show($"Ошибка при добавлении блюда: {ex.Message}",
                 "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
         }
@@ -359,9 +361,7 @@ public partial class MenuPage : Page
                 // Если это блюдо или продукт, связанный с авто-добавляемым продуктом (AutoAdd),
                 // запоминаем факт ручного удаления, чтобы больше не добавлять его автоматически в это меню.
                 if (_currentMenuId.HasValue)
-                {
                     _menuRepository.RegisterAutoProductManualRemoval(_currentMenuId.Value, delicate.Del_id);
-                }
 
                 _menuRepository.RemoveDelicateFromMenu(delicate.Idmen);
                 _currentMenuDelicates.Remove(delicate);
@@ -440,7 +440,8 @@ public partial class MenuPage : Page
                 BanquetNameTextBox.Text,
                 int.Parse(PeopleCountTextBox.Text),
                 DescriptionTextBox.Text,
-                BanquetDatePicker.SelectedDateTime?.ToString("yyyy-MM-dd HH:mm") ?? DateTime.Now.ToString("yyyy-MM-dd HH:mm")
+                BanquetDatePicker.SelectedDateTime?.ToString("yyyy-MM-dd HH:mm") ??
+                DateTime.Now.ToString("yyyy-MM-dd HH:mm")
             );
 
             CurrentMenuInfo.Text =
@@ -462,17 +463,17 @@ public partial class MenuPage : Page
     /// </summary>
     private void NumericTextBox_PreviewTextInput(object sender, TextCompositionEventArgs e)
     {
-        Services.InputValidationHelper.NumericOnly_PreviewTextInput(sender, e);
+        InputValidationHelper.NumericOnly_PreviewTextInput(sender, e);
     }
 
     private void NumericField_LostFocus(object sender, RoutedEventArgs e)
     {
-        Services.InputValidationHelper.ValidateNumericField_LostFocus(sender, e);
+        InputValidationHelper.ValidateNumericField_LostFocus(sender, e);
     }
 
     private void TextField_LostFocus(object sender, RoutedEventArgs e)
     {
-        Services.InputValidationHelper.ValidateTextField_LostFocus(sender, e);
+        InputValidationHelper.ValidateTextField_LostFocus(sender, e);
     }
 
     /// <summary>
@@ -544,7 +545,8 @@ public partial class MenuPage : Page
             {
                 BanquetNameTextBox.Text,
                 PeopleCountTextBox.Text,
-                BanquetDatePicker.SelectedDateTime?.ToString("yyyy-MM-dd HH:mm") ?? DateTime.Now.ToString("yyyy-MM-dd HH:mm"),
+                BanquetDatePicker.SelectedDateTime?.ToString("yyyy-MM-dd HH:mm") ??
+                DateTime.Now.ToString("yyyy-MM-dd HH:mm"),
                 DescriptionTextBox.Text
             };
 
@@ -644,9 +646,9 @@ public partial class MenuPage : Page
     /// </summary>
     private static T? FindVisualChild<T>(DependencyObject parent) where T : DependencyObject
     {
-        for (var i = 0; i < System.Windows.Media.VisualTreeHelper.GetChildrenCount(parent); i++)
+        for (var i = 0; i < VisualTreeHelper.GetChildrenCount(parent); i++)
         {
-            var child = System.Windows.Media.VisualTreeHelper.GetChild(parent, i);
+            var child = VisualTreeHelper.GetChild(parent, i);
             if (child is T typedChild) return typedChild;
 
             var result = FindVisualChild<T>(child);

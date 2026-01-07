@@ -33,7 +33,7 @@ public partial class MainNavigationWindow : Window
     {
         // Показываем загрузчик при загрузке окна
         LoadingOverlay.Visibility = Visibility.Visible;
-        
+
         // Даем UI время для отображения загрузчика перед навигацией
         Application.Current.Dispatcher.BeginInvoke(new Action(() =>
         {
@@ -112,10 +112,10 @@ public partial class MainNavigationWindow : Window
     {
         // Показываем загрузчик сразу
         LoadingOverlay.Visibility = Visibility.Visible;
-        
+
         // Принудительно обновляем UI
         Application.Current.Dispatcher.Invoke(() => { }, DispatcherPriority.Render);
-        
+
         // Выполняем навигацию асинхронно, чтобы UI успел обновиться
         Application.Current.Dispatcher.BeginInvoke(new Action(() =>
         {
@@ -139,11 +139,9 @@ public partial class MainNavigationWindow : Window
     {
         // Проверяем, можно ли вернуться назад
         if (!NavigationService.Instance.CanGoBack)
-        {
             // Если нельзя вернуться назад, ничего не делаем и не показываем загрузчик
             return;
-        }
-        
+
         ShowLoadingAndNavigate(() => NavigationService.Instance.GoBack());
     }
 
@@ -162,7 +160,7 @@ public partial class MainNavigationWindow : Window
     {
         // Показываем индикатор сразу при начале навигации
         LoadingOverlay.Visibility = Visibility.Visible;
-        
+
         // Принудительно обновляем UI
         Application.Current.Dispatcher.Invoke(() => { }, DispatcherPriority.Render);
 
@@ -174,10 +172,7 @@ public partial class MainNavigationWindow : Window
         {
             // Если кто-то отменил навигацию (e.Cancel=true), Navigated не сработает —
             // поэтому прячем лоадер вручную.
-            if (navArgs.Cancel)
-            {
-                LoadingOverlay.Visibility = Visibility.Collapsed;
-            }
+            if (navArgs.Cancel) LoadingOverlay.Visibility = Visibility.Collapsed;
         }), DispatcherPriority.Background);
     }
 
@@ -259,7 +254,8 @@ public partial class MainNavigationWindow : Window
     /// <summary>
     /// Получить данные текущего меню для отчетов
     /// </summary>
-    private (ObservableCollection<MenuDel_act> menuDelicates, List<string> banquetInfo, int menuId)? GetCurrentMenuData()
+    private (ObservableCollection<MenuDel_act> menuDelicates, List<string> banquetInfo, int menuId)?
+        GetCurrentMenuData()
     {
         try
         {

@@ -112,7 +112,7 @@ public partial class ProductsPage : Page
         {
             var menuRepository = new MenuRepository();
             var openMenu = menuRepository.GetOpenMenu();
-            
+
             if (openMenu == null)
             {
                 Logger.Debug("Нет открытого меню для автоматического добавления продукта");
@@ -120,10 +120,10 @@ public partial class ProductsPage : Page
             }
 
             Logger.Debug($"Автоматическое добавление продукта ID={productId} в меню ID={openMenu.Id}");
-            
+
             // Используем метод MenuRepository для добавления продукта с AutoAdd
             menuRepository.AddAutoProductToMenu(openMenu.Id, productId, baseCount, openMenu.CountP);
-            
+
             Logger.Info($"Продукт ID={productId} автоматически добавлен в меню ID={openMenu.Id}");
         }
         catch (Exception ex)
@@ -210,7 +210,7 @@ public partial class ProductsPage : Page
             ProductMeasureComboBox.ItemsSource = measures;
             ProductMeasureComboBox.DisplayMemberPath = "Name";
             ProductMeasureComboBox.SelectedValuePath = "Id";
-            
+
             ProductFassMeasureComboBox.ItemsSource = measures;
             ProductFassMeasureComboBox.DisplayMemberPath = "Name";
             ProductFassMeasureComboBox.SelectedValuePath = "Id";
@@ -226,40 +226,31 @@ public partial class ProductsPage : Page
     {
         // Автоматическое заполнение единицы измерения и значения фасовки только при создании продукта
         if (_currentProductId.HasValue)
-        {
             // При редактировании продукта ничего не делаем
             return;
-        }
 
         // Режим создания нового продукта
         if (ProductMeasureComboBox.SelectedValue != null && ProductFassMeasureComboBox.Items.Count > 0)
-        {
             try
             {
                 // Получаем список мер из источника данных
                 var measures = ProductMeasureComboBox.ItemsSource as List<Measure>;
-                if (measures == null)
-                {
-                    measures = _productRepository.GetMeasures();
-                }
+                if (measures == null) measures = _productRepository.GetMeasures();
 
                 // Находим выбранную меру
                 var selectedMeasureId = (int)ProductMeasureComboBox.SelectedValue;
                 var selectedMeasure = measures.FirstOrDefault(m => m.Id == selectedMeasureId);
-                
+
                 if (selectedMeasure != null)
                 {
                     // Устанавливаем единицу измерения фасовки из справочника мер
                     if (!string.IsNullOrWhiteSpace(selectedMeasure.FassIzmer))
                     {
                         // Ищем меру по имени FassIzmer
-                        var fassMeasure = measures.FirstOrDefault(m => 
+                        var fassMeasure = measures.FirstOrDefault(m =>
                             m.Name.Equals(selectedMeasure.FassIzmer, StringComparison.OrdinalIgnoreCase));
-                        
-                        if (fassMeasure != null)
-                        {
-                            ProductFassMeasureComboBox.SelectedValue = fassMeasure.Id;
-                        }
+
+                        if (fassMeasure != null) ProductFassMeasureComboBox.SelectedValue = fassMeasure.Id;
                     }
                     else
                     {
@@ -269,9 +260,7 @@ public partial class ProductsPage : Page
 
                     // Устанавливаем значение фасовки из справочника мер
                     if (selectedMeasure.Fass > 0)
-                    {
                         ProductFassTextBox.Text = selectedMeasure.Fass.ToString(CultureInfo.CurrentCulture);
-                    }
                 }
             }
             catch (Exception ex)
@@ -279,7 +268,6 @@ public partial class ProductsPage : Page
                 // В случае ошибки просто игнорируем - не блокируем создание продукта
                 System.Diagnostics.Debug.WriteLine($"Ошибка при установке фасовки: {ex.Message}");
             }
-        }
     }
 
     private void EditProduct_Click(object sender, RoutedEventArgs e)
@@ -306,7 +294,7 @@ public partial class ProductsPage : Page
         // Форматируем фасовку с учетом культуры (без лишних нулей, если целое число)
         var fassValue = product.Fass;
         Logger.Debug($"Загрузка продукта ID={product.ID}: Fass из базы={fassValue}");
-        ProductFassTextBox.Text = fassValue == (int)fassValue 
+        ProductFassTextBox.Text = fassValue == (int)fassValue
             ? ((int)fassValue).ToString(CultureInfo.CurrentCulture)
             : fassValue.ToString(CultureInfo.CurrentCulture);
         Logger.Debug($"Загрузка продукта ID={product.ID}: Fass в TextBox='{ProductFassTextBox.Text}'");
@@ -469,22 +457,20 @@ public partial class ProductsPage : Page
             var typeId = (int)ProductTypeComboBox.SelectedValue;
             var measureId = (int)ProductMeasureComboBox.SelectedValue;
             var fassMeasureId = (int)ProductFassMeasureComboBox.SelectedValue;
-            
+
             // Парсим числовые значения
             decimal count = 0;
             if (!string.IsNullOrWhiteSpace(ProductCountTextBox.Text))
-            {
                 decimal.TryParse(ProductCountTextBox.Text, out count);
-            }
 
             double fass = 0;
             var fassText = ProductFassTextBox.Text?.Trim() ?? string.Empty;
             Logger.Debug($"Парсинг фасовки: исходный текст='{fassText}'");
-            
+
             if (!string.IsNullOrWhiteSpace(fassText))
             {
                 // Используем правильный парсинг с учетом культуры (как для цены)
-                bool parsed = false;
+                var parsed = false;
                 if (double.TryParse(fassText, NumberStyles.Any, CultureInfo.CurrentCulture, out fass))
                 {
                     parsed = true;
@@ -500,7 +486,7 @@ public partial class ProductsPage : Page
                     // Пробуем заменить запятую на точку и наоборот
                     var textWithDot = fassText.Replace(',', '.');
                     var textWithComma = fassText.Replace('.', ',');
-                    
+
                     if (double.TryParse(textWithDot, NumberStyles.Any, CultureInfo.InvariantCulture, out fass))
                     {
                         parsed = true;
@@ -512,11 +498,12 @@ public partial class ProductsPage : Page
                         Logger.Debug($"Фасовка распарсена после замены точки на запятую: {fass}");
                     }
                 }
-                
+
                 if (!parsed)
                 {
                     Logger.Error($"Не удалось распарсить фасовку: '{fassText}'");
-                    MessageBox.Show($"Неверное значение фасовки! Используйте число (например: 600 или 600,0).\nВведено: '{fassText}'",
+                    MessageBox.Show(
+                        $"Неверное значение фасовки! Используйте число (например: 600 или 600,0).\nВведено: '{fassText}'",
                         "Внимание", MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
                 }
@@ -525,24 +512,22 @@ public partial class ProductsPage : Page
             {
                 Logger.Debug("Фасовка пустая, используется значение по умолчанию 0");
             }
-            
+
             Logger.Debug($"Итоговое значение фасовки для сохранения: {fass}");
 
-            int countPeople = 0;
+            var countPeople = 0;
             if (!string.IsNullOrWhiteSpace(ProductCountPeopleTextBox.Text))
-            {
                 int.TryParse(ProductCountPeopleTextBox.Text, out countPeople);
-            }
 
             var prizMenu = ProductAddToDishesCheckBox.IsChecked == true ? 1 : 0;
             var automat = ProductAutoAddCheckBox.IsChecked == true;
             var mainCount = ProductMainCountCheckBox.IsChecked == true;
-        var hideInMenu = ProductHideInMenuCheckBox.IsChecked == true;
-        var doNotConvertToPackInMenu = ProductDoNotConvertToPackInMenuCheckBox.IsChecked == true;
+            var hideInMenu = ProductHideInMenuCheckBox.IsChecked == true;
+            var doNotConvertToPackInMenu = ProductDoNotConvertToPackInMenuCheckBox.IsChecked == true;
 
-        double price = 0;
-        if (!string.IsNullOrWhiteSpace(ProductPriceTextBox.Text))
-            double.TryParse(ProductPriceTextBox.Text, NumberStyles.Any, CultureInfo.CurrentCulture, out price);
+            double price = 0;
+            if (!string.IsNullOrWhiteSpace(ProductPriceTextBox.Text))
+                double.TryParse(ProductPriceTextBox.Text, NumberStyles.Any, CultureInfo.CurrentCulture, out price);
 
             // Используем основную единицу измерения как Ves (если нужно)
             int? vesId = measureId > 0 ? measureId : null;
@@ -552,7 +537,8 @@ public partial class ProductsPage : Page
             {
                 // Обновление существующего продукта
                 var fassValue = (decimal)fass;
-                Logger.Debug($"Сохранение продукта ID={_currentProductId.Value}, Fass={fassValue} (из текста '{ProductFassTextBox.Text}')");
+                Logger.Debug(
+                    $"Сохранение продукта ID={_currentProductId.Value}, Fass={fassValue} (из текста '{ProductFassTextBox.Text}')");
                 _productRepository.UpdateProduct(
                     _currentProductId.Value,
                     ProductNameTextBox.Text,
@@ -600,21 +586,17 @@ public partial class ProductsPage : Page
 
             // Если продукт имеет флаг автоматического добавления, добавляем его в открытое меню
             // В старом приложении продукты с AutoAdd добавлялись автоматически независимо от Priz_menu
-            if (automat)
-            {
-                AddAutoProductToOpenMenu(productId, count, countPeople, mainCount);
-            }
+            if (automat) AddAutoProductToOpenMenu(productId, count, countPeople, mainCount);
 
             LoadProducts();
-            
+
             // Проверяем значение после загрузки
             if (_currentProductId.HasValue)
             {
                 var loadedProduct = _allProducts.FirstOrDefault(p => p.ID == _currentProductId.Value);
                 if (loadedProduct != null)
-                {
-                    Logger.Debug($"SaveProduct: После LoadProducts продукт ID={_currentProductId.Value}, Fass={loadedProduct.Fass}");
-                }
+                    Logger.Debug(
+                        $"SaveProduct: После LoadProducts продукт ID={_currentProductId.Value}, Fass={loadedProduct.Fass}");
             }
 
             // Обновляем список и сохраняем текущий фильтр поиска

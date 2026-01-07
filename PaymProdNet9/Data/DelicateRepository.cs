@@ -206,7 +206,8 @@ public class DelicateRepository
     /// <summary>
     /// Добавить блюдо
     /// </summary>
-    public int AddDelicate(int typeId, string name, decimal ves, decimal count, bool autoAdd, bool hideInMenu = false, bool hideInProductReport = false)
+    public int AddDelicate(int typeId, string name, decimal ves, decimal count, bool autoAdd, bool hideInMenu = false,
+        bool hideInProductReport = false)
     {
         using var connection = DatabaseHelper.GetConnection();
         connection.Open();
@@ -237,7 +238,8 @@ public class DelicateRepository
     /// <summary>
     /// Обновить блюдо
     /// </summary>
-    public void UpdateDelicate(int id, int typeId, string name, decimal ves, decimal count, bool autoAdd, bool hideInMenu = false, bool hideInProductReport = false)
+    public void UpdateDelicate(int id, int typeId, string name, decimal ves, decimal count, bool autoAdd,
+        bool hideInMenu = false, bool hideInProductReport = false)
     {
         using var connection = DatabaseHelper.GetConnection();
         connection.Open();
@@ -500,7 +502,7 @@ public class DelicateRepository
 
         using (var reader = command.ExecuteReader())
         {
-                while (reader.Read())
+            while (reader.Read())
                 delicates.Add(new DelicatesColl
                 {
                     Id = reader.GetInt32(0),
@@ -549,22 +551,16 @@ public class DelicateRepository
             using (var reader = productCommand.ExecuteReader())
             {
                 while (reader.Read())
-                {
                     products[reader.GetInt32(0)] = (reader.GetDecimal(1),
                         reader.GetInt32(2) == 1,
                         reader.GetInt32(3) == 1);
-                }
             }
 
             foreach (var delicate in delicates)
-            {
                 if (delicate.LinkedProductId.HasValue &&
                     products.TryGetValue(delicate.LinkedProductId.Value, out var info) &&
                     info.Isdiap && info.PrizMenu && info.Count > 0)
-                {
                     delicate.LinkedProductDefaultCount = info.Count;
-                }
-            }
         }
 
         return delicates;

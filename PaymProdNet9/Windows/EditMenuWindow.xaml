@@ -10,47 +10,47 @@
     <materialDesign:Card Padding="20">
         <Grid>
             <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="*"/>
-                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
-            <TextBlock Text="{Binding Title, RelativeSource={RelativeSource AncestorType=Window}}" 
+            <TextBlock Text="{Binding Title, RelativeSource={RelativeSource AncestorType=Window}}"
                        Style="{StaticResource MaterialDesignHeadline6TextBlock}"
-                       Margin="0,0,0,20"/>
+                       Margin="0,0,0,20" />
 
             <StackPanel Grid.Row="1">
-                <TextBox x:Name="NameTextBox" 
+                <TextBox x:Name="NameTextBox"
                          materialDesign:HintAssist.Hint="Название банкета"
                          Style="{StaticResource MaterialDesignFloatingHintTextBox}"
-                         Margin="0,0,0,15"/>
+                         Margin="0,0,0,15" />
 
-                <TextBox x:Name="GuestsTextBox" 
+                <TextBox x:Name="GuestsTextBox"
                          materialDesign:HintAssist.Hint="Количество гостей"
                          Style="{StaticResource MaterialDesignFloatingHintTextBox}"
                          PreviewTextInput="GuestsTextBox_PreviewTextInput"
-                         Margin="0,0,0,15"/>
+                         Margin="0,0,0,15" />
 
-                <controls:DateTimePicker x:Name="DatePicker" 
-                                       Margin="0,0,0,15"/>
+                <controls:DateTimePicker x:Name="DatePicker"
+                                         Margin="0,0,0,15" />
 
-                <TextBox x:Name="DescriptionTextBox" 
+                <TextBox x:Name="DescriptionTextBox"
                          materialDesign:HintAssist.Hint="Описание (необязательно)"
                          Style="{StaticResource MaterialDesignFloatingHintTextBox}"
                          AcceptsReturn="True"
                          TextWrapping="Wrap"
                          Height="60"
-                         Margin="0,0,0,15"/>
+                         Margin="0,0,0,15" />
             </StackPanel>
 
             <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right">
                 <Button Style="{StaticResource MaterialDesignOutlinedButton}"
                         Content="Отмена"
                         Click="Cancel_Click"
-                        Margin="0,0,10,0"/>
+                        Margin="0,0,10,0" />
                 <Button Style="{StaticResource MaterialDesignRaisedButton}"
                         Content="Сохранить"
-                        Click="Save_Click"/>
+                        Click="Save_Click" />
             </StackPanel>
         </Grid>
     </materialDesign:Card>

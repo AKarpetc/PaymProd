@@ -82,10 +82,7 @@ public static class MigrationRunner
         command.CommandText = $"SELECT Version FROM {MigrationsTableName}";
 
         using var reader = command.ExecuteReader();
-        while (reader.Read())
-        {
-            result.Add(reader.GetInt32(0));
-        }
+        while (reader.Read()) result.Add(reader.GetInt32(0));
 
         return result;
     }
@@ -135,7 +132,8 @@ internal sealed class AddAutoAddToDelicatesMigration : IDatabaseMigration
 
             if (hasAutoAdd)
             {
-                Services.Logger.Debug("Миграция AddAutoAddToDelicates: колонка AutoAdd уже существует, пропускаем ALTER TABLE.");
+                Services.Logger.Debug(
+                    "Миграция AddAutoAddToDelicates: колонка AutoAdd уже существует, пропускаем ALTER TABLE.");
                 return;
             }
         }
@@ -166,7 +164,8 @@ internal sealed class AddHideInMenuFlagsMigration : IDatabaseMigration
         AddColumnIfNotExists(connection, "Delicates", "HideInMenu", "INTEGER DEFAULT 0");
     }
 
-    private static void AddColumnIfNotExists(SqliteConnection connection, string tableName, string columnName, string columnDefinition)
+    private static void AddColumnIfNotExists(SqliteConnection connection, string tableName, string columnName,
+        string columnDefinition)
     {
         using (var checkCmd = connection.CreateCommand())
         {
@@ -187,7 +186,8 @@ internal sealed class AddHideInMenuFlagsMigration : IDatabaseMigration
 
             if (hasColumn)
             {
-                Services.Logger.Debug($"Миграция AddHideInMenuFlags: колонка {columnName} уже существует в {tableName}, пропускаем.");
+                Services.Logger.Debug(
+                    $"Миграция AddHideInMenuFlags: колонка {columnName} уже существует в {tableName}, пропускаем.");
                 return;
             }
         }
@@ -201,4 +201,3 @@ internal sealed class AddHideInMenuFlagsMigration : IDatabaseMigration
         Services.Logger.Info($"Миграция AddHideInMenuFlags: колонка {columnName} добавлена в таблицу {tableName}.");
     }
 }
-

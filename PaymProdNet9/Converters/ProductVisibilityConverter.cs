@@ -12,10 +12,8 @@ public class ProductVisibilityConverter : IValueConverter
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
     {
         if (value is int id)
-        {
             // Если ID отрицательный, это продукт - скрываем кнопки
             return id < 0 ? System.Windows.Visibility.Collapsed : System.Windows.Visibility.Visible;
-        }
         return System.Windows.Visibility.Visible;
     }
 
@@ -24,4 +22,3 @@ public class ProductVisibilityConverter : IValueConverter
         throw new NotImplementedException();
     }
 }
-

@@ -19,7 +19,9 @@
 ### Шаг 1: Экспорт данных из SQL Server CE
 
 1.
+
 Установите [SQL Server Compact Toolbox](https://marketplace.visualstudio.com/items?itemName=ErikEJ.SQLServerCompactSQLiteToolbox)
+
 2. Откройте базу данных `MenuCaolc.mdf`
 3. Экспортируйте таблицы в SQL скрипты:
     - Меры (Mera)

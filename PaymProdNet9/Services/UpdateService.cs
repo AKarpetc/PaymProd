@@ -39,21 +39,14 @@ public static class UpdateService
             if (info == null ||
                 string.IsNullOrWhiteSpace(info.Version) ||
                 string.IsNullOrWhiteSpace(info.InstallerUrl))
-            {
                 return;
-            }
 
             var currentVersion = Assembly.GetExecutingAssembly().GetName().Version ?? new Version(0, 0, 0);
-            if (!Version.TryParse(info.Version, out var remoteVersion) || remoteVersion <= currentVersion)
-            {
-                return; // уже последняя версия
-            }
+            if (!Version.TryParse(info.Version, out var remoteVersion) ||
+                remoteVersion <= currentVersion) return; // уже последняя версия
 
             var message = $"Доступна новая версия {remoteVersion} (у вас {currentVersion}).";
-            if (!string.IsNullOrWhiteSpace(info.ReleaseNotes))
-            {
-                message += $"\n\nИзменения:\n{info.ReleaseNotes}";
-            }
+            if (!string.IsNullOrWhiteSpace(info.ReleaseNotes)) message += $"\n\nИзменения:\n{info.ReleaseNotes}";
 
             message += "\n\nСкачать и установить обновление сейчас?";
 
@@ -63,13 +56,11 @@ public static class UpdateService
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Information);
 
-            if (result != MessageBoxResult.Yes)
-            {
-                return;
-            }
+            if (result != MessageBoxResult.Yes) return;
 
             var tempInstallerPath = GetTempInstallerPath(info.InstallerUrl, remoteVersion);
-            await DownloadInstallerAsync(info.InstallerUrl, tempInstallerPath, owner ?? Application.Current.MainWindow, remoteVersion);
+            await DownloadInstallerAsync(info.InstallerUrl, tempInstallerPath, owner ?? Application.Current.MainWindow,
+                remoteVersion);
 
             Process.Start(new ProcessStartInfo(tempInstallerPath)
             {
@@ -87,19 +78,13 @@ public static class UpdateService
 
     public static async Task<UpdateInfo?> GetUpdateInfoAsync()
     {
-        if (_cachedUpdateInfo != null)
-        {
-            return _cachedUpdateInfo;
-        }
+        if (_cachedUpdateInfo != null) return _cachedUpdateInfo;
 
         try
         {
             var json = await HttpClient.GetStringAsync(UpdateInfoUrl);
             var info = JsonSerializer.Deserialize<UpdateInfo>(json);
-            if (info == null)
-            {
-                return null;
-            }
+            if (info == null) return null;
 
             _cachedUpdateInfo = info;
             return info;
@@ -111,18 +96,19 @@ public static class UpdateService
         }
     }
 
-    private static async Task DownloadInstallerAsync(string url, string destinationPath, Window? owner, Version remoteVersion)
+    private static async Task DownloadInstallerAsync(string url, string destinationPath, Window? owner,
+        Version remoteVersion)
     {
         await DownloadFileAsync(url, destinationPath, owner, "Скачивание обновления", $"Версия: {remoteVersion}");
     }
 
-    private static async Task DownloadFileAsync(string url, string destinationPath, Window? owner, string title, string? subtitle)
+    private static async Task DownloadFileAsync(string url, string destinationPath, Window? owner, string title,
+        string? subtitle)
     {
         UpdateDownloadWindow? progressWindow = null;
         try
         {
             if (owner != null)
-            {
                 await owner.Dispatcher.InvokeAsync(() =>
                 {
                     progressWindow = new UpdateDownloadWindow
@@ -131,13 +117,9 @@ public static class UpdateService
                     };
 
                     progressWindow.SetTitle(title);
-                    if (!string.IsNullOrWhiteSpace(subtitle))
-                    {
-                        progressWindow.SetSubtitle(subtitle);
-                    }
+                    if (!string.IsNullOrWhiteSpace(subtitle)) progressWindow.SetSubtitle(subtitle);
                     progressWindow.Show();
                 });
-            }
 
             using var response = await HttpClient.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
             var totalBytes = response.Content.Headers.ContentLength ?? -1;
@@ -150,10 +132,7 @@ public static class UpdateService
             while (true)
             {
                 var read = await input.ReadAsync(buffer);
-                if (read == 0)
-                {
-                    break;
-                }
+                if (read == 0) break;
 
                 await output.WriteAsync(buffer.AsMemory(0, read));
                 downloaded += read;
@@ -167,10 +146,7 @@ public static class UpdateService
         }
         finally
         {
-            if (progressWindow != null)
-            {
-                await progressWindow.Dispatcher.InvokeAsync(progressWindow.Close);
-            }
+            if (progressWindow != null) await progressWindow.Dispatcher.InvokeAsync(progressWindow.Close);
         }
     }
 
@@ -180,15 +156,12 @@ public static class UpdateService
         bool replaceExisting = false,
         bool silentSuccess = false)
     {
-        Window? messageOwner = owner ?? Application.Current.MainWindow;
+        var messageOwner = owner ?? Application.Current.MainWindow;
 
         try
         {
             var info = await GetUpdateInfoAsync();
-            if (info == null || string.IsNullOrWhiteSpace(info.StartDb))
-            {
-                return false;
-            }
+            if (info == null || string.IsNullOrWhiteSpace(info.StartDb)) return false;
 
             var hasExistingDb = File.Exists(targetPath);
             var willBackup = replaceExisting && hasExistingDb;
@@ -204,20 +177,13 @@ public static class UpdateService
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Question);
 
-            if (dialogResult != MessageBoxResult.Yes)
-            {
-                return false;
-            }
+            if (dialogResult != MessageBoxResult.Yes) return false;
 
             var directory = Path.GetDirectoryName(targetPath);
-            if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
-            {
-                Directory.CreateDirectory(directory);
-            }
+            if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory)) Directory.CreateDirectory(directory);
 
             string? backupPath = null;
             if (willBackup)
-            {
                 try
                 {
                     backupPath = DatabaseBackupHelper.CreateAutoBackup();
@@ -230,17 +196,14 @@ public static class UpdateService
                         MessageBoxButton.YesNo,
                         MessageBoxImage.Warning);
 
-                    if (continueResult != MessageBoxResult.Yes)
-                    {
-                        return false;
-                    }
+                    if (continueResult != MessageBoxResult.Yes) return false;
                 }
-            }
 
             var tempFile = Path.Combine(Path.GetTempPath(), $"PaymProdStartDb_{Guid.NewGuid():N}.db");
             try
             {
-                await DownloadFileAsync(info.StartDb, tempFile, messageOwner, "Скачивание стартовой базы данных", "Подготовленные данные");
+                await DownloadFileAsync(info.StartDb, tempFile, messageOwner, "Скачивание стартовой базы данных",
+                    "Подготовленные данные");
 
                 SqliteConnection.ClearAllPools();
                 File.Copy(tempFile, targetPath, true);
@@ -249,11 +212,10 @@ public static class UpdateService
 
                 if (!silentSuccess)
                 {
-                    var successMessage = "Стартовая база данных готова к использованию.\nДля применения изменений рекомендуется перезапустить приложение.";
+                    var successMessage =
+                        "Стартовая база данных готова к использованию.\nДля применения изменений рекомендуется перезапустить приложение.";
                     if (!string.IsNullOrWhiteSpace(backupPath))
-                    {
                         successMessage += $"\n\nРезервная копия сохранена в:\n{backupPath}";
-                    }
 
                     MessageBox.Show(messageOwner ?? Application.Current.MainWindow,
                         successMessage,
@@ -267,7 +229,6 @@ public static class UpdateService
             finally
             {
                 if (File.Exists(tempFile))
-                {
                     try
                     {
                         File.Delete(tempFile);
@@ -276,7 +237,6 @@ public static class UpdateService
                     {
                         // Игнорируем ошибки очистки
                     }
-                }
             }
         }
         catch (Exception ex)
@@ -293,10 +253,7 @@ public static class UpdateService
     private static string GetTempInstallerPath(string installerUrl, Version version)
     {
         var extension = Path.GetExtension(installerUrl);
-        if (string.IsNullOrWhiteSpace(extension) || extension.Length > 10)
-        {
-            extension = ".exe";
-        }
+        if (string.IsNullOrWhiteSpace(extension) || extension.Length > 10) extension = ".exe";
 
         var fileName = $"PaymProdNet9_{version}{extension}".Replace(" ", "_");
         return Path.Combine(Path.GetTempPath(), fileName);
@@ -304,17 +261,12 @@ public static class UpdateService
 
     public sealed class UpdateInfo
     {
-        [JsonPropertyName("version")]
-        public string Version { get; set; } = string.Empty;
-        
-        [JsonPropertyName("installerUrl")]
-        public string InstallerUrl { get; set; } = string.Empty;
-        
-        [JsonPropertyName("releaseNotes")]
-        public string? ReleaseNotes { get; set; }
+        [JsonPropertyName("version")] public string Version { get; set; } = string.Empty;
 
-        [JsonPropertyName("startDb")]
-        public string? StartDb { get; set; }
+        [JsonPropertyName("installerUrl")] public string InstallerUrl { get; set; } = string.Empty;
+
+        [JsonPropertyName("releaseNotes")] public string? ReleaseNotes { get; set; }
+
+        [JsonPropertyName("startDb")] public string? StartDb { get; set; }
     }
 }
-

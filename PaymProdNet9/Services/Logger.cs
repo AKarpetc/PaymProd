@@ -11,7 +11,7 @@ namespace PaymProdNet9.Services;
 /// </summary>
 public static class Logger
 {
-    private static readonly object _lockObject = new object();
+    private static readonly object _lockObject = new();
     private static string? _logDirectory;
     private static string? _logFileName;
     private static bool _isInitialized = false;
@@ -48,10 +48,7 @@ public static class Logger
             // Создаем директорию, если её нет
             try
             {
-                if (!Directory.Exists(_logDirectory))
-                {
-                    Directory.CreateDirectory(_logDirectory);
-                }
+                if (!Directory.Exists(_logDirectory)) Directory.CreateDirectory(_logDirectory);
             }
             catch
             {
@@ -81,7 +78,7 @@ public static class Logger
             var logLevelConfig = ConfigurationManager.AppSettings["LogLevel"];
             if (!string.IsNullOrEmpty(logLevelConfig))
             {
-                if (Enum.TryParse<LogLevel>(logLevelConfig, ignoreCase: true, out var parsedLevel))
+                if (Enum.TryParse<LogLevel>(logLevelConfig, true, out var parsedLevel))
                 {
                     _minLogLevel = parsedLevel;
                 }
@@ -89,7 +86,8 @@ public static class Logger
                 {
                     // Если значение не распознано, используем по умолчанию Info
                     _minLogLevel = LogLevel.Info;
-                    Console.WriteLine($"[Logger] Неизвестный уровень логирования '{logLevelConfig}', используется по умолчанию: Info");
+                    Console.WriteLine(
+                        $"[Logger] Неизвестный уровень логирования '{logLevelConfig}', используется по умолчанию: Info");
                 }
             }
         }
@@ -97,7 +95,8 @@ public static class Logger
         {
             // Если не удалось загрузить конфигурацию, используем по умолчанию
             _minLogLevel = LogLevel.Info;
-            Console.WriteLine($"[Logger] Ошибка при загрузке уровня логирования из конфигурации: {ex.Message}. Используется по умолчанию: Info");
+            Console.WriteLine(
+                $"[Logger] Ошибка при загрузке уровня логирования из конфигурации: {ex.Message}. Используется по умолчанию: Info");
         }
     }
 
@@ -115,7 +114,6 @@ public static class Logger
             var logFiles = Directory.GetFiles(_logDirectory, "PaymProd_*.log");
 
             foreach (var logFile in logFiles)
-            {
                 try
                 {
                     var fileInfo = new FileInfo(logFile);
@@ -129,7 +127,6 @@ public static class Logger
                 {
                     Console.WriteLine($"[Logger] Ошибка при удалении лог-файла {logFile}: {ex.Message}");
                 }
-            }
         }
         catch (Exception ex)
         {
@@ -161,12 +158,12 @@ public static class Logger
         var fullMessage = message;
         if (exception != null)
         {
-            fullMessage += $"\nИсключение: {exception.GetType().Name}\nСообщение: {exception.Message}\nСтек вызовов: {exception.StackTrace}";
+            fullMessage +=
+                $"\nИсключение: {exception.GetType().Name}\nСообщение: {exception.Message}\nСтек вызовов: {exception.StackTrace}";
             if (exception.InnerException != null)
-            {
                 fullMessage += $"\nВнутреннее исключение: {exception.InnerException.Message}";
-            }
         }
+
         WriteLog(LogLevel.Error, fullMessage);
     }
 
@@ -183,7 +180,7 @@ public static class Logger
     /// Запись SQL-запроса (только в Debug сборке)
     /// </summary>
     [System.Diagnostics.Conditional("DEBUG")]
-    public static void Sql(string sql, System.Collections.Generic.Dictionary<string, object?>? parameters = null)
+    public static void Sql(string sql, Dictionary<string, object?>? parameters = null)
     {
         var message = $"SQL: {sql}";
         if (parameters != null && parameters.Count > 0)
@@ -191,6 +188,7 @@ public static class Logger
             var paramString = string.Join(", ", parameters.Select(p => $"{p.Key}={FormatParameterValue(p.Value)}"));
             message += $"\nПараметры: {paramString}";
         }
+
         WriteLog(LogLevel.Debug, message);
     }
 
@@ -201,7 +199,7 @@ public static class Logger
     {
         if (value == null || value == DBNull.Value)
             return "NULL";
-        
+
         var str = value.ToString() ?? "null";
         // Ограничиваем длину для читаемости
         if (str.Length > 100)
@@ -215,21 +213,15 @@ public static class Logger
     private static void WriteLog(LogLevel level, string message)
     {
         if (!_isInitialized)
-        {
             // Если логгер не инициализирован, инициализируем с настройками по умолчанию
             Initialize();
-        }
 
         // Важно: ошибки пишем всегда (даже если в конфиге высокий уровень)
         // Пользователь должен иметь возможность поделиться логом в Release.
         if (level != LogLevel.Error)
-        {
             // Фильтруем логи по минимальному уровню
             if (level < _minLogLevel)
-            {
                 return;
-            }
-        }
 
         // В Release сборке пропускаем Debug логи (если они не включены через конфигурацию)
 #if !DEBUG
@@ -278,37 +270,25 @@ public static class Logger
             {
                 // Если по какой-то причине директория не готова (Release/инсталлятор/права) — используем fallback в TEMP
                 if (string.IsNullOrEmpty(_logDirectory))
-                {
                     _logDirectory = Path.Combine(Path.GetTempPath(), "PaymProdNet9", "Logs");
-                }
-                if (!Directory.Exists(_logDirectory))
-                {
-                    Directory.CreateDirectory(_logDirectory);
-                }
+                if (!Directory.Exists(_logDirectory)) Directory.CreateDirectory(_logDirectory);
 
                 // Проверяем, нужно ли создать новый файл (если дата изменилась)
                 var currentLogFileName = Path.Combine(_logDirectory!, $"PaymProd_{DateTime.Now:yyyyMMdd}.log");
-                if (currentLogFileName != _logFileName)
-                {
-                    _logFileName = currentLogFileName;
-                }
+                if (currentLogFileName != _logFileName) _logFileName = currentLogFileName;
 
                 // Записываем в файл с UTF-8 кодировкой
                 // Если файл новый, добавляем BOM для правильного отображения в Windows
                 var fileExists = File.Exists(_logFileName!);
                 if (!fileExists)
-                {
                     // Создаем файл с UTF-8 BOM
                     using (var writer = new StreamWriter(_logFileName!, false, new UTF8Encoding(true)))
                     {
                         writer.Write(logMessage + Environment.NewLine);
                     }
-                }
                 else
-                {
                     // Добавляем в существующий файл
                     File.AppendAllText(_logFileName!, logMessage + Environment.NewLine, Encoding.UTF8);
-                }
             }
             catch (Exception ex)
             {
@@ -329,4 +309,3 @@ public static class Logger
         Error = 3
     }
 }
-

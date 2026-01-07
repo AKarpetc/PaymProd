@@ -10,4 +10,3 @@ namespace PaymProdDbTool;
 public partial class App : Application
 {
 }
-

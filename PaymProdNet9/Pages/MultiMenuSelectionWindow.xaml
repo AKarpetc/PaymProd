@@ -9,14 +9,14 @@
         WindowStartupLocation="CenterScreen">
     <Grid Margin="10">
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <TextBlock Text="Выберите меню для включения в отчет:" 
+        <TextBlock Text="Выберите меню для включения в отчет:"
                    Style="{StaticResource MaterialDesignHeadline6TextBlock}"
-                   Margin="0,0,0,10"/>
+                   Margin="0,0,0,10" />
 
         <DataGrid Grid.Row="1" x:Name="MenusDataGrid"
                   AutoGenerateColumns="False"
@@ -27,10 +27,10 @@
             <DataGrid.Columns>
                 <DataGridCheckBoxColumn Binding="{Binding IsSelected, UpdateSourceTrigger=PropertyChanged}"
                                         ElementStyle="{StaticResource MaterialDesignDataGridCheckBoxColumnStyle}"
-                                        EditingElementStyle="{StaticResource MaterialDesignDataGridCheckBoxColumnEditingStyle}"/>
-                <DataGridTextColumn Header="Название" Binding="{Binding Menu.Name}" Width="*" IsReadOnly="True"/>
-                <DataGridTextColumn Header="Гостей" Binding="{Binding Menu.CountP}" Width="Auto" IsReadOnly="True"/>
-                <DataGridTextColumn Header="Дата" Binding="{Binding Menu.DateBan}" Width="Auto" IsReadOnly="True"/>
+                                        EditingElementStyle="{StaticResource MaterialDesignDataGridCheckBoxColumnEditingStyle}" />
+                <DataGridTextColumn Header="Название" Binding="{Binding Menu.Name}" Width="*" IsReadOnly="True" />
+                <DataGridTextColumn Header="Гостей" Binding="{Binding Menu.CountP}" Width="Auto" IsReadOnly="True" />
+                <DataGridTextColumn Header="Дата" Binding="{Binding Menu.DateBan}" Width="Auto" IsReadOnly="True" />
             </DataGrid.Columns>
         </DataGrid>
 
@@ -38,14 +38,14 @@
             <Button Content="Отчет с ценами"
                     Click="ReportWithPrices_Click"
                     Style="{StaticResource MaterialDesignRaisedButton}"
-                    Margin="0,0,10,0"/>
+                    Margin="0,0,10,0" />
             <Button Content="Отчет без цен"
                     Click="ReportWithoutPrices_Click"
                     Style="{StaticResource MaterialDesignRaisedButton}"
-                    Margin="0,0,10,0"/>
+                    Margin="0,0,10,0" />
             <Button Content="Отмена"
                     IsCancel="True"
-                    Style="{StaticResource MaterialDesignFlatButton}"/>
+                    Style="{StaticResource MaterialDesignFlatButton}" />
         </StackPanel>
     </Grid>
 </Window>

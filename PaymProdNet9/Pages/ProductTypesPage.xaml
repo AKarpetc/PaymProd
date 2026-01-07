@@ -166,8 +166,9 @@
                                      LostFocus="NumericField_LostFocus" />
 
                             <CheckBox x:Name="ProductTypeHideInMenuCheckBox" Margin="0,15,0,0">
-                                <TextBlock Text="Не показывать продукты этого типа в меню (только в отчете по продуктам)"
-                                           TextWrapping="Wrap" />
+                                <TextBlock
+                                    Text="Не показывать продукты этого типа в меню (только в отчете по продуктам)"
+                                    TextWrapping="Wrap" />
                             </CheckBox>
                         </StackPanel>
                     </StackPanel>

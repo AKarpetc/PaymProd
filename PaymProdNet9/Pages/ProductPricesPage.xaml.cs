@@ -40,7 +40,7 @@ public partial class ProductPricesPage : Page
         _menuId = menuId;
         ProductsPricesDataGrid.ItemsSource = _allProducts;
         DishMarkupDataGrid.ItemsSource = _allDishes;
-        
+
         // Подписываемся на событие навигации
         if (NavigationService != null)
         {
@@ -58,7 +58,7 @@ public partial class ProductPricesPage : Page
             {
                 BasePriceColumn.Visibility = Visibility.Collapsed;
                 SaveToBasePriceColumn.Visibility = Visibility.Collapsed;
-                
+
                 // Для блюд также скрываем "Старая надбавка" и "В базу", так как мы редактируем базу
                 // Находим колонки по индексу или имени
                 var dishGrid = DishMarkupDataGrid;
@@ -74,7 +74,7 @@ public partial class ProductPricesPage : Page
             {
                 BasePriceColumn.Visibility = Visibility.Visible;
                 SaveToBasePriceColumn.Visibility = Visibility.Visible;
-                
+
                 var dishGrid = DishMarkupDataGrid;
                 if (dishGrid != null && dishGrid.Columns.Count > 4)
                 {
@@ -82,16 +82,13 @@ public partial class ProductPricesPage : Page
                     dishGrid.Columns[4].Visibility = Visibility.Visible;
                 }
             }
-            
+
             // Сначала загружаем продукты (для меню это нужно для определения типов)
             LoadProducts();
             // Затем загружаем типы (они будут отфильтрованы по продуктам меню)
             LoadProductTypes();
-            
-            if (_menuId.HasValue)
-            {
-                LoadMenuPrices();
-            }
+
+            if (_menuId.HasValue) LoadMenuPrices();
 
             // Загружаем блюда и типы блюд
             LoadDishes();
@@ -118,7 +115,7 @@ public partial class ProductPricesPage : Page
             foreach (var button in buttonsToRemove) panel.Children.Remove(button);
 
             List<ProductType> types;
-            
+
             // Если это меню, показываем только типы продуктов, которые есть в загруженных продуктах
             if (_menuId.HasValue)
             {
@@ -131,7 +128,7 @@ public partial class ProductPricesPage : Page
             {
                 types = _productRepository.GetProductTypes().ToList();
             }
-            
+
             foreach (var type in types.OrderBy(t => t.SortOrder).ThenBy(t => t.Name))
             {
                 var button = new Button
@@ -158,14 +155,12 @@ public partial class ProductPricesPage : Page
         if (sender is Button button)
         {
             _currentTypeFilter = button.Tag?.ToString() ?? "%";
-            
+
             // Обновляем стиль кнопок
-            foreach (Button btn in FilterPanel.Children.OfType<Button>())
-            {
+            foreach (var btn in FilterPanel.Children.OfType<Button>())
                 btn.Style = (Style)FindResource("MaterialDesignRaisedButton");
-            }
             button.Style = (Style)FindResource("MaterialDesignFlatButton");
-            
+
             LoadProducts();
         }
     }
@@ -175,14 +170,12 @@ public partial class ProductPricesPage : Page
         if (sender is Button button)
         {
             _currentDishTypeFilter = button.Tag?.ToString() ?? "%";
-            
+
             // Обновляем стиль кнопок
-            foreach (Button btn in DishFilterPanel.Children.OfType<Button>())
-            {
+            foreach (var btn in DishFilterPanel.Children.OfType<Button>())
                 btn.Style = (Style)FindResource("MaterialDesignRaisedButton");
-            }
             button.Style = (Style)FindResource("MaterialDesignFlatButton");
-            
+
             LoadDishes();
         }
     }
@@ -191,47 +184,48 @@ public partial class ProductPricesPage : Page
     {
         try
         {
-             var panel = DishFilterPanel;
-             if (panel == null) return;
- 
-             // Очищаем все кнопки кроме "Все", если они были добавлены динамически (хотя здесь "DishAllTypesButton" статическая)
-             var buttonsToRemove = panel.Children.Cast<UIElement>()
-                 .Where(c => c != DishAllTypesButton).ToList();
-             foreach (var button in buttonsToRemove) panel.Children.Remove(button);
- 
-             List<DelicateType> types;
-             
-             // Для блюд всегда показываем все типы, которые есть в меню
-             if (_menuId.HasValue)
-             {
-                 var menuDelicates = _menuRepository.GetMenuDelicates(_menuId.Value);
-                 // Здесь сложно получить типы напрямую из MenuDel_act, так как там нет TypeId.
-                 // Но мы можем получить все доступные типы.
-                 // Для простоты пока загружаем все типы.
-                 types = _delicateRepository.GetDelicateTypes();
-             }
-             else
-             {
-                 types = _delicateRepository.GetDelicateTypes();
-             }
-             
-             foreach (var type in types.OrderBy(t => t.SortOrder).ThenBy(t => t.Name))
-             {
-                 var button = new Button
-                 {
-                     Content = type.Name,
-                     Tag = type.Name,
-                     Margin = new Thickness(0, 0, 5, 0)
-                 };
-                 button.Click += FilterDishByType_Click;
-                 button.SetResourceReference(StyleProperty, "MaterialDesignRaisedButton");
-                 panel.Children.Add(button);
-             }
+            var panel = DishFilterPanel;
+            if (panel == null) return;
+
+            // Очищаем все кнопки кроме "Все", если они были добавлены динамически (хотя здесь "DishAllTypesButton" статическая)
+            var buttonsToRemove = panel.Children.Cast<UIElement>()
+                .Where(c => c != DishAllTypesButton).ToList();
+            foreach (var button in buttonsToRemove) panel.Children.Remove(button);
+
+            List<DelicateType> types;
+
+            // Для блюд всегда показываем все типы, которые есть в меню
+            if (_menuId.HasValue)
+            {
+                var menuDelicates = _menuRepository.GetMenuDelicates(_menuId.Value);
+                // Здесь сложно получить типы напрямую из MenuDel_act, так как там нет TypeId.
+                // Но мы можем получить все доступные типы.
+                // Для простоты пока загружаем все типы.
+                types = _delicateRepository.GetDelicateTypes();
+            }
+            else
+            {
+                types = _delicateRepository.GetDelicateTypes();
+            }
+
+            foreach (var type in types.OrderBy(t => t.SortOrder).ThenBy(t => t.Name))
+            {
+                var button = new Button
+                {
+                    Content = type.Name,
+                    Tag = type.Name,
+                    Margin = new Thickness(0, 0, 5, 0)
+                };
+                button.Click += FilterDishByType_Click;
+                button.SetResourceReference(StyleProperty, "MaterialDesignRaisedButton");
+                panel.Children.Add(button);
+            }
         }
         catch (Exception ex)
         {
             Logger.Error("Ошибка при загрузке типов блюд", ex);
-            MessageBox.Show($"Ошибка при загрузке типов блюд: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+            MessageBox.Show($"Ошибка при загрузке типов блюд: {ex.Message}", "Ошибка", MessageBoxButton.OK,
+                MessageBoxImage.Error);
         }
     }
 
@@ -245,9 +239,9 @@ public partial class ProductPricesPage : Page
             if (!_menuId.HasValue)
             {
                 var allDelicates = _delicateRepository.GetAllDelicates();
-                
+
                 // Фильтрация
-                var filtered = allDelicates.Where(d => 
+                var filtered = allDelicates.Where(d =>
                 {
                     if (d.HideInMenu) return false;
                     if (_currentDishTypeFilter == "%") return true;
@@ -255,7 +249,7 @@ public partial class ProductPricesPage : Page
                 }).OrderBy(d => d.Name).ToList();
 
                 Logger.Debug($"LoadDishes (Global): Loading {filtered.Count} dishes.");
-                
+
                 // Получаем глобальный ServicePercent
                 var settings = _settingsRepository.GetSettings();
                 _currentServicePercent = settings.ServicePercent;
@@ -264,33 +258,31 @@ public partial class ProductPricesPage : Page
                 foreach (var d in filtered)
                 {
                     decimal baseCost = 0;
-                    string ShortCompositionStr = "";
-                     // Для расчета себестоимости в глобальном режиме нам нужно посчитать цену компонентов
-                     // Но у нас нет привязки к меню.
-                     // Мы можем посчитать "базовую" себестоимость, используя базовые цены продуктов.
-                     // Однако GetComponentPriceInfo требует menuId.
-                     // Если мы передадим 0 или null в GetComponentPriceInfo? Нужно проверить сервис.
-                     // В ProductPricesPage у нас нет удобного способа посчитать глобальную себестоимость без рефакторинга сервиса.
-                     // Попробуем посчитать "на лету" используя цены продуктов из справочника.
-                     
-                     if (d.Lcomp != null)
-                     {
-                         // Generating ShortComposition from components
-                         var validComponents = d.Lcomp.Where(c => !string.IsNullOrEmpty(c.Name)).Select(c => c.Name);
-                         if (validComponents.Any())
-                         {
-                             // Limit to reasonable length if needed, but for now just join
-                             // Usually "Name, Name, Name" or "Name/Name"
-                             // Let's use comma based on existing UI look
-                             ShortCompositionStr = string.Join(", ", validComponents);
-                         }
+                    var ShortCompositionStr = "";
+                    // Для расчета себестоимости в глобальном режиме нам нужно посчитать цену компонентов
+                    // Но у нас нет привязки к меню.
+                    // Мы можем посчитать "базовую" себестоимость, используя базовые цены продуктов.
+                    // Однако GetComponentPriceInfo требует menuId.
+                    // Если мы передадим 0 или null в GetComponentPriceInfo? Нужно проверить сервис.
+                    // В ProductPricesPage у нас нет удобного способа посчитать глобальную себестоимость без рефакторинга сервиса.
+                    // Попробуем посчитать "на лету" используя цены продуктов из справочника.
 
-                         foreach (var comp in d.Lcomp)
-                         {
-                             // Получаем цену продукта из справочника
-                             // ... (existing comments)
-                         }
-                     }
+                    if (d.Lcomp != null)
+                    {
+                        // Generating ShortComposition from components
+                        var validComponents = d.Lcomp.Where(c => !string.IsNullOrEmpty(c.Name)).Select(c => c.Name);
+                        if (validComponents.Any())
+                            // Limit to reasonable length if needed, but for now just join
+                            // Usually "Name, Name, Name" or "Name/Name"
+                            // Let's use comma based on existing UI look
+                            ShortCompositionStr = string.Join(", ", validComponents);
+
+                        foreach (var comp in d.Lcomp)
+                        {
+                            // Получаем цену продукта из справочника
+                            // ... (existing comments)
+                        }
+                    }
 
                     var view = new DishMarkupView
                     {
@@ -305,7 +297,7 @@ public partial class ProductPricesPage : Page
                         Count = 1,
                         BaseCost = 0 // Пока 0
                     };
-                    
+
                     view.PropertyChanged += DishView_PropertyChanged;
                     _allDishes.Add(view);
                 }
@@ -317,15 +309,12 @@ public partial class ProductPricesPage : Page
 
                 var allDelicatesDict = _delicateRepository.GetAllDelicates().ToDictionary(d => d.Id, d => d.Type);
 
-                var filtered = menuDelicates.Where(d => 
+                var filtered = menuDelicates.Where(d =>
                 {
                     if (d.HideInMenu) return false;
                     if (_currentDishTypeFilter == "%") return true;
-                    if (allDelicatesDict.TryGetValue(d.Del_id, out var type))
-                    {
-                        return type == _currentDishTypeFilter;
-                    }
-                    return false; 
+                    if (allDelicatesDict.TryGetValue(d.Del_id, out var type)) return type == _currentDishTypeFilter;
+                    return false;
                 }).ToList();
 
                 Logger.Debug($"LoadDishes (Menu): Loading {filtered.Count} dishes. MenuId={_menuId}");
@@ -334,59 +323,52 @@ public partial class ProductPricesPage : Page
                 _currentServicePercent = settings.ServicePercent;
 
                 var menu = _menuRepository.GetMenuById(_menuId.Value);
-                if (menu?.ServicePercent != null)
-                {
-                    _currentServicePercent = menu.ServicePercent.Value;
-                }
+                if (menu?.ServicePercent != null) _currentServicePercent = menu.ServicePercent.Value;
                 ServicePercentRun.Text = $"{_currentServicePercent:G}%";
 
                 foreach (var md in filtered)
                 {
                     decimal baseCost = 0;
                     if (md.Lcomp != null)
-                    {
                         foreach (var comp in md.Lcomp)
                         {
                             var priceInfo = _menuPriceService.GetComponentPriceInfo(_menuId.Value, comp, md.Countpor);
                             baseCost += priceInfo.TotalPrice;
                         }
-                    }
 
                     var view = new DishMarkupView
                     {
-                        Id = md.Id, 
+                        Id = md.Id,
                         Name = md.Del,
                         ShortComposition = md.Sost,
                         DefaultMarkup = md.DefaultMarkup,
-                        Markup = md.Markup ?? md.DefaultMarkup, 
+                        Markup = md.Markup ?? md.DefaultMarkup,
                         SaveToDefault = true,
                         IsModified = false,
                         Type = allDelicatesDict.ContainsKey(md.Del_id) ? allDelicatesDict[md.Del_id] : "",
                         Count = md.Countpor,
                         BaseCost = baseCost
                     };
-                    
+
                     view.PropertyChanged += DishView_PropertyChanged;
-                    
+
                     _allDishes.Add(view);
                 }
             }
-            
+
             RecalculateTotals();
         }
         catch (Exception ex)
         {
-             Logger.Error("Ошибка при загрузке блюд", ex);
-             MessageBox.Show($"Ошибка при загрузке блюд: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+            Logger.Error("Ошибка при загрузке блюд", ex);
+            MessageBox.Show($"Ошибка при загрузке блюд: {ex.Message}", "Ошибка", MessageBoxButton.OK,
+                MessageBoxImage.Error);
         }
     }
-    
-    private void DishView_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+
+    private void DishView_PropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(DishMarkupView.Markup))
-        {
-            RecalculateTotals();
-        }
+        if (e.PropertyName == nameof(DishMarkupView.Markup)) RecalculateTotals();
     }
 
     private void RecalculateTotals()
@@ -406,22 +388,22 @@ public partial class ProductPricesPage : Page
                 // НО в MenuPrinter код: dishTotal = dishTotal * (delicate.DefaultMarkup / 100);
                 // Это значит, если Markup = 200, то Цена = Cost * 2. 
                 // Это странно (обычно markup добавляется), но я буду следовать логике MenuPrinter.
-                
-                decimal markupMultiplier = (dish.Markup > 0) ? (dish.Markup / 100) : 1;
-                decimal dishPrice = dish.BaseCost * markupMultiplier;
-                
+
+                var markupMultiplier = dish.Markup > 0 ? dish.Markup / 100 : 1;
+                var dishPrice = dish.BaseCost * markupMultiplier;
+
                 // Учитываем количество порций? 
                 // BaseCost расчитан на md.Countpor (так как GetComponentPriceInfo берет delicate.Count)
                 // Подождите. GetComponentPriceInfo(..., delicate.Count).
                 // Если delicate.Count - это количество порций блюда в заказе.
                 // То PriceInfo возвращает общую стоимость ВСЕХ порций этого компонента.
                 // Значит baseCost - это уже полная себестоимость ВСЕХ порций блюда.
-                
+
                 totalDishesSum += dishPrice;
             }
 
-            decimal serviceCharge = totalDishesSum * (_currentServicePercent / 100);
-            decimal grandTotal = totalDishesSum + serviceCharge;
+            var serviceCharge = totalDishesSum * (_currentServicePercent / 100);
+            var grandTotal = totalDishesSum + serviceCharge;
 
             TotalDishesRun.Text = FormatCurrency(totalDishesSum);
             TotalServiceRun.Text = FormatCurrency(serviceCharge);
@@ -443,19 +425,15 @@ public partial class ProductPricesPage : Page
         try
         {
             _allProducts.Clear();
-            
+
             List<ProductView> productsToShow;
-            
+
             // Если это меню, показываем только продукты, добавленные в меню
             if (_menuId.HasValue)
-            {
                 productsToShow = _productRepository.GetMenuProducts(_menuId.Value);
-            }
             else
-            {
                 productsToShow = _productRepository.GetAllProducts();
-            }
-            
+
             // Сохраняем базовые цены для всех продуктов
             foreach (var product in productsToShow)
             {
@@ -464,18 +442,12 @@ public partial class ProductPricesPage : Page
                 product.SaveToBasePrice = true; // По умолчанию галочка включена
                 product.IsModified = false; // Сбрасываем флаг изменений
             }
-            
+
             // Фильтруем по типу
             var filtered = productsToShow;
-            if (_currentTypeFilter != "%")
-            {
-                filtered = productsToShow.Where(p => p.Type == _currentTypeFilter).ToList();
-            }
-            
-            foreach (var product in filtered.OrderBy(p => p.Name))
-            {
-                _allProducts.Add(product);
-            }
+            if (_currentTypeFilter != "%") filtered = productsToShow.Where(p => p.Type == _currentTypeFilter).ToList();
+
+            foreach (var product in filtered.OrderBy(p => p.Name)) _allProducts.Add(product);
         }
         catch (Exception ex)
         {
@@ -488,25 +460,21 @@ public partial class ProductPricesPage : Page
     private void LoadMenuPrices()
     {
         if (!_menuId.HasValue) return;
-        
+
         try
         {
             var menuPrices = _productRepository.GetMenuProductPrices(_menuId.Value);
             var pricesDict = menuPrices.ToDictionary(p => p.ProductID, p => p.Price);
-            
+
             foreach (var product in _allProducts)
             {
                 // BasePrice уже установлена при загрузке продуктов (цена из справочника)
                 // Теперь загружаем цену из меню, если она есть
                 if (pricesDict.TryGetValue(product.ID, out var price))
-                {
                     product.Price = (decimal)price;
-                }
                 else
-                {
                     // Если цены в меню нет, используем базовую цену
                     product.Price = product.BasePrice;
-                }
                 // Сохраняем оригинальную цену для отслеживания изменений
                 product.OriginalPrice = product.Price;
                 product.IsModified = false;
@@ -523,9 +491,8 @@ public partial class ProductPricesPage : Page
     private void ProductsPricesDataGrid_CellEditEnding(object sender, DataGridCellEditEndingEventArgs e)
     {
         if (e.EditAction == DataGridEditAction.Cancel) return;
-        
+
         if (e.Column.Header.ToString() == "Цена, тг" && e.Row.Item is ProductView product)
-        {
             try
             {
                 var textBox = e.EditingElement as TextBox;
@@ -539,7 +506,7 @@ public partial class ProductPricesPage : Page
                 }
                 else
                 {
-                    MessageBox.Show("Неверный формат цены. Используйте число.", 
+                    MessageBox.Show("Неверный формат цены. Используйте число.",
                         "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
                     e.Cancel = true;
                 }
@@ -551,25 +518,22 @@ public partial class ProductPricesPage : Page
                     "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
                 e.Cancel = true;
             }
-        }
     }
 
     private void ProductsPricesDataGrid_PreparingCellForEdit(object sender, DataGridPreparingCellForEditEventArgs e)
     {
         if (e.Column.Header?.ToString() == "Цена, тг" && e.EditingElement is TextBox textBox)
-        {
             textBox.PreviewTextInput += NumericOnly_PreviewTextInput;
-        }
     }
 
     private void NumericOnly_PreviewTextInput(object sender, TextCompositionEventArgs e)
     {
-        Services.InputValidationHelper.NumericOnly_PreviewTextInput(sender, e);
+        InputValidationHelper.NumericOnly_PreviewTextInput(sender, e);
     }
 
     private void NumericField_LostFocus(object sender, RoutedEventArgs e)
     {
-        Services.InputValidationHelper.ValidateNumericField_LostFocus(sender, e);
+        InputValidationHelper.ValidateNumericField_LostFocus(sender, e);
     }
 
     private void ProductsPricesDataGrid_PreviewKeyDown(object sender, KeyEventArgs e)
@@ -604,11 +568,11 @@ public partial class ProductPricesPage : Page
                 {
                     dataGrid.SelectedIndex = nextRow;
                     dataGrid.CurrentCell = new DataGridCellInfo(dataGrid.Items[nextRow], priceColumn);
-                    
+
                     // Начинаем редактирование
                     dataGrid.BeginEdit();
                 }), System.Windows.Threading.DispatcherPriority.Input);
-                
+
                 e.Handled = true;
             }
         }
@@ -626,14 +590,11 @@ public partial class ProductPricesPage : Page
                 {
                     dataGrid.SelectedIndex = nextRow;
                     dataGrid.CurrentCell = new DataGridCellInfo(dataGrid.Items[nextRow], currentColumn);
-                    
+
                     // Если это колонка "Цена, тг", начинаем редактирование
-                    if (currentColumn == priceColumn)
-                    {
-                        dataGrid.BeginEdit();
-                    }
+                    if (currentColumn == priceColumn) dataGrid.BeginEdit();
                 }), System.Windows.Threading.DispatcherPriority.Input);
-                
+
                 e.Handled = true;
             }
         }
@@ -651,14 +612,11 @@ public partial class ProductPricesPage : Page
                 {
                     dataGrid.SelectedIndex = prevRow;
                     dataGrid.CurrentCell = new DataGridCellInfo(dataGrid.Items[prevRow], currentColumn);
-                    
+
                     // Если это колонка "Цена, тг", начинаем редактирование
-                    if (currentColumn == priceColumn)
-                    {
-                        dataGrid.BeginEdit();
-                    }
+                    if (currentColumn == priceColumn) dataGrid.BeginEdit();
                 }), System.Windows.Threading.DispatcherPriority.Input);
-                
+
                 e.Handled = true;
             }
         }
@@ -673,20 +631,19 @@ public partial class ProductPricesPage : Page
     {
         try
         {
-            int count = SaveProductsInternal();
+            var count = SaveProductsInternal();
             if (count > 0)
-            {
-                MessageBox.Show($"Сохранено изменений: {count}", "Успешно", MessageBoxButton.OK, MessageBoxImage.Information);
-            }
+                MessageBox.Show($"Сохранено изменений: {count}", "Успешно", MessageBoxButton.OK,
+                    MessageBoxImage.Information);
             else
-            {
-                 MessageBox.Show("Нет изменений для сохранения.", "Информация", MessageBoxButton.OK, MessageBoxImage.Information);
-            }
+                MessageBox.Show("Нет изменений для сохранения.", "Информация", MessageBoxButton.OK,
+                    MessageBoxImage.Information);
         }
         catch (Exception ex)
         {
             Logger.Error("Ошибка при сохранении изменений", ex);
-            MessageBox.Show($"Ошибка при сохранении изменений: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+            MessageBox.Show($"Ошибка при сохранении изменений: {ex.Message}", "Ошибка", MessageBoxButton.OK,
+                MessageBoxImage.Error);
         }
     }
 
@@ -703,7 +660,7 @@ public partial class ProductPricesPage : Page
                 if (product.SaveToBasePrice)
                 {
                     _productRepository.UpdateProductPrice(product.ID, (double)product.Price);
-                    product.BasePrice = product.Price; 
+                    product.BasePrice = product.Price;
                 }
             }
             else
@@ -711,10 +668,11 @@ public partial class ProductPricesPage : Page
                 _productRepository.UpdateProductPrice(product.ID, (double)product.Price);
                 product.BasePrice = product.Price;
             }
-            
+
             product.OriginalPrice = product.Price;
             product.IsModified = false;
         }
+
         return modifiedProducts.Count;
     }
 
@@ -723,10 +681,10 @@ public partial class ProductPricesPage : Page
         try
         {
             var modifiedProducts = _allProducts.Where(p => p.IsModified).ToList();
-            
+
             if (modifiedProducts.Count == 0)
             {
-                MessageBox.Show("Нет изменений для отмены.", 
+                MessageBox.Show("Нет изменений для отмены.",
                     "Информация", MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
@@ -736,13 +694,11 @@ public partial class ProductPricesPage : Page
                 "Подтверждение", MessageBoxButton.YesNo, MessageBoxImage.Question);
 
             if (result == MessageBoxResult.Yes)
-            {
                 foreach (var product in modifiedProducts)
                 {
                     product.Price = product.OriginalPrice;
                     product.IsModified = false;
                 }
-            }
         }
         catch (Exception ex)
         {
@@ -756,20 +712,19 @@ public partial class ProductPricesPage : Page
     {
         try
         {
-            int count = SaveDishesInternal();
+            var count = SaveDishesInternal();
             if (count > 0)
-            {
-                MessageBox.Show($"Сохранено изменений блюд: {count}", "Успешно", MessageBoxButton.OK, MessageBoxImage.Information);
-            }
+                MessageBox.Show($"Сохранено изменений блюд: {count}", "Успешно", MessageBoxButton.OK,
+                    MessageBoxImage.Information);
             else
-            {
-                MessageBox.Show("Нет изменений для сохранения.", "Информация", MessageBoxButton.OK, MessageBoxImage.Information);
-            }
+                MessageBox.Show("Нет изменений для сохранения.", "Информация", MessageBoxButton.OK,
+                    MessageBoxImage.Information);
         }
         catch (Exception ex)
         {
             Logger.Error("Ошибка при сохранении блюд", ex);
-            MessageBox.Show($"Ошибка при сохранении блюд: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+            MessageBox.Show($"Ошибка при сохранении блюд: {ex.Message}", "Ошибка", MessageBoxButton.OK,
+                MessageBoxImage.Error);
         }
     }
 
@@ -777,13 +732,14 @@ public partial class ProductPricesPage : Page
     {
         var modifiedDishes = _allDishes.Where(d => d.IsModified).ToList();
         Logger.Debug($"SaveDishesInternal: Found {modifiedDishes.Count} modified dishes.");
-        
+
         if (modifiedDishes.Count == 0) return 0;
 
         foreach (var dish in modifiedDishes)
         {
-            Logger.Debug($"Saving Dish: Id={dish.Id}, Name={dish.Name}, NewMarkup={dish.Markup}, SaveToDefault={dish.SaveToDefault}");
-            
+            Logger.Debug(
+                $"Saving Dish: Id={dish.Id}, Name={dish.Name}, NewMarkup={dish.Markup}, SaveToDefault={dish.SaveToDefault}");
+
             if (_menuId.HasValue)
             {
                 // Режим меню: обновляем Menu_Delicates
@@ -815,6 +771,7 @@ public partial class ProductPricesPage : Page
 
             dish.IsModified = false;
         }
+
         return modifiedDishes.Count;
     }
 
@@ -823,10 +780,8 @@ public partial class ProductPricesPage : Page
         var modified = _allDishes.Where(d => d.IsModified).Count();
         if (modified == 0) return;
 
-        if (MessageBox.Show($"Отменить изменения ({modified})?", "Подтверждение", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
-        {
-            LoadDishes(); // Проще перезагрузить список
-        }
+        if (MessageBox.Show($"Отменить изменения ({modified})?", "Подтверждение", MessageBoxButton.YesNo) ==
+            MessageBoxResult.Yes) LoadDishes(); // Проще перезагрузить список
     }
 
     private void ProductPricesPage_Navigating(object sender, NavigatingCancelEventArgs e)
@@ -843,15 +798,16 @@ public partial class ProductPricesPage : Page
             {
                 try
                 {
-                    int prodCount = SaveProductsInternal();
-                    int dishCount = SaveDishesInternal();
+                    var prodCount = SaveProductsInternal();
+                    var dishCount = SaveDishesInternal();
                     // Optional: Show summary message? Usually silent save on close is better or just simple OK.
                     // But if errors occur, exceptions are thrown.
                 }
                 catch (Exception ex)
                 {
                     Logger.Error("Ошибка при сохранении перед выходом", ex);
-                    MessageBox.Show($"Ошибка при сохранении: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show($"Ошибка при сохранении: {ex.Message}", "Ошибка", MessageBoxButton.OK,
+                        MessageBoxImage.Error);
                     e.Cancel = true; // Отменяем выход, если ошибка
                 }
             }
@@ -895,11 +851,11 @@ public partial class ProductPricesPage : Page
                 {
                     dataGrid.SelectedIndex = nextRow;
                     dataGrid.CurrentCell = new DataGridCellInfo(dataGrid.Items[nextRow], markupColumn);
-                    
+
                     // Начинаем редактирование
                     dataGrid.BeginEdit();
                 }), System.Windows.Threading.DispatcherPriority.Input);
-                
+
                 e.Handled = true;
             }
         }
@@ -916,13 +872,10 @@ public partial class ProductPricesPage : Page
                 {
                     dataGrid.SelectedIndex = nextRow;
                     dataGrid.CurrentCell = new DataGridCellInfo(dataGrid.Items[nextRow], currentColumn);
-                    
-                    if (currentColumn == markupColumn)
-                    {
-                        dataGrid.BeginEdit();
-                    }
+
+                    if (currentColumn == markupColumn) dataGrid.BeginEdit();
                 }), System.Windows.Threading.DispatcherPriority.Input);
-                
+
                 e.Handled = true;
             }
         }
@@ -939,19 +892,15 @@ public partial class ProductPricesPage : Page
                 {
                     dataGrid.SelectedIndex = prevRow;
                     dataGrid.CurrentCell = new DataGridCellInfo(dataGrid.Items[prevRow], currentColumn);
-                    
-                    if (currentColumn == markupColumn)
-                    {
-                        dataGrid.BeginEdit();
-                    }
+
+                    if (currentColumn == markupColumn) dataGrid.BeginEdit();
                 }), System.Windows.Threading.DispatcherPriority.Input);
-                
+
                 e.Handled = true;
             }
         }
     }
-    }
-
+}
 
 /// <summary>
 /// Модель для редактирования наценки на блюда
@@ -971,33 +920,53 @@ public class DishMarkupView : INotifyPropertyChanged
     public int Id
     {
         get => _id;
-        set { _id = value; OnPropertyChanged(nameof(Id)); }
+        set
+        {
+            _id = value;
+            OnPropertyChanged(nameof(Id));
+        }
     }
 
     public string Name
     {
         get => _name;
-        set { _name = value; OnPropertyChanged(nameof(Name)); }
+        set
+        {
+            _name = value;
+            OnPropertyChanged(nameof(Name));
+        }
     }
 
     public string ShortComposition
     {
         get => _shortComposition;
-        set { _shortComposition = value; OnPropertyChanged(nameof(ShortComposition)); }
+        set
+        {
+            _shortComposition = value;
+            OnPropertyChanged(nameof(ShortComposition));
+        }
     }
 
     public string Type
     {
         get => _type;
-        set { _type = value; OnPropertyChanged(nameof(Type)); }
+        set
+        {
+            _type = value;
+            OnPropertyChanged(nameof(Type));
+        }
     }
 
     public int TypeId
     {
         get => _typeId;
-        set { _typeId = value; OnPropertyChanged(nameof(TypeId)); }
+        set
+        {
+            _typeId = value;
+            OnPropertyChanged(nameof(TypeId));
+        }
     }
-    
+
     // Новые поля для подсчета итогов
     public decimal Count { get; set; }
     public decimal BaseCost { get; set; }
@@ -1008,7 +977,11 @@ public class DishMarkupView : INotifyPropertyChanged
     public decimal DefaultMarkup
     {
         get => _defaultMarkup;
-        set { _defaultMarkup = value; OnPropertyChanged(nameof(DefaultMarkup)); }
+        set
+        {
+            _defaultMarkup = value;
+            OnPropertyChanged(nameof(DefaultMarkup));
+        }
     }
 
     /// <summary>
@@ -1017,11 +990,11 @@ public class DishMarkupView : INotifyPropertyChanged
     public decimal Markup
     {
         get => _markup;
-        set 
-        { 
-            _markup = value; 
+        set
+        {
+            _markup = value;
             _isModified = true;
-            OnPropertyChanged(nameof(Markup)); 
+            OnPropertyChanged(nameof(Markup));
             OnPropertyChanged(nameof(IsModified));
         }
     }
@@ -1029,18 +1002,29 @@ public class DishMarkupView : INotifyPropertyChanged
     public bool SaveToDefault
     {
         get => _saveToDefault;
-        set { _saveToDefault = value; OnPropertyChanged(nameof(SaveToDefault)); }
+        set
+        {
+            _saveToDefault = value;
+            OnPropertyChanged(nameof(SaveToDefault));
+        }
     }
 
     public bool IsModified
     {
         get => _isModified;
-        set { _isModified = value; OnPropertyChanged(nameof(IsModified)); }
+        set
+        {
+            _isModified = value;
+            OnPropertyChanged(nameof(IsModified));
+        }
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;
-    protected void OnPropertyChanged(string propertyName) => 
+
+    protected void OnPropertyChanged(string propertyName)
+    {
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+    }
 }
 
 /// <summary>
@@ -1060,4 +1044,3 @@ public static class ProductEdit
     public static bool Flag { get; set; }
     public static ProductView? Pv { get; set; }
 }
-

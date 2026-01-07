@@ -130,12 +130,15 @@
                                         </Grid>
                                         <DataTemplate.Triggers>
                                             <DataTrigger Binding="{Binding IsDeleted}" Value="True">
-                                                <Setter TargetName="DeleteButton" Property="Visibility" Value="Collapsed" />
-                                                <Setter TargetName="RestoreButton" Property="Visibility" Value="Visible" />
+                                                <Setter TargetName="DeleteButton" Property="Visibility"
+                                                        Value="Collapsed" />
+                                                <Setter TargetName="RestoreButton" Property="Visibility"
+                                                        Value="Visible" />
                                             </DataTrigger>
                                             <DataTrigger Binding="{Binding IsDeleted}" Value="False">
                                                 <Setter TargetName="DeleteButton" Property="Visibility" Value="Visible" />
-                                                <Setter TargetName="RestoreButton" Property="Visibility" Value="Collapsed" />
+                                                <Setter TargetName="RestoreButton" Property="Visibility"
+                                                        Value="Collapsed" />
                                             </DataTrigger>
                                         </DataTemplate.Triggers>
                                     </DataTemplate>
@@ -221,145 +224,146 @@
                     </Grid.RowDefinitions>
 
                     <Grid Grid.Row="0">
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto" />
-                                <RowDefinition Height="Auto" />
-                                <RowDefinition Height="Auto" />
-                            </Grid.RowDefinitions>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="*" />
-                            </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
 
-                            <!-- Название -->
-                            <StackPanel Grid.Row="0" Grid.Column="0" Margin="0,0,10,15">
-                                <TextBlock Text="Название блюда:"
-                                           Style="{StaticResource MaterialDesignBody2TextBlock}"
-                                           Margin="0,0,0,5" />
-                                <TextBox x:Name="DelicateNameTextBox"
-                                         materialDesign:HintAssist.Hint="Введите название блюда"
-                                         MaxLength="50"
-                                         LostFocus="TextField_LostFocus"
-                                         Style="{StaticResource MaterialDesignOutlinedTextBox}" />
-                            </StackPanel>
+                        <!-- Название -->
+                        <StackPanel Grid.Row="0" Grid.Column="0" Margin="0,0,10,15">
+                            <TextBlock Text="Название блюда:"
+                                       Style="{StaticResource MaterialDesignBody2TextBlock}"
+                                       Margin="0,0,0,5" />
+                            <TextBox x:Name="DelicateNameTextBox"
+                                     materialDesign:HintAssist.Hint="Введите название блюда"
+                                     MaxLength="50"
+                                     LostFocus="TextField_LostFocus"
+                                     Style="{StaticResource MaterialDesignOutlinedTextBox}" />
+                        </StackPanel>
 
-                            <!-- Тип -->
-                            <StackPanel Grid.Row="0" Grid.Column="1" Margin="10,0,0,15">
-                                <TextBlock Text="Тип блюда:"
-                                           Style="{StaticResource MaterialDesignBody2TextBlock}"
-                                           Margin="0,0,0,5" />
-                                <ComboBox x:Name="DelicateTypeComboBox"
-                                          DisplayMemberPath="Name"
-                                          SelectedValuePath="Id"
-                                          Style="{StaticResource MaterialDesignOutlinedComboBox}"
-                                          materialDesign:HintAssist.Hint="Выберите тип" />
-                            </StackPanel>
+                        <!-- Тип -->
+                        <StackPanel Grid.Row="0" Grid.Column="1" Margin="10,0,0,15">
+                            <TextBlock Text="Тип блюда:"
+                                       Style="{StaticResource MaterialDesignBody2TextBlock}"
+                                       Margin="0,0,0,5" />
+                            <ComboBox x:Name="DelicateTypeComboBox"
+                                      DisplayMemberPath="Name"
+                                      SelectedValuePath="Id"
+                                      Style="{StaticResource MaterialDesignOutlinedComboBox}"
+                                      materialDesign:HintAssist.Hint="Выберите тип" />
+                        </StackPanel>
 
-                            <!-- Вес -->
-                            <StackPanel Grid.Row="1" Grid.Column="0" Margin="0,0,10,15">
-                                <TextBlock Text="Вес порции (грамм):"
-                                           Style="{StaticResource MaterialDesignBody2TextBlock}"
-                                           Margin="0,0,0,5" />
-                                <TextBox x:Name="DelicateWeightTextBox"
-                                         materialDesign:HintAssist.Hint="Например: 250"
-                                         Style="{StaticResource MaterialDesignOutlinedTextBox}"
-                                         PreviewTextInput="NumericOnly_PreviewTextInput"
-                                         LostFocus="NumericField_LostFocus" />
-                            </StackPanel>
+                        <!-- Вес -->
+                        <StackPanel Grid.Row="1" Grid.Column="0" Margin="0,0,10,15">
+                            <TextBlock Text="Вес порции (грамм):"
+                                       Style="{StaticResource MaterialDesignBody2TextBlock}"
+                                       Margin="0,0,0,5" />
+                            <TextBox x:Name="DelicateWeightTextBox"
+                                     materialDesign:HintAssist.Hint="Например: 250"
+                                     Style="{StaticResource MaterialDesignOutlinedTextBox}"
+                                     PreviewTextInput="NumericOnly_PreviewTextInput"
+                                     LostFocus="NumericField_LostFocus" />
+                        </StackPanel>
 
-                            <!-- Количество -->
-                            <StackPanel Grid.Row="1" Grid.Column="1" Margin="10,0,0,15">
-                                <TextBlock Text="Количество порций:"
-                                           Style="{StaticResource MaterialDesignBody2TextBlock}"
-                                           Margin="0,0,0,5" />
-                                <TextBox x:Name="DelicateCountTextBox"
-                                         materialDesign:HintAssist.Hint="По умолчанию: 1"
-                                         Style="{StaticResource MaterialDesignOutlinedTextBox}"
-                                         PreviewTextInput="NumericOnly_PreviewTextInput"
-                                         LostFocus="NumericField_LostFocus" />
-                            </StackPanel>
+                        <!-- Количество -->
+                        <StackPanel Grid.Row="1" Grid.Column="1" Margin="10,0,0,15">
+                            <TextBlock Text="Количество порций:"
+                                       Style="{StaticResource MaterialDesignBody2TextBlock}"
+                                       Margin="0,0,0,5" />
+                            <TextBox x:Name="DelicateCountTextBox"
+                                     materialDesign:HintAssist.Hint="По умолчанию: 1"
+                                     Style="{StaticResource MaterialDesignOutlinedTextBox}"
+                                     PreviewTextInput="NumericOnly_PreviewTextInput"
+                                     LostFocus="NumericField_LostFocus" />
+                        </StackPanel>
 
-                            <!-- Автодобавление и скрытие в меню -->
-                            <StackPanel Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" 
-                                        Orientation="Horizontal" Margin="0,5,0,0">
-                                <CheckBox x:Name="DelicateAutoAddCheckBox" Margin="0,5,15,5"
-                                          ToolTip="Если отмечено, блюдо будет автоматически добавляться в новое меню с количеством, равным числу гостей.">
-                                    <TextBlock Text="Автоматически добавлять в новое меню"/>
-                                </CheckBox>
-                                <CheckBox x:Name="DelicateHideInMenuCheckBox" Margin="0,5,15,5"
-                                          ToolTip="Если отмечено, блюдо не выводится в отчете меню, но учитывается в отчете по продуктам.">
-                                    <TextBlock Text="Не показывать в меню"/>
-                                </CheckBox>
-                                <CheckBox x:Name="DelicateHideInProductReportCheckBox" Margin="0,5"
-                                          ToolTip="Если отмечено, блюдо не выводится в отчете по продуктам и не участвует в подсчете итогов.">
-                                    <TextBlock Text="Не показывать в отчете по продуктам"/>
-                                </CheckBox>
-                            </StackPanel>
+                        <!-- Автодобавление и скрытие в меню -->
+                        <StackPanel Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
+                                    Orientation="Horizontal" Margin="0,5,0,0">
+                            <CheckBox x:Name="DelicateAutoAddCheckBox" Margin="0,5,15,5"
+                                      ToolTip="Если отмечено, блюдо будет автоматически добавляться в новое меню с количеством, равным числу гостей.">
+                                <TextBlock Text="Автоматически добавлять в новое меню" />
+                            </CheckBox>
+                            <CheckBox x:Name="DelicateHideInMenuCheckBox" Margin="0,5,15,5"
+                                      ToolTip="Если отмечено, блюдо не выводится в отчете меню, но учитывается в отчете по продуктам.">
+                                <TextBlock Text="Не показывать в меню" />
+                            </CheckBox>
+                            <CheckBox x:Name="DelicateHideInProductReportCheckBox" Margin="0,5"
+                                      ToolTip="Если отмечено, блюдо не выводится в отчете по продуктам и не участвует в подсчете итогов.">
+                                <TextBlock Text="Не показывать в отчете по продуктам" />
+                            </CheckBox>
+                        </StackPanel>
                     </Grid>
 
                     <Separator Grid.Row="1" Margin="0,10,0,20" />
 
                     <Grid Grid.Row="2" MinHeight="300">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="80" />
-                                <ColumnDefinition Width="*" />
-                            </Grid.ColumnDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="80" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
 
-                            <!-- Доступные продукты -->
-                            <GroupBox Grid.Column="0" Header="Доступные продукты"
-                                      Style="{StaticResource MaterialDesignCardGroupBox}">
-                                <Grid>
-                                    <Grid.RowDefinitions>
-                                        <RowDefinition Height="Auto" />
-                                        <RowDefinition Height="*" />
-                                    </Grid.RowDefinitions>
+                        <!-- Доступные продукты -->
+                        <GroupBox Grid.Column="0" Header="Доступные продукты"
+                                  Style="{StaticResource MaterialDesignCardGroupBox}">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="*" />
+                                </Grid.RowDefinitions>
 
-                                    <TextBox Grid.Row="0" x:Name="ProductSearchBox"
-                                             materialDesign:HintAssist.Hint="Поиск..."
-                                             TextChanged="ProductSearch_TextChanged"
-                                             Margin="0,0,0,5" />
+                                <TextBox Grid.Row="0" x:Name="ProductSearchBox"
+                                         materialDesign:HintAssist.Hint="Поиск..."
+                                         TextChanged="ProductSearch_TextChanged"
+                                         Margin="0,0,0,5" />
 
-                                    <ListBox Grid.Row="1" x:Name="AvailableProductsList"
-                                             DisplayMemberPath="Name"
-                                             SelectionMode="Single" />
-                                </Grid>
-                            </GroupBox>
+                                <ListBox Grid.Row="1" x:Name="AvailableProductsList"
+                                         DisplayMemberPath="Name"
+                                         SelectionMode="Single" />
+                            </Grid>
+                        </GroupBox>
 
-                            <!-- Кнопки управления -->
-                            <StackPanel Grid.Column="1" VerticalAlignment="Center"
-                                        HorizontalAlignment="Center">
-                                <Button Style="{StaticResource MaterialDesignFloatingActionMiniButton}"
-                                        Click="AddProductToDelicate_Click"
-                                        Margin="0,0,0,10"
-                                        ToolTip="Добавить в состав">
-                                    <materialDesign:PackIcon Kind="ArrowRight" />
-                                </Button>
-                                <Button Style="{StaticResource MaterialDesignFloatingActionMiniButton}"
-                                        Click="RemoveProductFromDelicate_Click"
-                                        ToolTip="Убрать из состава">
-                                    <materialDesign:PackIcon Kind="ArrowLeft" />
-                                </Button>
-                            </StackPanel>
+                        <!-- Кнопки управления -->
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center"
+                                    HorizontalAlignment="Center">
+                            <Button Style="{StaticResource MaterialDesignFloatingActionMiniButton}"
+                                    Click="AddProductToDelicate_Click"
+                                    Margin="0,0,0,10"
+                                    ToolTip="Добавить в состав">
+                                <materialDesign:PackIcon Kind="ArrowRight" />
+                            </Button>
+                            <Button Style="{StaticResource MaterialDesignFloatingActionMiniButton}"
+                                    Click="RemoveProductFromDelicate_Click"
+                                    ToolTip="Убрать из состава">
+                                <materialDesign:PackIcon Kind="ArrowLeft" />
+                            </Button>
+                        </StackPanel>
 
-                            <!-- Состав блюда -->
-                            <GroupBox Grid.Column="2" Header="Состав блюда"
-                                      Style="{StaticResource MaterialDesignCardGroupBox}">
-                                <DataGrid x:Name="DelicateComponentsGrid"
-                                          AutoGenerateColumns="False"
-                                          CanUserAddRows="False"
-                                          IsReadOnly="False"
-                                          materialDesign:DataGridAssist.CellPadding="5">
-                                    <DataGrid.Columns>
-                                        <DataGridTextColumn Header="Продукт" Binding="{Binding NameT}"
-                                                            Width="*" IsReadOnly="True" />
-                                        <DataGridTextColumn Header="Вес" Binding="{Binding Ves, UpdateSourceTrigger=PropertyChanged}"
-                                                            Width="80" />
-                                        <DataGridTextColumn Header="Мера" Binding="{Binding Mera}"
-                                                            Width="60" IsReadOnly="True" />
-                                    </DataGrid.Columns>
-                                </DataGrid>
-                            </GroupBox>
+                        <!-- Состав блюда -->
+                        <GroupBox Grid.Column="2" Header="Состав блюда"
+                                  Style="{StaticResource MaterialDesignCardGroupBox}">
+                            <DataGrid x:Name="DelicateComponentsGrid"
+                                      AutoGenerateColumns="False"
+                                      CanUserAddRows="False"
+                                      IsReadOnly="False"
+                                      materialDesign:DataGridAssist.CellPadding="5">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="Продукт" Binding="{Binding NameT}"
+                                                        Width="*" IsReadOnly="True" />
+                                    <DataGridTextColumn Header="Вес"
+                                                        Binding="{Binding Ves, UpdateSourceTrigger=PropertyChanged}"
+                                                        Width="80" />
+                                    <DataGridTextColumn Header="Мера" Binding="{Binding Mera}"
+                                                        Width="60" IsReadOnly="True" />
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </GroupBox>
                     </Grid>
                 </Grid>
             </materialDesign:Card>

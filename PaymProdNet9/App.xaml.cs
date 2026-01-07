@@ -20,11 +20,11 @@ public partial class App : Application
         // Устанавливаем русскую локализацию для приложения
         try
         {
-            var culture = new System.Globalization.CultureInfo("ru-RU");
-            System.Globalization.CultureInfo.DefaultThreadCurrentCulture = culture;
-            System.Globalization.CultureInfo.DefaultThreadCurrentUICulture = culture;
-            System.Threading.Thread.CurrentThread.CurrentCulture = culture;
-            System.Threading.Thread.CurrentThread.CurrentUICulture = culture;
+            var culture = new CultureInfo("ru-RU");
+            CultureInfo.DefaultThreadCurrentCulture = culture;
+            CultureInfo.DefaultThreadCurrentUICulture = culture;
+            Thread.CurrentThread.CurrentCulture = culture;
+            Thread.CurrentThread.CurrentUICulture = culture;
         }
         catch (Exception ex)
         {
@@ -42,13 +42,13 @@ public partial class App : Application
         }
 
         // Показываем splash screen
-        var splashScreen = new PaymProdNet9.Windows.SplashScreen();
+        var splashScreen = new Windows.SplashScreen();
         splashScreen.Show();
         splashScreen.UpdateStatus("Инициализация...");
-        
+
         // Обновляем UI для отображения splash screen
-        await System.Threading.Tasks.Task.Delay(50);
-        
+        await Task.Delay(50);
+
         // Инициализируем логгер в самом начале
         Logger.Initialize();
         Logger.Info("Приложение запущено");
@@ -57,7 +57,7 @@ public partial class App : Application
         AppDomain.CurrentDomain.UnhandledException += (sender, args) =>
         {
             var exception = args.ExceptionObject as Exception;
-            
+
             // Выводим подробную информацию в консоль
             Console.WriteLine("═══════════════════════════════════════════════════════════");
             Console.WriteLine("КРИТИЧЕСКАЯ ОШИБКА: Необработанное исключение в AppDomain");
@@ -79,18 +79,19 @@ public partial class App : Application
             {
                 Console.WriteLine($"Объект исключения: {args.ExceptionObject?.GetType().FullName ?? "null"}");
             }
+
             Console.WriteLine("═══════════════════════════════════════════════════════════");
-            
+
             Logger.Error("Необработанное исключение в AppDomain", exception);
-            
+
             // Показываем сообщение пользователю только для критических ошибок
             if (args.IsTerminating)
             {
                 var errorMessage = exception != null
                     ? $"Критическая ошибка приложения:\n\n{exception.Message}\n\nПодробности в логах и консоли."
                     : "Произошла критическая ошибка приложения. Подробности в логах и консоли.";
-                
-                MessageBox.Show(errorMessage, "Критическая ошибка", 
+
+                MessageBox.Show(errorMessage, "Критическая ошибка",
                     MessageBoxButton.OK, MessageBoxImage.Error);
             }
         };
@@ -110,15 +111,16 @@ public partial class App : Application
                 Console.WriteLine($"Внутреннее сообщение: {args.Exception.InnerException.Message}");
                 Console.WriteLine($"Внутренний стек:\n{args.Exception.InnerException.StackTrace}");
             }
+
             Console.WriteLine("═══════════════════════════════════════════════════════════");
-            
+
             Logger.Error("Необработанное исключение в UI потоке", args.Exception);
-            
+
             // Показываем сообщение пользователю
             var errorMessage = $"Произошла ошибка:\n\n{args.Exception.Message}\n\nПодробности в логах и консоли.";
-            MessageBox.Show(errorMessage, "Ошибка", 
+            MessageBox.Show(errorMessage, "Ошибка",
                 MessageBoxButton.OK, MessageBoxImage.Warning);
-            
+
             args.Handled = true; // Предотвращаем краш приложения
         };
 
@@ -138,8 +140,9 @@ public partial class App : Application
                 Console.WriteLine($"Внутреннее сообщение: {args.Exception.InnerException.Message}");
                 Console.WriteLine($"Внутренний стек:\n{args.Exception.InnerException.StackTrace}");
             }
+
             Console.WriteLine("═══════════════════════════════════════════════════════════");
-            
+
             Logger.Error("Необработанное исключение в Task", args.Exception);
             args.SetObserved(); // Помечаем как обработанное
         };
@@ -154,7 +157,6 @@ public partial class App : Application
         // Всегда используем AppData для базы данных (там есть права на запись)
         // Убедимся что директория существует
         if (!System.IO.Directory.Exists(appDataDir))
-        {
             try
             {
                 System.IO.Directory.CreateDirectory(appDataDir);
@@ -163,17 +165,16 @@ public partial class App : Application
             {
                 Logger.Error($"Не удалось создать директорию для базы данных: {appDataDir}", ex);
                 splashScreen.Close();
-                MessageBox.Show($"Не удалось создать директорию для базы данных:\n{appDataDir}\n\nОшибка: {ex.Message}", 
+                MessageBox.Show($"Не удалось создать директорию для базы данных:\n{appDataDir}\n\nОшибка: {ex.Message}",
                     "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
                 Shutdown();
                 return;
             }
-        }
 
         if (!System.IO.File.Exists(dbPath))
         {
             splashScreen.UpdateStatus("Загрузка базы данных...");
-            await UpdateService.TryDownloadStartDatabaseAsync(dbPath, null, replaceExisting: false, silentSuccess: true);
+            await UpdateService.TryDownloadStartDatabaseAsync(dbPath, null, false, true);
         }
 
         try
@@ -187,7 +188,7 @@ public partial class App : Application
         {
             Logger.Error("Ошибка при инициализации базы данных", ex);
             splashScreen.Close();
-            MessageBox.Show($"Критическая ошибка при инициализации базы данных:\n{ex.Message}", 
+            MessageBox.Show($"Критическая ошибка при инициализации базы данных:\n{ex.Message}",
                 "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
             Shutdown();
             return;
@@ -210,7 +211,7 @@ public partial class App : Application
         {
             Logger.Error("Ошибка при запуске приложения", ex);
             splashScreen.Close();
-            MessageBox.Show($"Ошибка при запуске приложения:\n{ex.Message}", 
+            MessageBox.Show($"Ошибка при запуске приложения:\n{ex.Message}",
                 "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
             Shutdown();
         }

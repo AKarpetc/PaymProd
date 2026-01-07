@@ -32,7 +32,8 @@ public class MenuPrinter
     /// <summary>
     ///     Печать меню
     /// </summary>
-    public void PrintMenu(List<DelicatesColl> delicates, string menuName, ReportMode reportMode = ReportMode.NoPrices, int? menuId = null)
+    public void PrintMenu(List<DelicatesColl> delicates, string menuName, ReportMode reportMode = ReportMode.NoPrices,
+        int? menuId = null)
     {
         try
         {
@@ -67,9 +68,7 @@ public class MenuPrinter
 
                 if (productLookup.TryGetValue(component.Prodid, out var product) &&
                     !string.IsNullOrWhiteSpace(product.IzName))
-                {
                     return product.IzName;
-                }
 
                 var baseMeasureInfo = FindMeasure(baseMeasure);
                 if (!string.IsNullOrWhiteSpace(baseMeasureInfo?.FassIzmer))
@@ -112,12 +111,18 @@ public class MenuPrinter
                 var tableProperties = new TableProperties(
                     new TableWidth { Type = TableWidthUnitValues.Pct, Width = "5000" },
                     new TableBorders(
-                        new TopBorder { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 12, Color = "000000" },
-                        new BottomBorder { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 12, Color = "000000" },
-                        new LeftBorder { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 12, Color = "000000" },
-                        new RightBorder { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 12, Color = "000000" },
-                        new InsideHorizontalBorder { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 12, Color = "000000" },
-                        new InsideVerticalBorder { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 12, Color = "000000" }
+                        new TopBorder
+                            { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 12, Color = "000000" },
+                        new BottomBorder
+                            { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 12, Color = "000000" },
+                        new LeftBorder
+                            { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 12, Color = "000000" },
+                        new RightBorder
+                            { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 12, Color = "000000" },
+                        new InsideHorizontalBorder
+                            { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 12, Color = "000000" },
+                        new InsideVerticalBorder
+                            { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 12, Color = "000000" }
                     ),
                     new TableCellMarginDefault(
                         new TopMargin { Width = "50", Type = TableWidthUnitValues.Dxa },
@@ -128,7 +133,7 @@ public class MenuPrinter
                 );
                 table.AppendChild(tableProperties);
 
-                bool showPriceColumn = reportMode != ReportMode.NoPrices;
+                var showPriceColumn = reportMode != ReportMode.NoPrices;
 
                 var tableGrid = showPriceColumn
                     ? new TableGrid(
@@ -193,43 +198,52 @@ public class MenuPrinter
                             foreach (var component in components)
                             {
                                 var baseMeasure = GetBaseMeasure(component);
-                                var productName = !string.IsNullOrEmpty(component.NameT) ? component.NameT : component.Name;
+                                var productName = !string.IsNullOrEmpty(component.NameT)
+                                    ? component.NameT
+                                    : component.Name;
                                 var count = delicate.Count > 0 ? delicate.Count : 1;
 
                                 // Логика как в отчете по товарам: показываем основную единицу, если нет перерасчета в фасовку
                                 string displayValue;
                                 var totalWeight = component.Ves * count;
-                                
+
                                 // Локальная функция для нормализации единиц
-                                string NormalizeUnitLocal(string unit) => unit?.Trim().ToLowerInvariant() ?? string.Empty;
-                                
+                                string NormalizeUnitLocal(string unit)
+                                {
+                                    return unit?.Trim().ToLowerInvariant() ?? string.Empty;
+                                }
+
                                 // Нормализуем единицы для сравнения (как в отчете по товарам)
                                 var baseUnitNormalized = NormalizeUnitLocal(baseMeasure);
                                 var fassIzNormalized = NormalizeUnitLocal(component.FassIz ?? string.Empty);
-                                
+
                                 // Если на продукте стоит флаг "не переводить в фасованные" — всегда показываем в базовой единице
                                 if (component.DoNotConvertToPackInMenu)
                                 {
-                                    displayValue = FormatMenuValue(Math.Round(totalWeight, 2, MidpointRounding.AwayFromZero), baseMeasure);
+                                    displayValue =
+                                        FormatMenuValue(Math.Round(totalWeight, 2, MidpointRounding.AwayFromZero),
+                                            baseMeasure);
                                 }
                                 else
                                 {
                                     // Проверяем, нужно ли пересчитывать в фасовку (как в отчете по товарам)
                                     // Пересчитываем только если: есть фасовка, единица фасовки отличается от базовой, и вес >= фасовка
-                                    if (component.Fass > 0 && 
-                                        !string.IsNullOrWhiteSpace(component.FassIz) && 
+                                    if (component.Fass > 0 &&
+                                        !string.IsNullOrWhiteSpace(component.FassIz) &&
                                         fassIzNormalized != baseUnitNormalized &&
                                         totalWeight >= component.Fass)
                                     {
                                         // Есть перерасчет в фасовку - показываем в фасовке
                                         var packageCount = totalWeight / component.Fass;
                                         var packageUnit = GetPackageMeasure(component, baseMeasure);
-                                        displayValue = FormatMenuValue(Math.Round(packageCount, 2, MidpointRounding.AwayFromZero), packageUnit);
+                                        displayValue = FormatMenuValue(
+                                            Math.Round(packageCount, 2, MidpointRounding.AwayFromZero), packageUnit);
                                     }
                                     else
                                     {
                                         // Нет перерасчета в фасовку - показываем в основных единицах
-                                        displayValue = FormatMenuValue(Math.Round(totalWeight, 2, MidpointRounding.AwayFromZero), baseMeasure);
+                                        displayValue = FormatMenuValue(
+                                            Math.Round(totalWeight, 2, MidpointRounding.AwayFromZero), baseMeasure);
                                     }
                                 }
 
@@ -241,7 +255,7 @@ public class MenuPrinter
                             // Для режима Price не показываем цены компонентов в составе
                             // В режиме Cost и NoPrices - цены компонентов уже включены в строку (или нет, в зависимости от логики BuildComponentLine)
                             // Если Price - то мы просто перечисляем компоненты без цен
-                            
+
                             if (reportMode == ReportMode.NoPrices || reportMode == ReportMode.Price)
                             {
                                 compositionParagraph.Append(new Break());
@@ -271,9 +285,7 @@ public class MenuPrinter
                         {
                             // Если режим Price, применяем наценку
                             if (reportMode == ReportMode.Price && delicate.DefaultMarkup > 0)
-                            {
-                                 dishTotal = dishTotal * (delicate.DefaultMarkup / 100);
-                            }
+                                dishTotal = dishTotal * (delicate.DefaultMarkup / 100);
 
                             var priceText = dishTotal > 0 ? FormatCurrency(dishTotal) : "—";
                             var priceCell = new TableCell();
@@ -294,60 +306,53 @@ public class MenuPrinter
 
                 // Пересчитываем сумму всех блюд для итога
                 foreach (var group in groupedDelicates)
+                foreach (var delicate in group)
                 {
-                    foreach (var delicate in group)
+                    var components = delicate.Lcomp ?? new List<Components>();
+                    decimal dishTotal = 0;
+                    if (components.Any())
+                        foreach (var component in components)
+                        {
+                            var priceInfo =
+                                _menuPriceService.GetComponentPriceInfo(menuId ?? 0, component, delicate.Count);
+                            dishTotal += priceInfo.TotalPrice;
+                        }
+
+                    // Применяем наценку если нужно (только для Price режима, т.к. в Cost мы считаем себестоимость)
+                    if (delicate.DefaultMarkup > 0)
+                        // Если режим Price - наценка уже применена при отображении, 
+                        // нам нужно получить ту же цифру для суммы
+                        dishTotal = dishTotal * (delicate.DefaultMarkup / 100);
+
+                    // В режиме Cost нам нужна просто сумма себестоимостей (без наценки)
+                    if (reportMode == ReportMode.Cost && delicate.DefaultMarkup > 0)
+                        // Откат наценки (если она была применена в логике выше, но здесь мы считаем заново)
+                        // В данном цикле мы считаем dishTotal = Sum(ComponentPrices).
+                        // В блоке выше мы умножили на markup. 
+                        // Для Cost отчета нам нужна "чистая" сумма.
+                        // Исправим: для Cost отчета мы НЕ должны умножать на markup.
+                        dishTotal = dishTotal / (delicate.DefaultMarkup / 100);
+
+                    // Более чистая логика суммирования:
+                    // 1. Считаем чистую себестоимость (cost)
+                    decimal currentDishCost = 0;
+                    foreach (var component in components)
                     {
-                        var components = delicate.Lcomp ?? new List<Components>();
-                        decimal dishTotal = 0;
-                        if (components.Any())
-                        {
-                            foreach (var component in components)
-                            {
-                                var priceInfo = _menuPriceService.GetComponentPriceInfo(menuId ?? 0, component, delicate.Count);
-                                dishTotal += priceInfo.TotalPrice;
-                            }
-                        }
+                        var priceInfo = _menuPriceService.GetComponentPriceInfo(menuId ?? 0, component, delicate.Count);
+                        currentDishCost += priceInfo.TotalPrice;
+                    }
 
-                        // Применяем наценку если нужно (только для Price режима, т.к. в Cost мы считаем себестоимость)
-                        if (delicate.DefaultMarkup > 0)
-                        {
-                            // Если режим Price - наценка уже применена при отображении, 
-                            // нам нужно получить ту же цифру для суммы
-                            dishTotal = dishTotal * (delicate.DefaultMarkup / 100);
-                        }
-                        
-                        // В режиме Cost нам нужна просто сумма себестоимостей (без наценки)
-                        if (reportMode == ReportMode.Cost && delicate.DefaultMarkup > 0)
-                        {
-                             // Откат наценки (если она была применена в логике выше, но здесь мы считаем заново)
-                             // В данном цикле мы считаем dishTotal = Sum(ComponentPrices).
-                             // В блоке выше мы умножили на markup. 
-                             // Для Cost отчета нам нужна "чистая" сумма.
-                             // Исправим: для Cost отчета мы НЕ должны умножать на markup.
-                             dishTotal = dishTotal / (delicate.DefaultMarkup / 100); 
-                        }
-
-                         // Более чистая логика суммирования:
-                         // 1. Считаем чистую себестоимость (cost)
-                         decimal currentDishCost = 0;
-                         foreach (var component in components)
-                         {
-                             var priceInfo = _menuPriceService.GetComponentPriceInfo(menuId ?? 0, component, delicate.Count);
-                             currentDishCost += priceInfo.TotalPrice; 
-                         }
-
-                         // 2. В зависимости от режима добавляем к общей сумме
-                         if (reportMode == ReportMode.Price)
-                         {
-                             // Цена продажи = Себестоимость * Наценка
-                             decimal markupMultiplier = (delicate.DefaultMarkup > 0) ? (delicate.DefaultMarkup / 100) : 1;
-                             totalDishSum += currentDishCost * markupMultiplier;
-                         }
-                         else
-                         {
-                             // Себестоимость
-                             totalDishSum += currentDishCost;
-                         }
+                    // 2. В зависимости от режима добавляем к общей сумме
+                    if (reportMode == ReportMode.Price)
+                    {
+                        // Цена продажи = Себестоимость * Наценка
+                        var markupMultiplier = delicate.DefaultMarkup > 0 ? delicate.DefaultMarkup / 100 : 1;
+                        totalDishSum += currentDishCost * markupMultiplier;
+                    }
+                    else
+                    {
+                        // Себестоимость
+                        totalDishSum += currentDishCost;
                     }
                 }
 
@@ -355,15 +360,12 @@ public class MenuPrinter
                 if (reportMode == ReportMode.Price)
                 {
                     // Определяем процент обслуживания
-                    decimal effectiveServicePercent = settings.ServicePercent;
+                    var effectiveServicePercent = settings.ServicePercent;
 
                     if (menuId.HasValue)
                     {
                         var menu = _menuRepository.GetMenuById(menuId.Value);
-                        if (menu?.ServicePercent != null)
-                        {
-                            effectiveServicePercent = menu.ServicePercent.Value;
-                        }
+                        if (menu?.ServicePercent != null) effectiveServicePercent = menu.ServicePercent.Value;
                     }
 
                     // Строка "Подитог" (Сумма за блюда без обслуживания)
@@ -381,9 +383,9 @@ public class MenuPrinter
 
                     var subtotalValueCell = new TableCell();
                     subtotalValueCell.Append(new TableCellProperties(
-                         new TableCellVerticalAlignment { Val = TableVerticalAlignmentValues.Center }
+                        new TableCellVerticalAlignment { Val = TableVerticalAlignmentValues.Center }
                     ));
-                     subtotalValueCell.Append(new Paragraph(
+                    subtotalValueCell.Append(new Paragraph(
                         new ParagraphProperties(new Justification { Val = JustificationValues.Left }),
                         new Run(new RunProperties(new Bold()), new Text(FormatCurrency(totalDishSum)))
                     ));
@@ -392,7 +394,7 @@ public class MenuPrinter
 
                     // Строка "За обслуживание"
                     var serviceAmount = totalDishSum * (effectiveServicePercent / 100);
-                    
+
                     var serviceRow = new TableRow();
                     // Объединенная ячейка для текста "За обслуживание + %"
                     var serviceTitleCell = new TableCell();
@@ -402,16 +404,17 @@ public class MenuPrinter
                     ));
                     serviceTitleCell.Append(new Paragraph(
                         new ParagraphProperties(new Justification { Val = JustificationValues.Right }),
-                        new Run(new RunProperties(new Bold()), new Text($"За обслуживание {effectiveServicePercent:G}%"))
+                        new Run(new RunProperties(new Bold()),
+                            new Text($"За обслуживание {effectiveServicePercent:G}%"))
                     ));
                     serviceRow.Append(serviceTitleCell);
 
                     // Ячейка суммы
                     var serviceValueCell = new TableCell();
                     serviceValueCell.Append(new TableCellProperties(
-                         new TableCellVerticalAlignment { Val = TableVerticalAlignmentValues.Center }
+                        new TableCellVerticalAlignment { Val = TableVerticalAlignmentValues.Center }
                     ));
-                     serviceValueCell.Append(new Paragraph(
+                    serviceValueCell.Append(new Paragraph(
                         new ParagraphProperties(new Justification { Val = JustificationValues.Left }),
                         new Run(new RunProperties(new Bold()), new Text(FormatCurrency(serviceAmount)))
                     ));
@@ -420,12 +423,12 @@ public class MenuPrinter
 
                     // Строка "ИТОГ"
                     var grandTotal = totalDishSum + serviceAmount;
-                     
+
                     var totalRow = new TableRow();
                     var totalTitleCell = new TableCell();
                     totalTitleCell.Append(new TableCellProperties(
                         new GridSpan { Val = 2 },
-                        new Shading { Fill = "D3D3D3" }, 
+                        new Shading { Fill = "D3D3D3" },
                         new TableCellVerticalAlignment { Val = TableVerticalAlignmentValues.Center }
                     ));
                     totalTitleCell.Append(new Paragraph(
@@ -441,7 +444,8 @@ public class MenuPrinter
                     ));
                     totalValueCell.Append(new Paragraph(
                         new ParagraphProperties(new Justification { Val = JustificationValues.Left }),
-                        new Run(new RunProperties(new Bold(), new FontSize { Val = "24" }), new Text(FormatCurrency(grandTotal)))
+                        new Run(new RunProperties(new Bold(), new FontSize { Val = "24" }),
+                            new Text(FormatCurrency(grandTotal)))
                     ));
                     totalRow.Append(totalValueCell);
                     table.Append(totalRow);
@@ -452,11 +456,11 @@ public class MenuPrinter
                     var totalRow = new TableRow();
                     var totalTitleCell = new TableCell();
                     totalTitleCell.Append(new TableCellProperties(
-                        new GridSpan { Val = 1 }, 
-                        new Shading { Fill = "D3D3D3" }, 
+                        new GridSpan { Val = 1 },
+                        new Shading { Fill = "D3D3D3" },
                         new TableCellVerticalAlignment { Val = TableVerticalAlignmentValues.Center }
                     ));
-                    
+
                     totalTitleCell.Append(new Paragraph(
                         new ParagraphProperties(new Justification { Val = JustificationValues.Right }),
                         new Run(new RunProperties(new Bold(), new FontSize { Val = "24" }), new Text("ИТОГ"))
@@ -468,10 +472,11 @@ public class MenuPrinter
                         new Shading { Fill = "D3D3D3" },
                         new TableCellVerticalAlignment { Val = TableVerticalAlignmentValues.Center }
                     ));
-                    
+
                     totalValueCell.Append(new Paragraph(
                         new ParagraphProperties(new Justification { Val = JustificationValues.Left }),
-                        new Run(new RunProperties(new Bold(), new FontSize { Val = "24" }), new Text(FormatCurrency(totalDishSum)))
+                        new Run(new RunProperties(new Bold(), new FontSize { Val = "24" }),
+                            new Text(FormatCurrency(totalDishSum)))
                     ));
                     totalRow.Append(totalValueCell);
                     table.Append(totalRow);
@@ -491,7 +496,8 @@ public class MenuPrinter
         }
     }
 
-    private string BuildComponentLine(ReportMode reportMode, Components component, string productName, string displayValue,
+    private string BuildComponentLine(ReportMode reportMode, Components component, string productName,
+        string displayValue,
         int? menuId, decimal dishCount, ref decimal dishTotal)
     {
         // Считаем цену компонента всегда, чтобы накопить dishTotal
@@ -533,18 +539,16 @@ public class MenuPrinter
 
         var existing = props.GetFirstChild<TableCellVerticalAlignment>();
         if (existing != null)
-        {
             existing.Val = TableVerticalAlignmentValues.Center;
-        }
         else
-        {
             props.AppendChild(new TableCellVerticalAlignment { Val = TableVerticalAlignmentValues.Center });
-        }
     }
 
-    private static string FormatCurrency(decimal value) =>
-        Math.Round(value, MidpointRounding.AwayFromZero)
+    private static string FormatCurrency(decimal value)
+    {
+        return Math.Round(value, MidpointRounding.AwayFromZero)
             .ToString("N0", CultureInfo.CurrentCulture);
+    }
 
     /// <summary>
     /// Форматирование значения для меню по логике старого приложения
@@ -555,7 +559,7 @@ public class MenuPrinter
         // Если значение целое, показываем без дробной части
         if (value == Math.Truncate(value))
             return $"{(int)value}{unit}";
-        
+
         return $"{value:F2}{unit}";
     }
 
@@ -570,12 +574,15 @@ public class MenuPrinter
 
             // Получаем все меры для определения округления
             var measures = _productRepository.GetMeasures();
+
             // Обрабатываем дубликаты - берем первую меру с таким названием
-            static Measure PickPreferred(IEnumerable<Measure> candidates) =>
-                candidates
+            static Measure PickPreferred(IEnumerable<Measure> candidates)
+            {
+                return candidates
                     .OrderByDescending(m => m.Fass > 1 ? 1 : 0)
                     .ThenBy(m => m.Id)
                     .First();
+            }
 
             var measuresDict = measures
                 .GroupBy(m => m.Name.ToLower().Trim())
@@ -600,8 +607,10 @@ public class MenuPrinter
                 return null;
             }
 
-            string NormalizeUnit(string unit) =>
-                unit?.Trim().ToLowerInvariant() ?? string.Empty;
+            string NormalizeUnit(string unit)
+            {
+                return unit?.Trim().ToLowerInvariant() ?? string.Empty;
+            }
 
             Measure? FindChildMeasure(string? parentUnit)
             {
@@ -643,18 +652,15 @@ public class MenuPrinter
                 {
                     var parts = menuName.Split(',');
                     if (parts.Length >= 3 && DateTime.TryParse(parts[2].Trim(), out var banquetDate))
-                    {
                         dateText = banquetDate.ToString("dd.MM.yyyy HH:mm");
-                    }
                     else
-                    {
                         dateText = DateTime.Now.ToString("dd.MM.yyyy HH:mm");
-                    }
                 }
                 else
                 {
                     dateText = DateTime.Now.ToString("dd.MM.yyyy HH:mm");
                 }
+
                 dateRun.AppendChild(new Text($"Дата, начало: {dateText}"));
                 infoParagraph.AppendChild(dateRun);
 
@@ -713,9 +719,9 @@ public class MenuPrinter
                                 FormatCurrency(product.TotalPrice)));
                         }
                     }
-                    
+
                     // Add Total Row
-                    var totalSum = groupedList.Sum(g => 
+                    var totalSum = groupedList.Sum(g =>
                         GetGroupedProductsLeft(g).Sum(p => p.TotalPrice));
 
                     var totalRow = new TableRow();
@@ -780,10 +786,7 @@ public class MenuPrinter
                             // The instruction implies initializing it, but doesn't show where.
                             // I'll assume it's initialized in the constructor of the class containing PrintReport.
                             var menu = _menuRepository.GetMenuById(menuId.Value);
-                            if (menu?.ServicePercent != null)
-                            {
-                                currentServicePercent = menu.ServicePercent.Value;
-                            }
+                            if (menu?.ServicePercent != null) currentServicePercent = menu.ServicePercent.Value;
                         }
 
                         // Строка "Подытог" (Сумма за блюда без обслуживания)
@@ -799,12 +802,13 @@ public class MenuPrinter
                         ));
                         subtotalRow.Append(subtotalTitleCell);
 
-                        var totalDishSum = reportData.Sum(p => p.TotalPrice); // Assuming totalDishSum is calculated somewhere
+                        var totalDishSum =
+                            reportData.Sum(p => p.TotalPrice); // Assuming totalDishSum is calculated somewhere
                         var subtotalValueCell = new TableCell();
                         subtotalValueCell.Append(new TableCellProperties(
-                             new TableCellVerticalAlignment { Val = TableVerticalAlignmentValues.Center }
+                            new TableCellVerticalAlignment { Val = TableVerticalAlignmentValues.Center }
                         ));
-                         subtotalValueCell.Append(new Paragraph(
+                        subtotalValueCell.Append(new Paragraph(
                             new ParagraphProperties(new Justification { Val = JustificationValues.Left }),
                             new Run(new RunProperties(new Bold()), new Text(FormatCurrency(totalDishSum)))
                         ));
@@ -813,7 +817,7 @@ public class MenuPrinter
 
                         // Строка "За обслуживание"
                         var serviceAmount = totalDishSum * (currentServicePercent / 100);
-                        
+
                         var serviceRow = new TableRow();
                         var serviceTitleCell = new TableCell();
                         serviceTitleCell.Append(new TableCellProperties(
@@ -822,13 +826,14 @@ public class MenuPrinter
                         ));
                         serviceTitleCell.Append(new Paragraph(
                             new ParagraphProperties(new Justification { Val = JustificationValues.Right }),
-                            new Run(new RunProperties(new Bold()), new Text($"За обслуживание ({currentServicePercent:G}%)"))
+                            new Run(new RunProperties(new Bold()),
+                                new Text($"За обслуживание ({currentServicePercent:G}%)"))
                         ));
                         serviceRow.Append(serviceTitleCell);
 
                         var serviceValueCell = new TableCell();
                         serviceValueCell.Append(new TableCellProperties(
-                             new TableCellVerticalAlignment { Val = TableVerticalAlignmentValues.Center }
+                            new TableCellVerticalAlignment { Val = TableVerticalAlignmentValues.Center }
                         ));
                         serviceValueCell.Append(new Paragraph(
                             new ParagraphProperties(new Justification { Val = JustificationValues.Left }),
@@ -837,8 +842,8 @@ public class MenuPrinter
                         serviceRow.Append(serviceValueCell);
                         table.Append(serviceRow);
 
-                         // Строка ИТОГ
-                         var totalRow = new TableRow();
+                        // Строка ИТОГ
+                        var totalRow = new TableRow();
                     }
 
                     var rows = new List<TempRow>();
@@ -884,6 +889,7 @@ public class MenuPrinter
 
                     body.Append(table);
                 }
+
                 mainPart.Document.Save();
 
                 Process.Start(new ProcessStartInfo(fileName) { UseShellExecute = true });
@@ -897,7 +903,7 @@ public class MenuPrinter
 
                     foreach (var product in groupedProductsLeft)
                     {
-                    var (amountText, unitText) = FormatAmount(product);
+                        var (amountText, unitText) = FormatAmount(product);
                         rows.AddRange(CreateProductRow(product.Name, amountText, unitText));
                     }
 
@@ -956,10 +962,7 @@ public class MenuPrinter
                     var defaultUnit = !string.IsNullOrEmpty(product.Mera) ? product.Mera : "шт";
                     var normalizedUnit = NormalizeUnit(defaultUnit);
 
-                    if (!IsDiscreteUnit(normalizedUnit))
-                    {
-                        return FormatContinuous(product, defaultUnit, normalizedUnit);
-                    }
+                    if (!IsDiscreteUnit(normalizedUnit)) return FormatContinuous(product, defaultUnit, normalizedUnit);
 
                     return FormatDiscrete(product, defaultUnit);
                 }
@@ -994,10 +997,7 @@ public class MenuPrinter
                         normalizedUnit = NormalizeUnit(displayUnit);
 
                         currentMeasure = FindMeasure(product.FassIz) ?? currentMeasure;
-                        if (currentMeasure != null)
-                        {
-                            roundingPrecision = currentMeasure.RoundingPrecision;
-                        }
+                        if (currentMeasure != null) roundingPrecision = currentMeasure.RoundingPrecision;
                     }
 
                     if (currentMeasure != null)
@@ -1009,15 +1009,9 @@ public class MenuPrinter
                                !string.IsNullOrWhiteSpace(currentMeasure.FassIzmer))
                         {
                             var parent = FindMeasure(currentMeasure.FassIzmer);
-                            if (parent == null)
-                            {
-                                break;
-                            }
+                            if (parent == null) break;
 
-                            if (NormalizeUnit(parent.Name) == NormalizeUnit(displayUnit))
-                            {
-                                break;
-                            }
+                            if (NormalizeUnit(parent.Name) == NormalizeUnit(displayUnit)) break;
 
                             totalValue /= currentMeasure.Fass;
                             currentMeasure = parent;
@@ -1031,15 +1025,9 @@ public class MenuPrinter
                         while (totalValue < 1 && hop++ < maxUnitHops)
                         {
                             var child = FindChildMeasure(normalizedUnit);
-                            if (child == null || child.Fass <= 0)
-                            {
-                                break;
-                            }
+                            if (child == null || child.Fass <= 0) break;
 
-                            if (NormalizeUnit(child.Name) == normalizedUnit)
-                            {
-                                break;
-                            }
+                            if (NormalizeUnit(child.Name) == normalizedUnit) break;
 
                             totalValue *= child.Fass;
                             currentMeasure = child;
@@ -1047,10 +1035,7 @@ public class MenuPrinter
                             roundingPrecision = child.RoundingPrecision;
                             normalizedUnit = NormalizeUnit(displayUnit);
 
-                            if (totalValue >= 1)
-                            {
-                                break;
-                            }
+                            if (totalValue >= 1) break;
                         }
                     }
 
@@ -1140,7 +1125,7 @@ public class MenuPrinter
                         borders.Append(new LeftBorder
                             { Val = new EnumValue<BorderValues>(BorderValues.Nil) });
                         borders.Append(new RightBorder
-                            { Val = new EnumValue<BorderValues>(BorderValues.Nil)});
+                            { Val = new EnumValue<BorderValues>(BorderValues.Nil) });
                         props.Append(borders);
 
                         // Добавляем отступы для лучшей видимости

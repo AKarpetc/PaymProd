@@ -12,13 +12,13 @@ using Amazon.S3.Model;
 
 namespace S3UploadTool;
 
-class Program
+internal class Program
 {
     private const string ConfigFileName = "s3config.json";
     private const string DefaultSourceFolder = "files";
     private const string DefaultBucketName = "menu-db"; // Change this to your bucket name
 
-    static async Task Main(string[] args)
+    private static async Task Main(string[] args)
     {
         // Настраиваем кодировку консоли для правильного отображения русского текста
         try
@@ -39,7 +39,7 @@ class Program
             // Ask user if they want to build installer
             Console.Write("Do you want to build installer? (Y/N): ");
             var buildResponse = Console.ReadLine()?.Trim().ToUpperInvariant();
-            
+
             if (buildResponse == "Y" || buildResponse == "YES" || buildResponse == "Д" || buildResponse == "ДА")
             {
                 // Build installer using Inno Setup script
@@ -69,8 +69,8 @@ class Program
                 return;
             }
 
-            var bucketName = !string.IsNullOrWhiteSpace(config.BucketName) 
-                ? config.BucketName 
+            var bucketName = !string.IsNullOrWhiteSpace(config.BucketName)
+                ? config.BucketName
                 : DefaultBucketName;
 
             Console.WriteLine($"Source folder: {DefaultSourceFolder}");
@@ -140,7 +140,7 @@ class Program
     private static S3Config? LoadConfiguration()
     {
         var configPath = Path.Combine(AppContext.BaseDirectory, ConfigFileName);
-        
+
         if (!File.Exists(configPath))
         {
             // Try to find config in solution root
@@ -148,10 +148,7 @@ class Program
             configPath = Path.Combine(solutionRoot, "S3UploadTool", ConfigFileName);
         }
 
-        if (!File.Exists(configPath))
-        {
-            return null;
-        }
+        if (!File.Exists(configPath)) return null;
 
         try
         {
@@ -171,10 +168,7 @@ class Program
 
         while (dir != null)
         {
-            if (File.Exists(Path.Combine(dir.FullName, "PaymProd.sln")))
-            {
-                return dir.FullName;
-            }
+            if (File.Exists(Path.Combine(dir.FullName, "PaymProd.sln"))) return dir.FullName;
             dir = dir.Parent;
         }
 
@@ -269,14 +263,13 @@ class Program
                 {
                     process.Kill();
                     if (!process.WaitForExit(5000))
-                    {
                         Console.WriteLine("WARNING: Process did not terminate within 5 seconds.");
-                    }
                 }
                 catch (Exception killEx)
                 {
                     Console.WriteLine($"Failed to terminate process: {killEx.Message}");
                 }
+
                 Console.WriteLine();
                 return;
             }
@@ -321,12 +314,12 @@ class Program
             // Находим корень решения для определения абсолютных путей к исходному файлу
             var solutionRoot = FindSolutionRoot();
             var sourcePath = Path.Combine(solutionRoot, installerSourcePath);
-            
+
             // Путь к files - относительно базовой директории приложения (где запущена программа)
             // Это соответствует DefaultSourceFolder = "files"
             var baseDirectory = AppContext.BaseDirectory;
             var targetPath = Path.Combine(baseDirectory, installerTargetPath);
-            
+
             // Если папки files нет, пробуем найти её относительно корня решения
             var targetDir = Path.GetDirectoryName(targetPath);
             if (targetDir != null && !Directory.Exists(targetDir))
@@ -334,10 +327,7 @@ class Program
                 // Пробуем путь в S3UploadTool\files
                 var altPath = Path.Combine(solutionRoot, "S3UploadTool", installerTargetPath);
                 var altDir = Path.GetDirectoryName(altPath);
-                if (altDir != null && Directory.Exists(altDir))
-                {
-                    targetPath = altPath;
-                }
+                if (altDir != null && Directory.Exists(altDir)) targetPath = altPath;
             }
 
             // Проверяем, существует ли исходный файл
@@ -357,13 +347,11 @@ class Program
             {
                 // Целевого файла нет - копируем
                 Console.WriteLine($"Target file not found. Copying installer to {installerTargetPath}...");
-                
+
                 // Создаем директорию files, если её нет
                 var targetDirectory = Path.GetDirectoryName(targetPath);
                 if (!string.IsNullOrEmpty(targetDirectory) && !Directory.Exists(targetDirectory))
-                {
                     Directory.CreateDirectory(targetDirectory);
-                }
 
                 File.Copy(sourcePath, targetPath, true);
                 Console.WriteLine("Installer copied successfully.");
@@ -457,7 +445,7 @@ class Program
     }
 }
 
-class S3Config
+internal class S3Config
 {
     public string Endpoint { get; set; } = string.Empty;
     public string AccessKey { get; set; } = string.Empty;

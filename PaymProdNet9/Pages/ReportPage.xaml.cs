@@ -61,7 +61,8 @@ public partial class ReportPage : Page
 
             // Генерируем сводные данные для группировки
             var summaryData = new List<DelicatesCollForSvod>();
-            foreach (var delicate in _menuDelicates.Where(d => d.Lcomp != null && d.Lcomp.Any() && !d.HideInProductReport))
+            foreach (var delicate in _menuDelicates.Where(d =>
+                         d.Lcomp != null && d.Lcomp.Any() && !d.HideInProductReport))
             foreach (var component in delicate.Lcomp)
             {
                 var totalWeight = component.Ves * delicate.Countpor;
@@ -216,7 +217,8 @@ public partial class ReportPage : Page
         {
             _summaryData.Clear();
 
-            foreach (var delicate in _menuDelicates.Where(d => d.Lcomp != null && d.Lcomp.Any() && !d.HideInProductReport))
+            foreach (var delicate in _menuDelicates.Where(d =>
+                         d.Lcomp != null && d.Lcomp.Any() && !d.HideInProductReport))
             foreach (var component in delicate.Lcomp)
             {
                 var totalWeight = component.Ves * delicate.Countpor;

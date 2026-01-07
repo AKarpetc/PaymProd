@@ -9,7 +9,7 @@ namespace PaymProdNet9.Pages;
 public partial class MultiMenuSelectionWindow : Window
 {
     private readonly MenuRepository _menuRepository;
-    
+
     public List<int> SelectedMenuIds { get; private set; } = new();
     public bool IncludePrices { get; private set; }
 
@@ -25,12 +25,12 @@ public partial class MultiMenuSelectionWindow : Window
         var menus = _menuRepository.GetAllMenus();
         // Sort descending by date (using Id roughly or parsing date currently stored as string)
         var items = menus.OrderByDescending(m => m.Id)
-                         .Select(m => new MenuSelectionItem 
-                         { 
-                             Menu = m,
-                             IsSelected = preSelectedIds != null && preSelectedIds.Contains(m.Id)
-                         })
-                         .ToList();
+            .Select(m => new MenuSelectionItem
+            {
+                Menu = m,
+                IsSelected = preSelectedIds != null && preSelectedIds.Contains(m.Id)
+            })
+            .ToList();
         MenusDataGrid.ItemsSource = items;
     }
 

@@ -29,7 +29,7 @@ public partial class EditMenuWindow : Window
 
     private void GuestsTextBox_PreviewTextInput(object sender, TextCompositionEventArgs e)
     {
-         InputValidationHelper.IntegerOnly_PreviewTextInput(sender, e);
+        InputValidationHelper.IntegerOnly_PreviewTextInput(sender, e);
     }
 
     private void Save_Click(object sender, RoutedEventArgs e)
@@ -42,8 +42,9 @@ public partial class EditMenuWindow : Window
 
         if (!int.TryParse(GuestsTextBox.Text, out var guests) || guests <= 0)
         {
-             MessageBox.Show("Введите корректное количество гостей.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
-             return;
+            MessageBox.Show("Введите корректное количество гостей.", "Ошибка", MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+            return;
         }
 
         BanquetName = NameTextBox.Text;

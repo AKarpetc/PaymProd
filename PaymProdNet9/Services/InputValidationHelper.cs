@@ -55,16 +55,16 @@ public static class InputValidationHelper
         var currentText = textBox.Text ?? string.Empty;
         var selectionStart = textBox.SelectionStart;
         var selectionLength = textBox.SelectionLength;
-        var newText = currentText.Substring(0, selectionStart) + 
-                     e.Text + 
-                     currentText.Substring(selectionStart + selectionLength);
+        var newText = currentText.Substring(0, selectionStart) +
+                      e.Text +
+                      currentText.Substring(selectionStart + selectionLength);
 
         // Проверяем, что значение не превышает максимум
         if (!string.IsNullOrWhiteSpace(newText) && newText != decimalSeparator)
         {
             // Удаляем разделитель для проверки максимального значения
             var textForCheck = newText.Replace(decimalSeparator, string.Empty);
-            
+
             // Проверяем, что это число
             if (long.TryParse(textForCheck, out var numericValue))
             {
@@ -111,22 +111,18 @@ public static class InputValidationHelper
         var currentText = textBox.Text ?? string.Empty;
         var selectionStart = textBox.SelectionStart;
         var selectionLength = textBox.SelectionLength;
-        var newText = currentText.Substring(0, selectionStart) + 
-                     e.Text + 
-                     currentText.Substring(selectionStart + selectionLength);
+        var newText = currentText.Substring(0, selectionStart) +
+                      e.Text +
+                      currentText.Substring(selectionStart + selectionLength);
 
         // Проверяем, что значение не превышает максимум
         if (!string.IsNullOrWhiteSpace(newText))
-        {
             if (long.TryParse(newText, out var numericValue))
-            {
                 if (numericValue > MaxNumericValue || numericValue < 0)
                 {
                     e.Handled = true;
                     return;
                 }
-            }
-        }
     }
 
     /// <summary>
@@ -145,13 +141,8 @@ public static class InputValidationHelper
         {
             // Проверяем диапазон
             if (value < 0)
-            {
                 textBox.Text = "0";
-            }
-            else if (value > MaxNumericValue)
-            {
-                textBox.Text = MaxNumericValue.ToString(CultureInfo.CurrentCulture);
-            }
+            else if (value > MaxNumericValue) textBox.Text = MaxNumericValue.ToString(CultureInfo.CurrentCulture);
         }
         else
         {
@@ -176,13 +167,8 @@ public static class InputValidationHelper
         {
             // Проверяем диапазон
             if (value < 0)
-            {
                 textBox.Text = "0";
-            }
-            else if (value > MaxNumericValue)
-            {
-                textBox.Text = MaxNumericValue.ToString(CultureInfo.CurrentCulture);
-            }
+            else if (value > MaxNumericValue) textBox.Text = MaxNumericValue.ToString(CultureInfo.CurrentCulture);
         }
         else
         {
@@ -207,4 +193,3 @@ public static class InputValidationHelper
         }
     }
 }
-

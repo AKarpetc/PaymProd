@@ -71,12 +71,9 @@ public partial class MainWindow : Window
         try
         {
             var directory = Path.GetDirectoryName(_dbPath!);
-            if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
-            {
-                Directory.CreateDirectory(directory);
-            }
+            if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory)) Directory.CreateDirectory(directory);
 
-            var result = await UpdateService.TryDownloadStartDatabaseAsync(_dbPath!, this, replaceExisting: true, silentSuccess: false);
+            var result = await UpdateService.TryDownloadStartDatabaseAsync(_dbPath!, this, true, false);
             if (result)
             {
                 await LoadTablesAsync();
@@ -85,7 +82,8 @@ public partial class MainWindow : Window
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Ошибка при скачивании стартовой базы:\n{ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+            MessageBox.Show($"Ошибка при скачивании стартовой базы:\n{ex.Message}", "Ошибка", MessageBoxButton.OK,
+                MessageBoxImage.Error);
         }
     }
 
@@ -133,14 +131,12 @@ public partial class MainWindow : Window
             await connection.OpenAsync();
 
             var cmd = connection.CreateCommand();
-            cmd.CommandText = "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name";
+            cmd.CommandText =
+                "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name";
 
             using var reader = await cmd.ExecuteReaderAsync();
             var names = new List<string>();
-            while (await reader.ReadAsync())
-            {
-                names.Add(reader.GetString(0));
-            }
+            while (await reader.ReadAsync()) names.Add(reader.GetString(0));
 
             TablesListBox.ItemsSource = names;
 
@@ -152,7 +148,8 @@ public partial class MainWindow : Window
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Ошибка при загрузке списка таблиц:\n{ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+            MessageBox.Show($"Ошибка при загрузке списка таблиц:\n{ex.Message}", "Ошибка", MessageBoxButton.OK,
+                MessageBoxImage.Error);
         }
     }
 
@@ -180,13 +177,15 @@ public partial class MainWindow : Window
             var affected = await cmd.ExecuteNonQueryAsync();
             transaction.Commit();
 
-            MessageBox.Show($"Готово. Обновлено строк: {affected}.", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageBox.Show($"Готово. Обновлено строк: {affected}.", "Успех", MessageBoxButton.OK,
+                MessageBoxImage.Information);
 
             await ReloadTableAsync();
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Ошибка при перестановке флагов:\n{ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+            MessageBox.Show($"Ошибка при перестановке флагов:\n{ex.Message}", "Ошибка", MessageBoxButton.OK,
+                MessageBoxImage.Error);
         }
     }
 
@@ -209,13 +208,14 @@ public partial class MainWindow : Window
                     return;
 
                 SqliteConnection.ClearAllPools();
-                File.Copy(_dbPath, dialog.FileName, overwrite: true);
+                File.Copy(_dbPath, dialog.FileName, true);
                 MessageBox.Show("База данных сохранена.", "Готово", MessageBoxButton.OK, MessageBoxImage.Information);
             }
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Ошибка при сохранении базы:\n{ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+            MessageBox.Show($"Ошибка при сохранении базы:\n{ex.Message}", "Ошибка", MessageBoxButton.OK,
+                MessageBoxImage.Error);
         }
     }
 
@@ -263,11 +263,13 @@ public partial class MainWindow : Window
         catch (Exception ex)
         {
             SqlStatusTextBlock.Text = $"Ошибка: {ex.Message}";
-            MessageBox.Show($"Ошибка при выполнении SQL:\n{ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+            MessageBox.Show($"Ошибка при выполнении SQL:\n{ex.Message}", "Ошибка", MessageBoxButton.OK,
+                MessageBoxImage.Error);
         }
     }
 
-    private async void TablesListBox_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+    private async void TablesListBox_SelectionChanged(object sender,
+        System.Windows.Controls.SelectionChangedEventArgs e)
     {
         await ReloadTableAsync();
     }
@@ -312,32 +314,33 @@ public partial class MainWindow : Window
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Ошибка при загрузке данных таблицы '{tableName}':\n{ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+            MessageBox.Show($"Ошибка при загрузке данных таблицы '{tableName}':\n{ex.Message}", "Ошибка",
+                MessageBoxButton.OK, MessageBoxImage.Error);
             Logger.Error($"DBTool: ReloadTableAsync error for table '{tableName}'", ex);
         }
     }
 
-    private void ProductsGrid_AutoGeneratingColumn(object sender, System.Windows.Controls.DataGridAutoGeneratingColumnEventArgs e)
+    private void ProductsGrid_AutoGeneratingColumn(object sender,
+        System.Windows.Controls.DataGridAutoGeneratingColumnEventArgs e)
     {
-        if (e.PropertyName == RowIdColumnName)
-        {
-            e.Cancel = true; // скрываем служебный столбец с rowid
-        }
+        if (e.PropertyName == RowIdColumnName) e.Cancel = true; // скрываем служебный столбец с rowid
     }
 
-    private async void ProductsGrid_RowEditEnding(object sender, System.Windows.Controls.DataGridRowEditEndingEventArgs e)
+    private async void ProductsGrid_RowEditEnding(object sender,
+        System.Windows.Controls.DataGridRowEditEndingEventArgs e)
     {
         // Больше ничего не делаем здесь, чтобы избежать рекурсии CommitEdit;
         // фактическое сохранение переносим в CellEditEnding.
         await Task.CompletedTask;
     }
 
-    private async void ProductsGrid_CellEditEnding(object sender, System.Windows.Controls.DataGridCellEditEndingEventArgs e)
+    private async void ProductsGrid_CellEditEnding(object sender,
+        System.Windows.Controls.DataGridCellEditEndingEventArgs e)
     {
         if (_currentTable is null || string.IsNullOrWhiteSpace(_currentTableName))
             return;
 
-        if (e.Row.Item is not System.Data.DataRowView rowView)
+        if (e.Row.Item is not DataRowView rowView)
             return;
 
         var row = rowView.Row;
@@ -353,9 +356,7 @@ public partial class MainWindow : Window
         if (e.Column is System.Windows.Controls.DataGridBoundColumn bound
             && bound.Binding is System.Windows.Data.Binding binding
             && binding.Path != null)
-        {
             columnName = binding.Path.Path;
-        }
 
         if (string.IsNullOrWhiteSpace(columnName) || columnName == RowIdColumnName)
             return;
@@ -363,21 +364,16 @@ public partial class MainWindow : Window
         // Получаем новое значение из UI-элемента
         object? newValue = null;
         if (e.EditingElement is System.Windows.Controls.TextBox tb)
-        {
             newValue = string.IsNullOrWhiteSpace(tb.Text) ? DBNull.Value : tb.Text;
-        }
         else if (e.EditingElement is System.Windows.Controls.CheckBox cb)
-        {
             newValue = cb.IsChecked == true ? 1 : 0;
-        }
         else
-        {
             newValue = row[columnName] ?? DBNull.Value;
-        }
 
         try
         {
-            Logger.Info($"DBTool: CellEditEnding. Table={_currentTableName}, RowId={rowId}, Column={columnName}, NewValue={newValue}");
+            Logger.Info(
+                $"DBTool: CellEditEnding. Table={_currentTableName}, RowId={rowId}, Column={columnName}, NewValue={newValue}");
 
             using var connection = CreateConnection();
             await connection.OpenAsync();
@@ -409,8 +405,11 @@ public partial class MainWindow : Window
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Ошибка при сохранении значения:\n{ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
-            Logger.Error($"DBTool: CellEditEnding save error. Table={_currentTableName}, RowId={rowId}, Column={columnName}", ex);
+            MessageBox.Show($"Ошибка при сохранении значения:\n{ex.Message}", "Ошибка", MessageBoxButton.OK,
+                MessageBoxImage.Error);
+            Logger.Error(
+                $"DBTool: CellEditEnding save error. Table={_currentTableName}, RowId={rowId}, Column={columnName}",
+                ex);
         }
     }
 }

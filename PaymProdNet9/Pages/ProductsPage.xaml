@@ -133,12 +133,15 @@
                                         </Grid>
                                         <DataTemplate.Triggers>
                                             <DataTrigger Binding="{Binding IsDeleted}" Value="True">
-                                                <Setter TargetName="DeleteButton" Property="Visibility" Value="Collapsed" />
-                                                <Setter TargetName="RestoreButton" Property="Visibility" Value="Visible" />
+                                                <Setter TargetName="DeleteButton" Property="Visibility"
+                                                        Value="Collapsed" />
+                                                <Setter TargetName="RestoreButton" Property="Visibility"
+                                                        Value="Visible" />
                                             </DataTrigger>
                                             <DataTrigger Binding="{Binding IsDeleted}" Value="False">
                                                 <Setter TargetName="DeleteButton" Property="Visibility" Value="Visible" />
-                                                <Setter TargetName="RestoreButton" Property="Visibility" Value="Collapsed" />
+                                                <Setter TargetName="RestoreButton" Property="Visibility"
+                                                        Value="Collapsed" />
                                             </DataTrigger>
                                         </DataTemplate.Triggers>
                                     </DataTemplate>
@@ -186,11 +189,12 @@
                             <DataGridTemplateColumn Header="Авто в отчет" Width="*">
                                 <DataGridTemplateColumn.HeaderTemplate>
                                     <DataTemplate>
-                                        <StackPanel Orientation="Horizontal" ToolTip="Автоматически добавляется в отчет по товарам">
+                                        <StackPanel Orientation="Horizontal"
+                                                    ToolTip="Автоматически добавляется в отчет по товарам">
                                             <TextBlock Text="Авто в отчет" />
-                                            <materialDesign:PackIcon Kind="Information" 
-                                                                     Width="14" 
-                                                                     Height="14" 
+                                            <materialDesign:PackIcon Kind="Information"
+                                                                     Width="14"
+                                                                     Height="14"
                                                                      Foreground="#2196F3"
                                                                      Margin="3,0,0,0"
                                                                      VerticalAlignment="Center" />
@@ -389,23 +393,28 @@
 
                             <StackPanel Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="3" Margin="0,10,0,0">
                                 <CheckBox x:Name="ProductAddToDishesCheckBox" Margin="0,5">
-                                    <TextBlock Text="Добавить в блюда" TextWrapping="Wrap"/>
+                                    <TextBlock Text="Добавить в блюда" TextWrapping="Wrap" />
                                 </CheckBox>
-                                <CheckBox x:Name="ProductAutoAddCheckBox" Margin="0,5" ToolTip="Если отмечено, продукт автоматически добавляется в отчет по товарам в раздел 'Хозтовары' при генерации отчета для текущего меню">
+                                <CheckBox x:Name="ProductAutoAddCheckBox" Margin="0,5"
+                                          ToolTip="Если отмечено, продукт автоматически добавляется в отчет по товарам в раздел 'Хозтовары' при генерации отчета для текущего меню">
                                     <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="Автоматически добавлять в отчет" TextWrapping="Wrap" FontWeight="SemiBold"/>
+                                        <TextBlock Text="Автоматически добавлять в отчет" TextWrapping="Wrap"
+                                                   FontWeight="SemiBold" />
                                     </StackPanel>
                                 </CheckBox>
                                 <CheckBox x:Name="ProductMainCountCheckBox" Margin="0,5">
-                                    <TextBlock Text="Общее количество (не по граммовке, а общее число на весь банкет)" TextWrapping="Wrap"/>
+                                    <TextBlock Text="Общее количество (не по граммовке, а общее число на весь банкет)"
+                                               TextWrapping="Wrap" />
                                 </CheckBox>
                                 <CheckBox x:Name="ProductHideInMenuCheckBox" Margin="0,5"
                                           ToolTip="Если отмечено, продукт не выводится в отчете меню, но учитывается в отчете по продуктам">
-                                    <TextBlock Text="Не показывать этот продукт в меню (только в отчете по продуктам)" TextWrapping="Wrap"/>
+                                    <TextBlock Text="Не показывать этот продукт в меню (только в отчете по продуктам)"
+                                               TextWrapping="Wrap" />
                                 </CheckBox>
                                 <CheckBox x:Name="ProductDoNotConvertToPackInMenuCheckBox" Margin="0,5"
                                           ToolTip="Если отмечено, в отчете по меню продукт будет показан в основной единице, без пересчета в фасовку">
-                                    <TextBlock Text="Не переводить в фасованные в меню (отчет по меню)" TextWrapping="Wrap"/>
+                                    <TextBlock Text="Не переводить в фасованные в меню (отчет по меню)"
+                                               TextWrapping="Wrap" />
                                 </CheckBox>
                             </StackPanel>
                         </Grid>

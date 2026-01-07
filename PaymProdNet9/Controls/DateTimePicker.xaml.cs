@@ -27,22 +27,22 @@ public partial class DateTimePicker : UserControl
     public DateTimePicker()
     {
         InitializeComponent();
-        
+
         // Устанавливаем русскую локализацию для DatePicker
         var culture = new CultureInfo("ru-RU");
         DatePickerControl.Language = XmlLanguage.GetLanguage(culture.IetfLanguageTag);
-        
+
         // Инициализируем ComboBox для часов (0-23)
         HoursComboBox.ItemsSource = Enumerable.Range(0, 24).Select(h => h.ToString("00")).ToList();
-        
+
         // Инициализируем ComboBox для минут (0-59 с шагом 1)
         MinutesComboBox.ItemsSource = Enumerable.Range(0, 60).Select(m => m.ToString("00")).ToList();
-        
+
         // Устанавливаем текущее время по умолчанию
         var now = DateTime.Now;
         HoursComboBox.SelectedItem = now.Hour.ToString("00");
         MinutesComboBox.SelectedItem = now.Minute.ToString("00");
-        
+
         DatePickerControl.SelectedDateChanged += DatePicker_SelectedDateChanged;
     }
 
@@ -84,7 +84,7 @@ public partial class DateTimePicker : UserControl
                     picker.HoursComboBox.SelectedItem = null;
                     picker.MinutesComboBox.SelectedItem = null;
                 }
-                
+
                 // Вызываем событие
                 picker.RaiseEvent(new RoutedEventArgs(SelectedDateTimeChangedEvent));
             }
@@ -124,18 +124,12 @@ public partial class DateTimePicker : UserControl
 
     private void DatePicker_SelectedDateChanged(object? sender, SelectionChangedEventArgs e)
     {
-        if (!_isUpdating)
-        {
-            UpdateSelectedDateTime();
-        }
+        if (!_isUpdating) UpdateSelectedDateTime();
     }
 
     private void TimeSelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        if (!_isUpdating)
-        {
-            UpdateSelectedDateTime();
-        }
+        if (!_isUpdating) UpdateSelectedDateTime();
     }
 
     private void UpdateSelectedDateTime()
@@ -150,10 +144,7 @@ public partial class DateTimePicker : UserControl
             {
                 var oldValue = SelectedDateTime;
                 SelectedDateTime = null;
-                if (oldValue != SelectedDateTime)
-                {
-                    RaiseEvent(new RoutedEventArgs(SelectedDateTimeChangedEvent));
-                }
+                if (oldValue != SelectedDateTime) RaiseEvent(new RoutedEventArgs(SelectedDateTimeChangedEvent));
                 return;
             }
 
@@ -161,28 +152,19 @@ public partial class DateTimePicker : UserControl
             var hoursStr = HoursComboBox.SelectedItem?.ToString();
             var minutesStr = MinutesComboBox.SelectedItem?.ToString();
 
-            int hours = 0;
-            int minutes = 0;
+            var hours = 0;
+            var minutes = 0;
 
-            if (!string.IsNullOrEmpty(hoursStr) && int.TryParse(hoursStr, out var h))
-            {
-                hours = h;
-            }
+            if (!string.IsNullOrEmpty(hoursStr) && int.TryParse(hoursStr, out var h)) hours = h;
 
-            if (!string.IsNullOrEmpty(minutesStr) && int.TryParse(minutesStr, out var m))
-            {
-                minutes = m;
-            }
+            if (!string.IsNullOrEmpty(minutesStr) && int.TryParse(minutesStr, out var m)) minutes = m;
 
             var time = new TimeSpan(hours, minutes, 0);
             var oldDateTime = SelectedDateTime;
             SelectedDateTime = date.Value.Date + time;
             SelectedDate = date.Value.Date;
-            
-            if (oldDateTime != SelectedDateTime)
-            {
-                RaiseEvent(new RoutedEventArgs(SelectedDateTimeChangedEvent));
-            }
+
+            if (oldDateTime != SelectedDateTime) RaiseEvent(new RoutedEventArgs(SelectedDateTimeChangedEvent));
         }
         finally
         {

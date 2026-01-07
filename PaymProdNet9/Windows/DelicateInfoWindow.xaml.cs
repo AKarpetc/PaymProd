@@ -16,4 +16,3 @@ public partial class DelicateInfoWindow : Window
         Close();
     }
 }
-

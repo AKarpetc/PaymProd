@@ -210,13 +210,9 @@ public partial class DelicatesPage : Page
         EditViewPanel.Visibility = Visibility.Visible;
 
         if (isEdit)
-        {
             SaveButton.Content = "💾 Сохранить изменения";
-        }
         else
-        {
             SaveButton.Content = "💾 Создать блюдо";
-        }
     }
 
     /// <summary>
@@ -305,7 +301,8 @@ public partial class DelicatesPage : Page
             // Продукты с отрицательным ID нельзя редактировать (только для чтения)
             if (delicate.Id < 0)
             {
-                MessageBox.Show("Этот продукт доступен только для чтения. Для редактирования используйте справочник продуктов.",
+                MessageBox.Show(
+                    "Этот продукт доступен только для чтения. Для редактирования используйте справочник продуктов.",
                     "Информация", MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
@@ -391,7 +388,8 @@ public partial class DelicatesPage : Page
             {
                 // Обновление существующего блюда
                 _delicateRepository.UpdateDelicate(
-                    _currentDelicateId.Value, typeId, DelicateNameTextBox.Text, ves, count, autoAdd, hideInMenu, hideInProductReport);
+                    _currentDelicateId.Value, typeId, DelicateNameTextBox.Text, ves, count, autoAdd, hideInMenu,
+                    hideInProductReport);
 
                 // Сохранение компонентов
                 SaveDelicateComponents(_currentDelicateId.Value);
@@ -400,16 +398,15 @@ public partial class DelicatesPage : Page
                     "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
 
                 // Если включен флаг автодобавления, пробуем добавить блюдо в текущее открытое меню
-                if (autoAdd)
-                {
-                    TryAutoAddDelicateToOpenMenu(_currentDelicateId.Value);
-                }
+                if (autoAdd) TryAutoAddDelicateToOpenMenu(_currentDelicateId.Value);
             }
             else
             {
                 // Создание нового блюда
-                Logger.Debug($"Создание нового блюда: {DelicateNameTextBox.Text}, компонентов в списке: {_currentDelicateComponents.Count}");
-                var newId = _delicateRepository.AddDelicate(typeId, DelicateNameTextBox.Text, ves, count, autoAdd, hideInMenu, hideInProductReport);
+                Logger.Debug(
+                    $"Создание нового блюда: {DelicateNameTextBox.Text}, компонентов в списке: {_currentDelicateComponents.Count}");
+                var newId = _delicateRepository.AddDelicate(typeId, DelicateNameTextBox.Text, ves, count, autoAdd,
+                    hideInMenu, hideInProductReport);
                 _currentDelicateId = newId;
                 Logger.Debug($"Блюдо создано с ID: {newId}");
 
@@ -420,10 +417,7 @@ public partial class DelicatesPage : Page
                     "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
 
                 // Если включен флаг автодобавления, пробуем добавить блюдо в текущее открытое меню
-                if (autoAdd)
-                {
-                    TryAutoAddDelicateToOpenMenu(newId);
-                }
+                if (autoAdd) TryAutoAddDelicateToOpenMenu(newId);
             }
 
             // Перечитываем список и сохраняем фильтр поиска
@@ -445,7 +439,8 @@ public partial class DelicatesPage : Page
     {
         try
         {
-            Logger.Debug($"Сохранение компонентов для блюда ID={delicateId}, количество компонентов: {_currentDelicateComponents.Count}");
+            Logger.Debug(
+                $"Сохранение компонентов для блюда ID={delicateId}, количество компонентов: {_currentDelicateComponents.Count}");
 
             // Удаляем старые компоненты
             var existing = _delicateRepository.GetDelicateById(delicateId);
@@ -457,18 +452,15 @@ public partial class DelicatesPage : Page
             }
 
             // Добавляем новые компоненты
-            int savedCount = 0;
+            var savedCount = 0;
             foreach (var component in _currentDelicateComponents)
             {
                 Logger.Debug($"Компонент: {component.NameT}, ProdID={component.Prodid}, Ves={component.Ves}");
-                
+
                 // Сохраняем компонент даже если вес = 0 (может быть указан позже)
                 // Но предупреждаем пользователя
-                if (component.Ves <= 0)
-                {
-                    Logger.Warning($"Компонент '{component.NameT}' имеет вес 0, но будет сохранен");
-                }
-                
+                if (component.Ves <= 0) Logger.Warning($"Компонент '{component.NameT}' имеет вес 0, но будет сохранен");
+
                 _delicateRepository.AddComponent(delicateId, component.Prodid, component.Ves);
                 savedCount++;
             }
@@ -508,7 +500,8 @@ public partial class DelicatesPage : Page
             // Продукты с отрицательным ID нельзя удалять (только для чтения)
             if (delicate.Id < 0)
             {
-                MessageBox.Show("Этот продукт доступен только для чтения. Для удаления используйте справочник продуктов.",
+                MessageBox.Show(
+                    "Этот продукт доступен только для чтения. Для удаления используйте справочник продуктов.",
                     "Информация", MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
@@ -584,7 +577,9 @@ public partial class DelicatesPage : Page
                 Prodid = selectedProduct.ID,
                 NameT = selectedProduct.Name,
                 Ves = 0,
-                Mera = !string.IsNullOrWhiteSpace(selectedProduct.Ves) ? selectedProduct.Ves : "г" // Основная единица измерения
+                Mera = !string.IsNullOrWhiteSpace(selectedProduct.Ves)
+                    ? selectedProduct.Ves
+                    : "г" // Основная единица измерения
             };
 
             _currentDelicateComponents.Add(component);
@@ -655,17 +650,12 @@ public partial class DelicatesPage : Page
         {
             var openMenu = _menuRepository.GetOpenMenu();
             if (openMenu == null)
-            {
                 // Нет открытого меню — просто выходим
                 return;
-            }
 
             // Проверяем, нет ли уже такого блюда в меню
             var menuDelicates = _menuRepository.GetMenuDelicates(openMenu.Id);
-            if (menuDelicates.Any(md => md.Del_id == delicateId))
-            {
-                return;
-            }
+            if (menuDelicates.Any(md => md.Del_id == delicateId)) return;
 
             Logger.Debug($"Автоматическое добавление блюда ID={delicateId} в открытое меню ID={openMenu.Id}");
             _menuRepository.AddDelicateToMenu(openMenu.Id, delicateId, openMenu.CountP);

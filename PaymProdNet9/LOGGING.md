@@ -56,6 +56,7 @@ using var reader = command.ExecuteReaderWithLog();
 ### Где найти логи
 
 Логи сохраняются в:
+
 - Windows: `%LocalAppData%\PaymProdNet9\Logs\PaymProd_YYYYMMDD.log`
 - Консоль (с цветовой подсветкой)
 

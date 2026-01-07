@@ -44,12 +44,10 @@ public static class S3UploadService
         endpoint ??= "https://storage.yandexcloud.kz";
 
         if (string.IsNullOrWhiteSpace(accessKey) || string.IsNullOrWhiteSpace(secretKey))
-        {
             throw new InvalidOperationException(
                 "Не заданы ключи доступа для S3. " +
                 "Установите переменные окружения PAYMPROD_S3_ACCESS_KEY / PAYMPROD_S3_SECRET_KEY " +
                 "или создайте файл s3settings.local.json рядом с исполняемым файлом.");
-        }
 
         var credentials = new BasicAWSCredentials(accessKey, secretKey);
 
@@ -133,10 +131,9 @@ public static class S3UploadService
 
         var response = await client.PutObjectAsync(request);
 
-        Logger.Info($"Файл '{localPath}' загружен в S3: bucket={DefaultBucketName}, key={key}, HTTP {response.HttpStatusCode}");
+        Logger.Info(
+            $"Файл '{localPath}' загружен в S3: bucket={DefaultBucketName}, key={key}, HTTP {response.HttpStatusCode}");
 
         return key;
     }
 }
-
-

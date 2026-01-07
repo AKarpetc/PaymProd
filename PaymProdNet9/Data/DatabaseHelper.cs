@@ -22,10 +22,9 @@ public static class DatabaseHelper
                 var appDataDir = Path.Combine(
                     Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                     "PaymProdNet9");
-                
+
                 // Убедимся что директория существует
                 if (!Directory.Exists(appDataDir))
-                {
                     try
                     {
                         Directory.CreateDirectory(appDataDir);
@@ -35,7 +34,6 @@ public static class DatabaseHelper
                         Services.Logger.Error($"Не удалось создать директорию для базы данных: {appDataDir}", ex);
                         throw;
                     }
-                }
 
                 var dbPath = Path.Combine(appDataDir, "MenuCalc.db");
                 _connectionString = $"Data Source={dbPath}";
@@ -76,10 +74,10 @@ public static class DatabaseHelper
                 // Если по какой-то причине PRAGMA не применились, просто продолжаем с настройками по умолчанию
             }
 
-        var command = connection.CreateCommand();
+            var command = connection.CreateCommand();
 
-        // Создание таблицы мер
-        command.CommandText = @"
+            // Создание таблицы мер
+            command.CommandText = @"
             CREATE TABLE IF NOT EXISTS Mera (
                 Mera_ID INTEGER PRIMARY KEY AUTOINCREMENT,
                 Name_Mera TEXT NOT NULL,
@@ -89,43 +87,43 @@ public static class DatabaseHelper
                 MenuRoundingPrecision INTEGER DEFAULT 2,
                 IsDeleted INTEGER DEFAULT 0
             );";
-        command.ExecuteNonQuery();
-
-        // Миграция: добавляем RoundingPrecision, если его нет
-        try
-        {
-            command.CommandText = "ALTER TABLE Mera ADD COLUMN RoundingPrecision INTEGER DEFAULT 2";
             command.ExecuteNonQuery();
-        }
-        catch
-        {
-            // Колонка уже существует, игнорируем ошибку
-        }
 
-        // Миграция: добавляем MenuRoundingPrecision, если его нет
-        try
-        {
-            command.CommandText = "ALTER TABLE Mera ADD COLUMN MenuRoundingPrecision INTEGER DEFAULT 2";
-            command.ExecuteNonQuery();
-        }
-        catch
-        {
-            // Колонка уже существует, игнорируем ошибку
-        }
+            // Миграция: добавляем RoundingPrecision, если его нет
+            try
+            {
+                command.CommandText = "ALTER TABLE Mera ADD COLUMN RoundingPrecision INTEGER DEFAULT 2";
+                command.ExecuteNonQuery();
+            }
+            catch
+            {
+                // Колонка уже существует, игнорируем ошибку
+            }
 
-        // Миграция: добавляем IsDeleted для мер, если его нет
-        try
-        {
-            command.CommandText = "ALTER TABLE Mera ADD COLUMN IsDeleted INTEGER DEFAULT 0";
-            command.ExecuteNonQuery();
-        }
-        catch
-        {
-            // Колонка уже существует, игнорируем ошибку
-        }
+            // Миграция: добавляем MenuRoundingPrecision, если его нет
+            try
+            {
+                command.CommandText = "ALTER TABLE Mera ADD COLUMN MenuRoundingPrecision INTEGER DEFAULT 2";
+                command.ExecuteNonQuery();
+            }
+            catch
+            {
+                // Колонка уже существует, игнорируем ошибку
+            }
 
-        // Создание таблицы типов продуктов
-        command.CommandText = @"
+            // Миграция: добавляем IsDeleted для мер, если его нет
+            try
+            {
+                command.CommandText = "ALTER TABLE Mera ADD COLUMN IsDeleted INTEGER DEFAULT 0";
+                command.ExecuteNonQuery();
+            }
+            catch
+            {
+                // Колонка уже существует, игнорируем ошибку
+            }
+
+            // Создание таблицы типов продуктов
+            command.CommandText = @"
             CREATE TABLE IF NOT EXISTS Produkt_Type (
                 TypeProdId INTEGER PRIMARY KEY AUTOINCREMENT,
                 Type_Opis TEXT NOT NULL,
@@ -133,32 +131,32 @@ public static class DatabaseHelper
                 HideInMenu INTEGER DEFAULT 0,
                 IsDeleted INTEGER DEFAULT 0
             );";
-        command.ExecuteNonQuery();
-
-        // Миграция: добавляем SortOrder, если его нет
-        try
-        {
-            command.CommandText = "ALTER TABLE Produkt_Type ADD COLUMN SortOrder INTEGER DEFAULT 0";
             command.ExecuteNonQuery();
-        }
-        catch
-        {
-            // Колонка уже существует, игнорируем ошибку
-        }
 
-        // Миграция: добавляем IsDeleted для типов продуктов, если его нет
-        try
-        {
-            command.CommandText = "ALTER TABLE Produkt_Type ADD COLUMN IsDeleted INTEGER DEFAULT 0";
-            command.ExecuteNonQuery();
-        }
-        catch
-        {
-            // Колонка уже существует, игнорируем ошибку
-        }
+            // Миграция: добавляем SortOrder, если его нет
+            try
+            {
+                command.CommandText = "ALTER TABLE Produkt_Type ADD COLUMN SortOrder INTEGER DEFAULT 0";
+                command.ExecuteNonQuery();
+            }
+            catch
+            {
+                // Колонка уже существует, игнорируем ошибку
+            }
 
-        // Создание таблицы продуктов
-        command.CommandText = @"
+            // Миграция: добавляем IsDeleted для типов продуктов, если его нет
+            try
+            {
+                command.CommandText = "ALTER TABLE Produkt_Type ADD COLUMN IsDeleted INTEGER DEFAULT 0";
+                command.ExecuteNonQuery();
+            }
+            catch
+            {
+                // Колонка уже существует, игнорируем ошибку
+            }
+
+            // Создание таблицы продуктов
+            command.CommandText = @"
             CREATE TABLE IF NOT EXISTS Producrs (
                 Prod_ID INTEGER PRIMARY KEY AUTOINCREMENT,
                 Name TEXT NOT NULL,
@@ -178,10 +176,10 @@ public static class DatabaseHelper
                 FOREIGN KEY (Ves) REFERENCES Mera(Mera_ID),
                 FOREIGN KEY (Izmer) REFERENCES Mera(Mera_ID)
             );";
-        command.ExecuteNonQuery();
+            command.ExecuteNonQuery();
 
-        // Создание таблицы типов блюд
-        command.CommandText = @"
+            // Создание таблицы типов блюд
+            command.CommandText = @"
             CREATE TABLE IF NOT EXISTS Type_Del (
                 Type_Del_ID INTEGER PRIMARY KEY AUTOINCREMENT,
                 Type_del_opis TEXT NOT NULL,
@@ -189,76 +187,76 @@ public static class DatabaseHelper
                 LinkedProductTypeId INTEGER,
                 IsDeleted INTEGER DEFAULT 0
             );";
-        command.ExecuteNonQuery();
-
-        // Миграция: добавляем SortOrder, если его нет
-        try
-        {
-            command.CommandText = "ALTER TABLE Type_Del ADD COLUMN SortOrder INTEGER DEFAULT 0";
             command.ExecuteNonQuery();
-        }
-        catch
-        {
-            // Колонка уже существует, игнорируем ошибку
-        }
 
-        // Миграция: добавляем LinkedProductTypeId, если его нет
-        try
-        {
-            command.CommandText = "ALTER TABLE Type_Del ADD COLUMN LinkedProductTypeId INTEGER";
-            command.ExecuteNonQuery();
-        }
-        catch
-        {
-            // Колонка уже существует
-        }
+            // Миграция: добавляем SortOrder, если его нет
+            try
+            {
+                command.CommandText = "ALTER TABLE Type_Del ADD COLUMN SortOrder INTEGER DEFAULT 0";
+                command.ExecuteNonQuery();
+            }
+            catch
+            {
+                // Колонка уже существует, игнорируем ошибку
+            }
 
-        // Миграция: добавляем IsDeleted для типов блюд, если его нет
-        try
-        {
-            command.CommandText = "ALTER TABLE Type_Del ADD COLUMN IsDeleted INTEGER DEFAULT 0";
-            command.ExecuteNonQuery();
-        }
-        catch
-        {
-            // Колонка уже существует, игнорируем ошибку
-        }
+            // Миграция: добавляем LinkedProductTypeId, если его нет
+            try
+            {
+                command.CommandText = "ALTER TABLE Type_Del ADD COLUMN LinkedProductTypeId INTEGER";
+                command.ExecuteNonQuery();
+            }
+            catch
+            {
+                // Колонка уже существует
+            }
 
-        // Миграция: добавляем Price, если его нет
-        try
-        {
-            command.CommandText = "ALTER TABLE Producrs ADD COLUMN Price REAL DEFAULT 0";
-            command.ExecuteNonQuery();
-        }
-        catch
-        {
-            // Колонка уже существует, игнорируем
-        }
+            // Миграция: добавляем IsDeleted для типов блюд, если его нет
+            try
+            {
+                command.CommandText = "ALTER TABLE Type_Del ADD COLUMN IsDeleted INTEGER DEFAULT 0";
+                command.ExecuteNonQuery();
+            }
+            catch
+            {
+                // Колонка уже существует, игнорируем ошибку
+            }
 
-        // Миграция: флаг "не переводить в фасованные в меню" (на уровне продукта)
-        try
-        {
-            command.CommandText = "ALTER TABLE Producrs ADD COLUMN DoNotConvertToPackInMenu INTEGER DEFAULT 0";
-            command.ExecuteNonQuery();
-        }
-        catch
-        {
-            // Колонка уже существует
-        }
+            // Миграция: добавляем Price, если его нет
+            try
+            {
+                command.CommandText = "ALTER TABLE Producrs ADD COLUMN Price REAL DEFAULT 0";
+                command.ExecuteNonQuery();
+            }
+            catch
+            {
+                // Колонка уже существует, игнорируем
+            }
 
-        // Миграция: добавляем IsDeleted для продуктов, если его нет
-        try
-        {
-            command.CommandText = "ALTER TABLE Producrs ADD COLUMN IsDeleted INTEGER DEFAULT 0";
-            command.ExecuteNonQuery();
-        }
-        catch
-        {
-            // Колонка уже существует, игнорируем ошибку
-        }
+            // Миграция: флаг "не переводить в фасованные в меню" (на уровне продукта)
+            try
+            {
+                command.CommandText = "ALTER TABLE Producrs ADD COLUMN DoNotConvertToPackInMenu INTEGER DEFAULT 0";
+                command.ExecuteNonQuery();
+            }
+            catch
+            {
+                // Колонка уже существует
+            }
 
-        // Создание таблицы блюд
-        command.CommandText = @"
+            // Миграция: добавляем IsDeleted для продуктов, если его нет
+            try
+            {
+                command.CommandText = "ALTER TABLE Producrs ADD COLUMN IsDeleted INTEGER DEFAULT 0";
+                command.ExecuteNonQuery();
+            }
+            catch
+            {
+                // Колонка уже существует, игнорируем ошибку
+            }
+
+            // Создание таблицы блюд
+            command.CommandText = @"
             CREATE TABLE IF NOT EXISTS Delicates (
                 Del_id INTEGER PRIMARY KEY AUTOINCREMENT,
                 Del_Type INTEGER,
@@ -274,43 +272,43 @@ public static class DatabaseHelper
                 IsDeleted INTEGER DEFAULT 0,
                 FOREIGN KEY (Del_Type) REFERENCES Type_Del(Type_Del_ID)
             );";
-        command.ExecuteNonQuery();
-
-        // Миграция: добавляем LinkedProductId, если его нет
-        try
-        {
-            command.CommandText = "ALTER TABLE Delicates ADD COLUMN LinkedProductId INTEGER";
             command.ExecuteNonQuery();
-        }
-        catch
-        {
-            // Колонка уже существует
-        }
 
-        // Миграция: добавляем IsDeleted для блюд, если его нет
-        try
-        {
-            command.CommandText = "ALTER TABLE Delicates ADD COLUMN IsDeleted INTEGER DEFAULT 0";
-            command.ExecuteNonQuery();
-        }
-        catch
-        {
-            // Колонка уже существует, игнорируем ошибку
-        }
+            // Миграция: добавляем LinkedProductId, если его нет
+            try
+            {
+                command.CommandText = "ALTER TABLE Delicates ADD COLUMN LinkedProductId INTEGER";
+                command.ExecuteNonQuery();
+            }
+            catch
+            {
+                // Колонка уже существует
+            }
 
-        // Миграция: добавляем HideInProductReport для блюд, если его нет
-        try
-        {
-            command.CommandText = "ALTER TABLE Delicates ADD COLUMN HideInProductReport INTEGER DEFAULT 0";
-            command.ExecuteNonQuery();
-        }
-        catch
-        {
-            // Колонка уже существует, игнорируем ошибку
-        }
+            // Миграция: добавляем IsDeleted для блюд, если его нет
+            try
+            {
+                command.CommandText = "ALTER TABLE Delicates ADD COLUMN IsDeleted INTEGER DEFAULT 0";
+                command.ExecuteNonQuery();
+            }
+            catch
+            {
+                // Колонка уже существует, игнорируем ошибку
+            }
 
-        // Создание таблицы компонентов
-        command.CommandText = @"
+            // Миграция: добавляем HideInProductReport для блюд, если его нет
+            try
+            {
+                command.CommandText = "ALTER TABLE Delicates ADD COLUMN HideInProductReport INTEGER DEFAULT 0";
+                command.ExecuteNonQuery();
+            }
+            catch
+            {
+                // Колонка уже существует, игнорируем ошибку
+            }
+
+            // Создание таблицы компонентов
+            command.CommandText = @"
             CREATE TABLE IF NOT EXISTS Components (
                 Comp_Id INTEGER PRIMARY KEY AUTOINCREMENT,
                 Delic_id INTEGER,
@@ -320,10 +318,10 @@ public static class DatabaseHelper
                 FOREIGN KEY (Delic_id) REFERENCES Delicates(Del_id),
                 FOREIGN KEY (ProductID) REFERENCES Producrs(Prod_ID)
             );";
-        command.ExecuteNonQuery();
+            command.ExecuteNonQuery();
 
-        // Создание таблицы меню
-        command.CommandText = @"
+            // Создание таблицы меню
+            command.CommandText = @"
             CREATE TABLE IF NOT EXISTS Menus (
                 Id INTEGER PRIMARY KEY AUTOINCREMENT,
                 Name TEXT NOT NULL,
@@ -334,10 +332,10 @@ public static class DatabaseHelper
                 Dateban TEXT,
                 Ifchan INTEGER DEFAULT 0
             );";
-        command.ExecuteNonQuery();
+            command.ExecuteNonQuery();
 
-        // Создание таблицы связи меню и блюд
-        command.CommandText = @"
+            // Создание таблицы связи меню и блюд
+            command.CommandText = @"
             CREATE TABLE IF NOT EXISTS Menu_Delicates (
                 Id INTEGER PRIMARY KEY AUTOINCREMENT,
                 Id_men INTEGER,
@@ -346,10 +344,10 @@ public static class DatabaseHelper
                 FOREIGN KEY (Id_men) REFERENCES Menus(Id),
                 FOREIGN KEY (Id_delic) REFERENCES Delicates(Del_id)
             );";
-        command.ExecuteNonQuery();
+            command.ExecuteNonQuery();
 
-        // Создание таблицы для измененных компонентов
-        command.CommandText = @"
+            // Создание таблицы для измененных компонентов
+            command.CommandText = @"
             CREATE TABLE IF NOT EXISTS Components1 (
                 Comp_Id INTEGER PRIMARY KEY AUTOINCREMENT,
                 Delic_id INTEGER,
@@ -360,10 +358,10 @@ public static class DatabaseHelper
                 FOREIGN KEY (ProductID) REFERENCES Producrs(Prod_ID),
                 FOREIGN KEY (Idmen) REFERENCES Menus(Id)
             );";
-        command.ExecuteNonQuery();
+            command.ExecuteNonQuery();
 
-        // Создание таблицы для цен продуктов в меню
-        command.CommandText = @"
+            // Создание таблицы для цен продуктов в меню
+            command.CommandText = @"
             CREATE TABLE IF NOT EXISTS Menu_Product_Prices (
                 Id INTEGER PRIMARY KEY AUTOINCREMENT,
                 Id_men INTEGER,
@@ -373,12 +371,12 @@ public static class DatabaseHelper
                 FOREIGN KEY (ProductID) REFERENCES Producrs(Prod_ID),
                 UNIQUE(Id_men, ProductID)
             );";
-        command.ExecuteNonQuery();
+            command.ExecuteNonQuery();
 
-        // Создание таблицы для отключения авто-добавления продуктов в конкретных меню
-        // Если пользователь вручную удалил продукт с флагом AutoAdd из меню,
-        // запись в этой таблице предотвращает его последующее автоматическое добавление
-        command.CommandText = @"
+            // Создание таблицы для отключения авто-добавления продуктов в конкретных меню
+            // Если пользователь вручную удалил продукт с флагом AutoAdd из меню,
+            // запись в этой таблице предотвращает его последующее автоматическое добавление
+            command.CommandText = @"
             CREATE TABLE IF NOT EXISTS Menu_AutoProduct_Ignore (
                 Id INTEGER PRIMARY KEY AUTOINCREMENT,
                 Id_men INTEGER NOT NULL,
@@ -387,53 +385,53 @@ public static class DatabaseHelper
                 FOREIGN KEY (ProductID) REFERENCES Producrs(Prod_ID),
                 UNIQUE(Id_men, ProductID)
             );";
-        command.ExecuteNonQuery();
-
-        // Индексы для ускорения выборок и фильтрации
-        var indexStatements = new[]
-        {
-            // Блюда
-            @"CREATE INDEX IF NOT EXISTS idx_delicates_type_hide_deleted ON Delicates(Del_Type, HideInMenu, IsDeleted);",
-            @"CREATE INDEX IF NOT EXISTS idx_delicates_name ON Delicates(Del_Name);",
-            @"CREATE INDEX IF NOT EXISTS idx_delicates_linked_product ON Delicates(LinkedProductId);",
-
-            // Компоненты блюд
-            @"CREATE INDEX IF NOT EXISTS idx_components_delic ON Components(Delic_id);",
-            @"CREATE INDEX IF NOT EXISTS idx_components_product ON Components(ProductID);",
-
-            // Продукты
-            @"CREATE INDEX IF NOT EXISTS idx_products_type ON Producrs(Type);",
-            @"CREATE INDEX IF NOT EXISTS idx_products_name ON Producrs(Name);",
-            @"CREATE INDEX IF NOT EXISTS idx_products_hide_deleted ON Producrs(HideInMenu, IsDeleted);",
-
-            // Типы блюд
-            @"CREATE INDEX IF NOT EXISTS idx_type_del_sort_deleted ON Type_Del(SortOrder, IsDeleted);",
-
-            // Связь меню и блюд
-            @"CREATE INDEX IF NOT EXISTS idx_menu_delicates_menu ON Menu_Delicates(Id_men);",
-            @"CREATE INDEX IF NOT EXISTS idx_menu_delicates_delic ON Menu_Delicates(Id_delic);",
-            @"CREATE INDEX IF NOT EXISTS idx_menu_delicates_menu_delic ON Menu_Delicates(Id_men, Id_delic);",
-
-            // Цены продуктов в меню
-            @"CREATE INDEX IF NOT EXISTS idx_menu_product_prices_menu ON Menu_Product_Prices(Id_men);",
-
-            // Игнор авто-добавления продуктов
-            @"CREATE INDEX IF NOT EXISTS idx_menu_auto_ignore_menu ON Menu_AutoProduct_Ignore(Id_men);",
-
-            // Меню
-            @"CREATE INDEX IF NOT EXISTS idx_menus_isopen ON Menus(Isopen);"
-        };
-
-        foreach (var sql in indexStatements)
-        {
-            command.CommandText = sql;
             command.ExecuteNonQuery();
-        }
 
-        // Миграция: добавляем Menu_Product_Prices, если её нет
-        try
-        {
-            command.CommandText = @"
+            // Индексы для ускорения выборок и фильтрации
+            var indexStatements = new[]
+            {
+                // Блюда
+                @"CREATE INDEX IF NOT EXISTS idx_delicates_type_hide_deleted ON Delicates(Del_Type, HideInMenu, IsDeleted);",
+                @"CREATE INDEX IF NOT EXISTS idx_delicates_name ON Delicates(Del_Name);",
+                @"CREATE INDEX IF NOT EXISTS idx_delicates_linked_product ON Delicates(LinkedProductId);",
+
+                // Компоненты блюд
+                @"CREATE INDEX IF NOT EXISTS idx_components_delic ON Components(Delic_id);",
+                @"CREATE INDEX IF NOT EXISTS idx_components_product ON Components(ProductID);",
+
+                // Продукты
+                @"CREATE INDEX IF NOT EXISTS idx_products_type ON Producrs(Type);",
+                @"CREATE INDEX IF NOT EXISTS idx_products_name ON Producrs(Name);",
+                @"CREATE INDEX IF NOT EXISTS idx_products_hide_deleted ON Producrs(HideInMenu, IsDeleted);",
+
+                // Типы блюд
+                @"CREATE INDEX IF NOT EXISTS idx_type_del_sort_deleted ON Type_Del(SortOrder, IsDeleted);",
+
+                // Связь меню и блюд
+                @"CREATE INDEX IF NOT EXISTS idx_menu_delicates_menu ON Menu_Delicates(Id_men);",
+                @"CREATE INDEX IF NOT EXISTS idx_menu_delicates_delic ON Menu_Delicates(Id_delic);",
+                @"CREATE INDEX IF NOT EXISTS idx_menu_delicates_menu_delic ON Menu_Delicates(Id_men, Id_delic);",
+
+                // Цены продуктов в меню
+                @"CREATE INDEX IF NOT EXISTS idx_menu_product_prices_menu ON Menu_Product_Prices(Id_men);",
+
+                // Игнор авто-добавления продуктов
+                @"CREATE INDEX IF NOT EXISTS idx_menu_auto_ignore_menu ON Menu_AutoProduct_Ignore(Id_men);",
+
+                // Меню
+                @"CREATE INDEX IF NOT EXISTS idx_menus_isopen ON Menus(Isopen);"
+            };
+
+            foreach (var sql in indexStatements)
+            {
+                command.CommandText = sql;
+                command.ExecuteNonQuery();
+            }
+
+            // Миграция: добавляем Menu_Product_Prices, если её нет
+            try
+            {
+                command.CommandText = @"
                 CREATE TABLE IF NOT EXISTS Menu_Product_Prices (
                     Id INTEGER PRIMARY KEY AUTOINCREMENT,
                     Id_men INTEGER,
@@ -443,96 +441,98 @@ public static class DatabaseHelper
                     FOREIGN KEY (ProductID) REFERENCES Producrs(Prod_ID),
                     UNIQUE(Id_men, ProductID)
                 );";
-            command.ExecuteNonQuery();
-        }
-        catch
-        {
-            // Таблица уже существует, игнорируем ошибку
-        }
+                command.ExecuteNonQuery();
+            }
+            catch
+            {
+                // Таблица уже существует, игнорируем ошибку
+            }
 
-        // Миграция: добавляем DefaultMarkup для блюд (надбавка по умолчанию)
-        try
-        {
-            command.CommandText = "ALTER TABLE Delicates ADD COLUMN DefaultMarkup REAL DEFAULT 200";
-            command.ExecuteNonQuery();
-        }
-        catch
-        {
-            // Колонка уже существует
-        }
+            // Миграция: добавляем DefaultMarkup для блюд (надбавка по умолчанию)
+            try
+            {
+                command.CommandText = "ALTER TABLE Delicates ADD COLUMN DefaultMarkup REAL DEFAULT 200";
+                command.ExecuteNonQuery();
+            }
+            catch
+            {
+                // Колонка уже существует
+            }
 
-        // Миграция: добавляем Markup для блюд в меню (индивидуальная надбавка)
-        try
-        {
-            command.CommandText = "ALTER TABLE Menu_Delicates ADD COLUMN Markup REAL";
-            command.ExecuteNonQuery();
-            
-            // Заполняем существующие записи значением 200, если было пусто
-            command.CommandText = "UPDATE Menu_Delicates SET Markup = 200 WHERE Markup IS NULL";
-            command.ExecuteNonQuery();
-        }
+            // Миграция: добавляем Markup для блюд в меню (индивидуальная надбавка)
+            try
+            {
+                command.CommandText = "ALTER TABLE Menu_Delicates ADD COLUMN Markup REAL";
+                command.ExecuteNonQuery();
 
-        catch
-        {
-            // Колонка уже существует/ошибка обновления
-        }
+                // Заполняем существующие записи значением 200, если было пусто
+                command.CommandText = "UPDATE Menu_Delicates SET Markup = 200 WHERE Markup IS NULL";
+                command.ExecuteNonQuery();
+            }
 
-        // Миграция: добавляем IsModified для блюд в меню (флаг ручного изменения состава)
-        try
-        {
-            command.CommandText = "ALTER TABLE Menu_Delicates ADD COLUMN IsModified INTEGER DEFAULT 0";
-            command.ExecuteNonQuery();
-        }
-        catch
-        {
-            // Колонка уже существует
-        }
+            catch
+            {
+                // Колонка уже существует/ошибка обновления
+            }
 
-        // Миграция: добавляем ServicePercent для меню
-        try
-        {
-            command.CommandText = "ALTER TABLE Menus ADD COLUMN ServicePercent REAL";
-            command.ExecuteNonQuery();
+            // Миграция: добавляем IsModified для блюд в меню (флаг ручного изменения состава)
+            try
+            {
+                command.CommandText = "ALTER TABLE Menu_Delicates ADD COLUMN IsModified INTEGER DEFAULT 0";
+                command.ExecuteNonQuery();
+            }
+            catch
+            {
+                // Колонка уже существует
+            }
 
-            // Если колонка добавлена, заполняем её дефолтным значением из настроек (или 10%, если настроек нет)
-            // Но лучше оставить NULL для старых меню, чтобы знать, что для них нужно использовать глобальную настройку?
-            // Нет, требование пользователя: "если мы открыли старое меню ... мы должны видеть процент который был тогда".
-            // Значит, для старых меню нужно проставить текущий процент, чтобы зафиксировать его состояние "на момент сейчас",
-            // либо, если мы считаем, что раньше процент был 10, то 10.
-            // Проще всего: заполнить текущим глобальным значением.
-            
-            command.CommandText = "UPDATE Menus SET ServicePercent = (SELECT ServicePercent FROM Settings WHERE Id = 1)";
-            command.ExecuteNonQuery();
-            
-            // Если Settings пуст, ставим 10
-            command.CommandText = "UPDATE Menus SET ServicePercent = 10 WHERE ServicePercent IS NULL";
-            command.ExecuteNonQuery();
-        }
-        catch
-        {
-            // Колонка уже существует
-        }
+            // Миграция: добавляем ServicePercent для меню
+            try
+            {
+                command.CommandText = "ALTER TABLE Menus ADD COLUMN ServicePercent REAL";
+                command.ExecuteNonQuery();
 
-        // Создание таблицы настроек
-        command.CommandText = @"
+                // Если колонка добавлена, заполняем её дефолтным значением из настроек (или 10%, если настроек нет)
+                // Но лучше оставить NULL для старых меню, чтобы знать, что для них нужно использовать глобальную настройку?
+                // Нет, требование пользователя: "если мы открыли старое меню ... мы должны видеть процент который был тогда".
+                // Значит, для старых меню нужно проставить текущий процент, чтобы зафиксировать его состояние "на момент сейчас",
+                // либо, если мы считаем, что раньше процент был 10, то 10.
+                // Проще всего: заполнить текущим глобальным значением.
+
+                command.CommandText =
+                    "UPDATE Menus SET ServicePercent = (SELECT ServicePercent FROM Settings WHERE Id = 1)";
+                command.ExecuteNonQuery();
+
+                // Если Settings пуст, ставим 10
+                command.CommandText = "UPDATE Menus SET ServicePercent = 10 WHERE ServicePercent IS NULL";
+                command.ExecuteNonQuery();
+            }
+            catch
+            {
+                // Колонка уже существует
+            }
+
+            // Создание таблицы настроек
+            command.CommandText = @"
             CREATE TABLE IF NOT EXISTS Settings (
                 Id INTEGER PRIMARY KEY CHECK (Id = 1),
                 ServicePercent REAL DEFAULT 10,
                 DefaultMarkup REAL DEFAULT 200
             );";
-        command.ExecuteNonQuery();
+            command.ExecuteNonQuery();
 
-        // Инициализация дефолтных настроек, если их нет
-        command.CommandText = "INSERT OR IGNORE INTO Settings (Id, ServicePercent, DefaultMarkup) VALUES (1, 10, 200)";
-        command.ExecuteNonQuery();
+            // Инициализация дефолтных настроек, если их нет
+            command.CommandText =
+                "INSERT OR IGNORE INTO Settings (Id, ServicePercent, DefaultMarkup) VALUES (1, 10, 200)";
+            command.ExecuteNonQuery();
 
-        // Запускаем миграции (поддержка старых форматов базы данных)
-        MigrationRunner.RunAllMigrations(connection);
+            // Запускаем миграции (поддержка старых форматов базы данных)
+            MigrationRunner.RunAllMigrations(connection);
 
-        // Инициализация базовых данных
-        InitializeDefaultData(connection);
+            // Инициализация базовых данных
+            InitializeDefaultData(connection);
 
-        Services.Logger.Debug("База данных успешно инициализирована");
+            Services.Logger.Debug("База данных успешно инициализирована");
         }
         catch (Exception ex)
         {
