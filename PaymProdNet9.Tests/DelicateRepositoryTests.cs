@@ -104,6 +104,7 @@ namespace PaymProdNet9.Tests
 
             // Assert: Verify Component Added
             var delicate = _repository.GetDelicateById(delId);
+            Assert.NotNull(delicate);
             Assert.Single(delicate.Lcomp);
             var comp = delicate.Lcomp.First();
             Assert.Equal(prodId, comp.Prodid);
@@ -116,6 +117,7 @@ namespace PaymProdNet9.Tests
             
             // Assert: Verify Update
             delicate = _repository.GetDelicateById(delId);
+            Assert.NotNull(delicate);
             comp = delicate.Lcomp.First();
             Assert.Equal(75, comp.Ves);
 
@@ -124,6 +126,7 @@ namespace PaymProdNet9.Tests
 
             // Assert: Verify Deletion
             delicate = _repository.GetDelicateById(delId);
+            Assert.NotNull(delicate);
             Assert.Empty(delicate.Lcomp);
         }
 
@@ -170,6 +173,7 @@ namespace PaymProdNet9.Tests
 
             // Assert
             var delicate = _repository.GetDelicateById(id);
+            Assert.NotNull(delicate);
             Assert.False(delicate.IsDeleted);
             
             var available = _repository.GetAvailableDelicatesForMenu();
@@ -188,6 +192,7 @@ namespace PaymProdNet9.Tests
 
             // Assert
             var delicate = _repository.GetDelicateById(id);
+            Assert.NotNull(delicate);
             Assert.Equal(300, delicate.DefaultMarkup);
         }
     }

@@ -119,6 +119,7 @@ namespace PaymProdNet9.Tests
 
             // Assert
             var menu = _repository.GetMenuById(menuId);
+            Assert.NotNull(menu);
             Assert.Equal(20, menu.CountP);
             Assert.Equal("Updated Menu", menu.Name);
 

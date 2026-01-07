@@ -744,6 +744,9 @@ public class DishMarkupView : INotifyPropertyChanged
         set { _typeId = value; OnPropertyChanged(nameof(TypeId)); }
     }
 
+    public decimal BaseCost { get; set; }
+    public decimal Count { get; set; }
+
     /// <summary>
     /// Наценка по умолчанию (из справочника)
     /// </summary>
