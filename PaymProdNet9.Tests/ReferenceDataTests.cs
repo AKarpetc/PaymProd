@@ -95,16 +95,8 @@ public class ReferenceDataTests : IDisposable
         // Delete
         _repository.DeleteMeasure(id);
         // Verify soft delete
+        // Verify soft delete (filtered out by GetMeasures)
         measures = _repository.GetMeasures();
-        // Assuming GetMeasures filters isDeleted?
-        // Implementation: "FROM Mera ORDER BY Name_Mera" -- IT DOES NOT FILTER ISDELETED in the query I saw earlier!
-        // Wait, let's verify GetMeasures implementation in ProductRepository.cs
-        // Line 278: "SELECT ... FROM Mera ORDER BY Name_Mera"
-        // It does NOT have "WHERE IsDeleted = 0".
-        // However, IsDeleted column exists.
-        // Let's modify the test to expect it to be present but marked IsDeleted.
-
-        measure = measures.First(m => m.Id == id);
-        Assert.True(measure.IsDeleted);
+        Assert.DoesNotContain(measures, m => m.Id == id);
     }
 }

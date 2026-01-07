@@ -158,7 +158,7 @@ public class MenuRepositoryTests : IDisposable
         // Arrange
         var menuId = _repository.CreateMenu("Test Menu", 10, "Details", "2024-01-01");
         // Add product with Isdiap=1 (mainCount=true) effectively simulating AutoAdd behavior or manual add of such product
-        var prodId = _prodRepo.AddProduct("Auto Prod", 1, 1, 1, 1, 1, 0, true, mainCount: true);
+        var prodId = _prodRepo.AddProduct("Auto Prod", 1, 1, 1, 1, 0, 0, true, mainCount: true);
 
         // Trigger auto-add logic explicitly
         _repository.EnsureAutoAddProductsInMenu(menuId, 10);

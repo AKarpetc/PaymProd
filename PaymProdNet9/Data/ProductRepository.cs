@@ -290,9 +290,10 @@ public class ProductRepository
         var command = connection.CreateCommand();
         command.CommandText =
             "SELECT Mera_ID, Name_Mera, COALESCE(Fass_Def, 1), COALESCE(Fass_Izmer, Name_Mera), " +
-            "COALESCE(RoundingPrecision, 2), COALESCE(MenuRoundingPrecision, 2), " +
-            "COALESCE(IsDeleted, 0) " +
-            "FROM Mera ORDER BY Name_Mera";
+            "COALESCE(RoundingPrecision, 2), COALESCE(MenuRoundingPrecision, 2) " +
+            "FROM Mera " +
+            "WHERE COALESCE(IsDeleted, 0) = 0 " +
+            "ORDER BY Name_Mera";
 
         using var reader = command.ExecuteReader();
         while (reader.Read())
@@ -304,7 +305,7 @@ public class ProductRepository
                 FassIzmer = reader.GetString(3),
                 RoundingPrecision = reader.GetInt32(4),
                 MenuRoundingPrecision = reader.GetInt32(5),
-                IsDeleted = !reader.IsDBNull(6) && reader.GetInt32(6) == 1
+                IsDeleted = false
             });
 
         return measures;

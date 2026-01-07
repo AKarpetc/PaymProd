@@ -766,7 +766,7 @@ public partial class CurrentMenuPage : Page
                 if (_currentMenuId.HasValue)
                     _menuRepository.RegisterAutoProductManualRemoval(_currentMenuId.Value, delicateId);
 
-                _menuRepository.RemoveDelicateFromMenu(delicate.Idmen);
+                _menuRepository.RemoveDelicateFromMenu(delicate.Id);
                 _currentMenuDelicates.Remove(delicate);
 
                 // Возвращаем блюдо в список доступных
