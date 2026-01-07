@@ -15,7 +15,7 @@
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
-            <TextBlock Text="Редактирование меню" 
+            <TextBlock Text="{Binding Title, RelativeSource={RelativeSource AncestorType=Window}}" 
                        Style="{StaticResource MaterialDesignHeadline6TextBlock}"
                        Margin="0,0,0,20"/>
 

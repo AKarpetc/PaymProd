@@ -1106,6 +1106,7 @@ public partial class CurrentMenuPage : Page
             menu.CountP, 
             menu.DateBanParsed ?? DateTime.Now, 
             menu.Detail);
+        window.Title = "Редактирование банкета";
 
         if (window.ShowDialog() == true)
         {
@@ -1187,7 +1188,8 @@ public partial class CurrentMenuPage : Page
                  if (result == MessageBoxResult.No) return;
             }
 
-            var window = new EditMenuWindow("Новый банкет", 0, DateTime.Now, "");
+            var window = new EditMenuWindow("", 0, DateTime.Now, "");
+            window.Title = "Создание банкета";
             if (window.ShowDialog() == true)
             {
                  if (_currentMenuId.HasValue) _menuRepository.CloseMenu(_currentMenuId.Value);
