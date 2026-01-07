@@ -65,6 +65,8 @@ public class ProductReportCalculationService
                 {
                     // Special case for raw products logic mirrored from UI
                     var unitPrice = _priceService.GetUnitPrice(priceMenuId, component.Prodid);
+                    item.Price = unitPrice;
+
                     if (component.Fass > 0)
                     {
                         var packageCount = totalWeight / component.Fass;
@@ -78,6 +80,7 @@ public class ProductReportCalculationService
                 else
                 {
                     var priceInfo = _priceService.GetComponentPriceInfo(priceMenuId, component, dishCountForPrice);
+                    item.Price = priceInfo.UnitPrice;
                     item.TotalPrice = priceInfo.TotalPrice;
                 }
             }

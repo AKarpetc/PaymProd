@@ -228,6 +228,7 @@ public class DelicatesCollForSvod : Components
     public decimal Itog { get; set; }
     public decimal ItogFass { get; set; }
     public decimal TotalPrice { get; set; }
+    public decimal Price { get; set; }
 }
 
 /// <summary>

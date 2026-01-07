@@ -309,8 +309,9 @@ public partial class ProductsReportPage : Page
             BorderThickness = new Thickness(1)
         };
 
-        table.Columns.Add(new TableColumn { Width = new GridLength(350) });
+        table.Columns.Add(new TableColumn { Width = new GridLength(290) });
         table.Columns.Add(new TableColumn { Width = new GridLength(140) });
+        table.Columns.Add(new TableColumn { Width = new GridLength(100) });
         table.Columns.Add(new TableColumn { Width = new GridLength(100) });
         table.Columns.Add(new TableColumn { Width = new GridLength(140) });
 
@@ -322,7 +323,7 @@ public partial class ProductsReportPage : Page
         foreach (var typeGroup in groupedByType)
         {
             var headerRow = new TableRow();
-            headerRow.Cells.Add(CreateHeaderCell(typeGroup.Key, 4));
+            headerRow.Cells.Add(CreateHeaderCell(typeGroup.Key, 5));
             group.Rows.Add(headerRow);
 
             var titlesRow = new TableRow();
@@ -330,6 +331,7 @@ public partial class ProductsReportPage : Page
             titlesRow.Cells.Add(CreateTitleCell("Количество"));
             titlesRow.Cells.Add(CreateTitleCell("Ед."));
             titlesRow.Cells.Add(CreateTitleCell("Цена"));
+            titlesRow.Cells.Add(CreateTitleCell("Стоимость"));
             group.Rows.Add(titlesRow);
 
             var groupedProducts = GetGroupedProducts(typeGroup);
@@ -347,6 +349,7 @@ public partial class ProductsReportPage : Page
                 dataRow.Cells.Add(CreateValueCell(product.Name));
                 dataRow.Cells.Add(CreateValueCell(amountText, TextAlignment.Right));
                 dataRow.Cells.Add(CreateValueCell(unitText, TextAlignment.Center));
+                dataRow.Cells.Add(CreateValueCell(FormatPrice(product.Price), TextAlignment.Right));
                 dataRow.Cells.Add(CreateValueCell(priceText, TextAlignment.Right));
                 group.Rows.Add(dataRow);
             }
@@ -362,7 +365,7 @@ public partial class ProductsReportPage : Page
 
         var totalTitleCell = new TableCell(new Paragraph(new Run("ИТОГО") { FontWeight = FontWeights.Bold }))
         {
-            ColumnSpan = 3,
+            ColumnSpan = 4,
             TextAlignment = TextAlignment.Right,
             Background = new SolidColorBrush(Color.FromRgb(221, 235, 247)), // DDEBF7 matches title cell
             BorderBrush = Brushes.Black,
@@ -667,11 +670,13 @@ public partial class ProductsReportPage : Page
                         // Если нет фасовки, рассчитываем по общему весу
                         item.TotalPrice = decimal.Round(unitPrice * totalWeight, 2, MidpointRounding.AwayFromZero);
                     }
+                    item.Price = unitPrice;
                 }
                 else
                 {
                     // Для компонентов блюд используем стандартный расчет
                     var priceInfo = _menuPriceService.GetComponentPriceInfo(priceMenuId, component, dishCountForPrice);
+                    item.Price = priceInfo.UnitPrice;
                     item.TotalPrice = priceInfo.TotalPrice;
                 }
             }
@@ -694,6 +699,7 @@ public partial class ProductsReportPage : Page
                 FassIz = g.First().FassIz ?? g.First().Mera ?? "",
                 Mera = g.First().Mera ?? "",
                 Fass = g.First().Fass,
+                Price = g.First().Price,
                 TotalPrice = g.Sum(r => r.TotalPrice)
             })
             .OrderBy(p => p.Name);

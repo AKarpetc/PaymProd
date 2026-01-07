@@ -663,9 +663,11 @@ public class MenuPrinter
                             )
                         ),
                         new TableGrid(
-                            new GridColumn { Width = "3600" },
+                            new GridColumn { Width = "3000" },
                             new GridColumn { Width = "1400" },
                             new GridColumn { Width = "900" },
+                            new GridColumn { Width = "900" },
+                            new GridColumn { Width = "1200" },
                             new GridColumn { Width = "1800" }
                         )
                     );
@@ -673,7 +675,7 @@ public class MenuPrinter
                     foreach (var group in groupedList)
                     {
                         var headerRow = new TableRow();
-                        headerRow.Append(CreateCell(group.Key, true, "E3EAF2", JustificationValues.Center, 4));
+                        headerRow.Append(CreateCell(group.Key, true, "E3EAF2", JustificationValues.Center, 5));
                         priceTable.Append(headerRow);
 
                         var titlesRow = new TableRow();
@@ -681,6 +683,7 @@ public class MenuPrinter
                         titlesRow.Append(CreateCell("Количество", true, "DDEBF7", JustificationValues.Center));
                         titlesRow.Append(CreateCell("Ед.", true, "DDEBF7", JustificationValues.Center));
                         titlesRow.Append(CreateCell("Цена", true, "DDEBF7", JustificationValues.Center));
+                        titlesRow.Append(CreateCell("Стоимость", true, "DDEBF7", JustificationValues.Center));
                         priceTable.Append(titlesRow);
 
                         var groupedProductsLeft = GetGroupedProductsLeft(group).ToArray();
@@ -689,6 +692,7 @@ public class MenuPrinter
                         {
                             var (amountText, unitText) = FormatAmount(product);
                             priceTable.Append(CreatePriceRow(product.Name, amountText, unitText,
+                                FormatCurrency(product.Price),
                                 FormatCurrency(product.TotalPrice)));
                         }
                     }
@@ -698,7 +702,7 @@ public class MenuPrinter
                         GetGroupedProductsLeft(g).Sum(p => p.TotalPrice));
 
                     var totalRow = new TableRow();
-                    totalRow.Append(CreateCell("ИТОГО:", true, "DDEBF7", JustificationValues.Right, 3));
+                    totalRow.Append(CreateCell("ИТОГО:", true, "DDEBF7", JustificationValues.Right, 4));
                     totalRow.Append(CreateCell(FormatCurrency(totalSum), true, "DDEBF7", JustificationValues.Right));
                     priceTable.Append(totalRow);
 
@@ -920,13 +924,14 @@ public class MenuPrinter
                     return spacerRow;
                 }
 
-                TableRow CreatePriceRow(string productName, string amountText, string unitText, string priceText)
+                TableRow CreatePriceRow(string productName, string amountText, string unitText, string priceText, string totalPriceText)
                 {
                     var row = new TableRow();
                     row.Append(CreateCell(productName, false, null, JustificationValues.Left));
                     row.Append(CreateCell(amountText, false, null, JustificationValues.Right));
                     row.Append(CreateCell(unitText, false, null, JustificationValues.Center));
                     row.Append(CreateCell(priceText, false, null, JustificationValues.Right));
+                    row.Append(CreateCell(totalPriceText, false, null, JustificationValues.Right));
                     return row;
                 }
 
@@ -1165,6 +1170,7 @@ public class MenuPrinter
                 FassIz = g.First().FassIz,
                 Mera = g.First().Mera,
                 Fass = g.First().Fass,
+                Price = g.First().Price,
                 TotalPrice = g.Sum(r => r.TotalPrice)
             })
             .OrderBy(p => p.Name);
@@ -1181,6 +1187,7 @@ public record GroupedProduct
     public string? FassIz { get; init; }
     public string? Mera { get; init; }
     public decimal Fass { get; init; }
+    public decimal Price { get; init; }
     public decimal TotalPrice { get; init; }
 }
 
