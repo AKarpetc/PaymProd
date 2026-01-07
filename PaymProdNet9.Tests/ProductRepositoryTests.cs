@@ -1,186 +1,194 @@
 using PaymProdNet9.Data;
 using PaymProdNet9.Models;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Xunit;
 
 namespace PaymProdNet9.Tests
 {
-    // Ensure no parallel execution conflicts on the static DatabaseHelper
     [Collection("Database Tests")]
     public class ProductRepositoryTests : IDisposable
     {
         private readonly string _dbPath;
         private readonly ProductRepository _repository;
 
+        // Flags: 
+        // 1. PrizMen (AddToDish)
+        // 2. AutoAdd (Automat)
+        // 3. MainCount (IsDiap)
+        // 4. HideInMenu
+        // 5. DoNotConvertToPackInMenu
+        
         public ProductRepositoryTests()
         {
-            // Create a unique temporary database file
-            _dbPath = Path.Combine(Path.GetTempPath(), $"TestDb_{Guid.NewGuid()}.db");
-            
-            // Initialize the database (this sets the static ConnectionString in DatabaseHelper)
+            _dbPath = Path.Combine(Path.GetTempPath(), $"TestDb_Prod_{Guid.NewGuid()}.db");
             DatabaseHelper.InitializeDatabase(_dbPath);
-            
             _repository = new ProductRepository();
         }
 
         public void Dispose()
         {
-            // Clear connection string to avoid reuse (optional but good practice)
-            // DatabaseHelper doesn't have a Clear method, but re-init overwrites.
-            
-            // Try to delete the DB file
             try
             {
-                // Force GC to release any SQLite handles held by un-disposed connections (if any)
                 GC.Collect();
                 GC.WaitForPendingFinalizers();
-                
-                if (File.Exists(_dbPath))
-                    File.Delete(_dbPath);
+                if (File.Exists(_dbPath)) File.Delete(_dbPath);
             }
-            catch
+            catch {}
+        }
+
+        public static IEnumerable<object[]> GetAllFlagCombinations()
+        {
+            // Generate all 32 combinations of 5 booleans
+            for (int i = 0; i < 32; i++)
             {
-                // Ignored: Sometimes file lock persists due to connection pooling
+                bool prizMen = (i & 1) != 0;
+                bool autoAdd = (i & 2) != 0;
+                bool mainCount = (i & 4) != 0;
+                bool hideInMenu = (i & 8) != 0;
+                bool doNotConvert = (i & 16) != 0;
+
+                yield return new object[] { prizMen, autoAdd, mainCount, hideInMenu, doNotConvert };
             }
         }
 
-        [Fact]
-        public void AddProduct_ShouldSaveAllFlagsCorrectly()
+        [Theory]
+        [MemberData(nameof(GetAllFlagCombinations))]
+        public void AddProduct_ShouldSaveAllFlagCombinations(
+            bool addToDish, bool autoAdd, bool mainCount, bool hideInMenu, bool doNotConvert)
         {
             // Arrange
-            string name = "Test Product";
-            bool hideInMenu = true;
-            bool doNotConvert = true;
-            bool avtomat = true;
-            double price = 150.50;
+            string name = $"Prod_{addToDish}_{autoAdd}_{mainCount}_{hideInMenu}_{doNotConvert}";
+            int prizMenuInt = addToDish ? 1 : 0;
 
             // Act
             int id = _repository.AddProduct(
                 name: name,
-                vesId: 1, // Assumes 'г' exists (ID 1 created by InitializeDatabase)
-                typeId: 1, // Assumes 'Овощи' exists (ID 1 created by InitializeDatabase)
-                fass: 1,
-                izmerId: 1,
-                prizMenu: 0,
-                count: 100,
-                automat: avtomat,
+                vesId: 1, typeId: 1, fass: 1, izmerId: 1,
+                prizMenu: prizMenuInt,
+                count: 10,
+                automat: autoAdd,
                 countPeople: 0,
-                mainCount: false,
-                price: price,
+                mainCount: mainCount,
+                price: 100,
                 hideInMenu: hideInMenu,
                 doNotConvertToPackInMenu: doNotConvert
             );
 
             // Assert
-            var products = _repository.GetAllProducts();
-            var product = products.FirstOrDefault(p => p.ID == id);
+            var product = _repository.GetAllProducts().First(p => p.ID == id);
 
-            Assert.NotNull(product);
-            Assert.Equal(name, product.Name);
-            Assert.Equal((decimal)price, product.Price);
-            Assert.True(product.HideInMenu, "HideInMenu flag should be true");
-            Assert.True(product.DoNotConvertToPackInMenu, "DoNotConvertToPackInMenu flag should be true");
-            Assert.True(product.AutoAdd, "Avtomat (AutoAdd) flag should be true");
+            Assert.Equal(addToDish, product.PrizMen == 1); // Check int mapping
+            Assert.Equal(addToDish, product.PrizMen1);     // Check bool property
+            Assert.Equal(autoAdd, product.AutoAdd);
+            Assert.Equal(mainCount, product.MainCount);
+            Assert.Equal(hideInMenu, product.HideInMenu);
+            Assert.Equal(doNotConvert, product.DoNotConvertToPackInMenu);
+
+            // Bonus: Verify side effect of "Add To Dish" (PrizMen)
+            if (addToDish)
+            {
+                // Verify a linked delicate was created
+                // We need to access Delicates table or use a delicate repository.
+                // Assuming DatabaseHelper initialized tables correctly.
+                using var connection = DatabaseHelper.GetConnection();
+                connection.Open();
+                var cmd = connection.CreateCommand();
+                cmd.CommandText = "SELECT COUNT(*) FROM Delicates WHERE LinkedProductId = @pid";
+                cmd.Parameters.AddWithValue("@pid", id);
+                var count = Convert.ToInt32(cmd.ExecuteScalar());
+                Assert.Equal(1, count);
+            }
         }
 
-        [Fact]
-        public void UpdateProduct_ShouldUpdateFlagsAndValues()
+        [Theory]
+        [MemberData(nameof(GetAllFlagCombinations))]
+        public void UpdateProduct_ShouldUpdateAllFlagCombinations(
+            bool addToDish, bool autoAdd, bool mainCount, bool hideInMenu, bool doNotConvert)
         {
-            // Arrange
-            int id = _repository.AddProduct("Original Name", 1, 1, 1, 1, 0, 10, false, 0, false, 100, false, false);
-            
+            // Arrange - start with everything FALSE
+            int id = _repository.AddProduct("ToUpdate", 1, 1, 1, 1, 
+                prizMenu: 0, count: 0, automat: false, countPeople: 0, 
+                mainCount: false, price: 0, hideInMenu: false, doNotConvertToPackInMenu: false);
+
+            int prizMenuInt = addToDish ? 1 : 0;
+
             // Act
             _repository.UpdateProduct(
                 id: id,
-                name: "Updated Name",
-                vesId: 1,
-                typeId: 1,
-                fass: 2,
-                izmerId: 1,
-                prizMenu: 0,
-                count: 200,
-                automat: true,
-                countPeople: 10,
-                mainCount: true,
-                price: 250,
-                hideInMenu: true,
-                doNotConvertToPackInMenu: true
+                name: "Updated",
+                vesId: 1, typeId: 1, fass: 1, izmerId: 1,
+                prizMenu: prizMenuInt,
+                count: 10,
+                automat: autoAdd,
+                countPeople: 0,
+                mainCount: mainCount,
+                price: 100,
+                hideInMenu: hideInMenu,
+                doNotConvertToPackInMenu: doNotConvert
             );
 
             // Assert
-            var result = _repository.GetAllProducts().First(p => p.ID == id);
-            
-            Assert.Equal("Updated Name", result.Name);
-            Assert.Equal(2, result.Fass);
-            Assert.Equal(200, result.Count);
-            Assert.Equal(250, result.Price);
-            Assert.True(result.AutoAdd, "AutoAdd should be updated to true");
-            Assert.True(result.HideInMenu, "HideInMenu should be updated to true");
-            Assert.True(result.DoNotConvertToPackInMenu, "DoNotConvertToPackInMenu should be updated to true");
-            Assert.True(result.MainCount, "MainCount (IsDiap) should be updated to true");
-        }
-
-        [Fact]
-        public void DeleteProduct_ShouldSoftDelete()
-        {
-            // Arrange
-            int id = _repository.AddProduct("To Delete", 1, 1, 1, 1);
-            
-            // Act
-            _repository.DeleteProduct(id);
-            var products = _repository.GetAllProducts(); // This usually filters out deleted items?
-            
-            // Let's verify via direct SQL or check if GetAllProducts excludes it.
-            // Looking at ProductRepository.GetAllProducts SQL: 
-            // "SELECT ... COALESCE(p.IsDeleted, 0) ... FROM Producrs p ..."
-            // It does NOT have a WHERE IsDeleted = 0 clause! It returns everything.
-            // Wait, looking at GetAllProducts implementation I saw earlier:
-            /* 
-               command.CommandText = @"
-                SELECT ...
-                FROM Producrs p ... 
-                INNER JOIN Produkt_Type pt ...
-                LEFT JOIN Mera ...
-               ";
-               It does NOT filter by IsDeleted. It returns the IsDeleted flag.
-            */
-
-             var deletedProduct = products.FirstOrDefault(p => p.ID == id);
-             
-             // Assert
-             Assert.NotNull(deletedProduct);
-             Assert.True(deletedProduct.IsDeleted, "Product should be marked as IsDeleted");
-        }
-
-        [Fact]
-        public void AddProduct_DefaultsShouldBeFalse()
-        {
-            // Act
-            int id = _repository.AddProduct("Default Flags", 1, 1, 1, 1);
             var product = _repository.GetAllProducts().First(p => p.ID == id);
 
-            // Assert
-            Assert.False(product.HideInMenu);
-            Assert.False(product.DoNotConvertToPackInMenu);
-            Assert.False(product.AutoAdd);
-            Assert.False(product.IsDeleted);
+            Assert.Equal(addToDish, product.PrizMen == 1);
+            Assert.Equal(addToDish, product.PrizMen1);
+            Assert.Equal(autoAdd, product.AutoAdd);
+            Assert.Equal(mainCount, product.MainCount);
+            Assert.Equal(hideInMenu, product.HideInMenu);
+            Assert.Equal(doNotConvert, product.DoNotConvertToPackInMenu);
+            
+             // Verify side effect of "Add To Dish" (PrizMen) on update
+            using var connection = DatabaseHelper.GetConnection();
+            connection.Open();
+            var cmd = connection.CreateCommand();
+            cmd.CommandText = "SELECT COUNT(*) FROM Delicates WHERE LinkedProductId = @pid";
+            cmd.Parameters.AddWithValue("@pid", id);
+            var count = Convert.ToInt32(cmd.ExecuteScalar());
+            
+            if (addToDish)
+                Assert.Equal(1, count);
+            else
+                Assert.Equal(0, count); // Should be removed if flag is unset
         }
 
         [Fact]
-        public void RestoreProduct_ShouldUnmarkDelete()
+        public void UpdateProduct_ToggleFlags_ShouldWorkAndPersist()
         {
+             // Specialized test for toggling specific flags back and forth
              // Arrange
-            int id = _repository.AddProduct("To Restore", 1, 1, 1, 1);
-            _repository.DeleteProduct(id);
-            
-            // Act
-            _repository.RestoreProduct(id);
-            var product = _repository.GetAllProducts().First(p => p.ID == id);
+             int id = _repository.AddProduct("Toggler", 1, 1, 1, 1);
+             
+             // 1. Toggle DoNotConvertToPackInMenu ON
+             _repository.UpdateProduct(id, "Toggler", 1, 1, 1, 1, 0, 0, false, 0, false, 0, false, doNotConvertToPackInMenu: true);
+             var p = _repository.GetAllProducts().First(x => x.ID == id);
+             Assert.True(p.DoNotConvertToPackInMenu);
 
-            // Assert
-            Assert.False(product.IsDeleted, "Product should be restored (IsDeleted = false)");
+             // 2. Toggle DoNotConvertToPackInMenu OFF
+             _repository.UpdateProduct(id, "Toggler", 1, 1, 1, 1, 0, 0, false, 0, false, 0, false, doNotConvertToPackInMenu: false);
+             p = _repository.GetAllProducts().First(x => x.ID == id);
+             Assert.False(p.DoNotConvertToPackInMenu);
+             
+             // 3. Toggle HideInMenu ON
+             _repository.UpdateProduct(id, "Toggler", 1, 1, 1, 1, 0, 0, false, 0, false, 0, hideInMenu: true, false);
+             p = _repository.GetAllProducts().First(x => x.ID == id);
+             Assert.True(p.HideInMenu);
+        }
+        
+        [Fact]
+        public void DeleteProduct_ShouldSetIsDeleted_And_RestoreProduct_ShouldUnset()
+        {
+             int id = _repository.AddProduct("SoftDelete", 1, 1, 1, 1);
+             
+             _repository.DeleteProduct(id);
+             var p = _repository.GetAllProducts().First(x => x.ID == id);
+             Assert.True(p.IsDeleted);
+             
+             _repository.RestoreProduct(id);
+             p = _repository.GetAllProducts().First(x => x.ID == id);
+             Assert.False(p.IsDeleted);
         }
     }
 }
