@@ -450,36 +450,9 @@ public class MenuPrinter
                     totalRow.Append(totalValueCell);
                     table.Append(totalRow);
                 }
-                else if (reportMode == ReportMode.NoPrices) // Это CostReport (себестоимость)
+                else if (reportMode == ReportMode.NoPrices)
                 {
-                    // Строка "ИТОГ" (только сумма блюд)
-                    var totalRow = new TableRow();
-                    var totalTitleCell = new TableCell();
-                    totalTitleCell.Append(new TableCellProperties(
-                        new GridSpan { Val = 1 },
-                        new Shading { Fill = "D3D3D3" },
-                        new TableCellVerticalAlignment { Val = TableVerticalAlignmentValues.Center }
-                    ));
-
-                    totalTitleCell.Append(new Paragraph(
-                        new ParagraphProperties(new Justification { Val = JustificationValues.Right }),
-                        new Run(new RunProperties(new Bold(), new FontSize { Val = "24" }), new Text("ИТОГ"))
-                    ));
-                    totalRow.Append(totalTitleCell);
-
-                    var totalValueCell = new TableCell();
-                    totalValueCell.Append(new TableCellProperties(
-                        new Shading { Fill = "D3D3D3" },
-                        new TableCellVerticalAlignment { Val = TableVerticalAlignmentValues.Center }
-                    ));
-
-                    totalValueCell.Append(new Paragraph(
-                        new ParagraphProperties(new Justification { Val = JustificationValues.Left }),
-                        new Run(new RunProperties(new Bold(), new FontSize { Val = "24" }),
-                            new Text(FormatCurrency(totalDishSum)))
-                    ));
-                    totalRow.Append(totalValueCell);
-                    table.Append(totalRow);
+                    // В режиме "Без цен" итог не выводим
                 }
 
                 body.Append(table);
