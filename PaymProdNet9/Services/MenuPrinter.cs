@@ -690,9 +690,16 @@ public class MenuPrinter
 
                         foreach (var product in groupedProductsLeft)
                         {
-                            var (amountText, unitText) = FormatAmount(product);
-                            priceTable.Append(CreatePriceRow(product.Name, amountText, unitText,
-                                FormatCurrency(product.Price),
+                            var (amountText, unitText, priceMultiplier) = FormatAmount(product);
+                            
+                            // Calculate Unit Price for display
+                            var displayUnitPrice = product.Price * priceMultiplier;
+                            
+                            priceTable.Append(CreateTableRow(
+                                product.Name, 
+                                amountText, 
+                                unitText,
+                                FormatCurrency(displayUnitPrice),
                                 FormatCurrency(product.TotalPrice)));
                         }
                     }
@@ -880,8 +887,18 @@ public class MenuPrinter
 
                     foreach (var product in groupedProductsLeft)
                     {
-                        var (amountText, unitText) = FormatAmount(product);
-                        rows.AddRange(CreateProductRow(product.Name, amountText, unitText));
+                        var (amountText, unitText, priceMultiplier) = FormatAmount(product);
+                        
+                        // Calculate Unit Price for display based on the Displayed Unit
+                        var displayUnitPrice = product.Price * priceMultiplier;
+                        var priceText = FormatCurrency(displayUnitPrice); // Unit Price
+                        
+                        // Recalculated total for display (already calculated in grouped object, but formatted here)
+                        // Actually, 'TotalPrice' in GroupedProduct is already the total sum.
+                        // We can just format it.
+                        var totalPriceText = FormatCurrency(product.TotalPrice); 
+
+                        rows.AddRange(CreatePriceRow(product.Name, amountText, unitText, priceText, totalPriceText));
                     }
 
                     return rows;
@@ -897,22 +914,7 @@ public class MenuPrinter
                     return row;
                 }
 
-                TempRow CreateProductRow(params string?[] values)
-                {
-                    var texts = values.Select((value, index) => new { Value = value, Index = index })
-                        .ToDictionary(item => item.Index, item => item.Value ?? string.Empty);
 
-                    var row = new TempRow();
-                    for (var col = 0; col < 3; col++)
-                    {
-                        var justify = JustificationValues.Center;
-                        var text = texts.GetValueOrDefault(col) ?? string.Empty;
-
-                        row.AddCell(CreateCell(text, false, null, justify));
-                    }
-
-                    return row;
-                }
 
                 TempRow CreateSpacerRow()
                 {
@@ -924,7 +926,8 @@ public class MenuPrinter
                     return spacerRow;
                 }
 
-                TableRow CreatePriceRow(string productName, string amountText, string unitText, string priceText, string totalPriceText)
+                // Helper to create TableRow directly for the price table (OpenXml Table)
+                TableRow CreateTableRow(string productName, string amountText, string unitText, string priceText, string totalPriceText)
                 {
                     var row = new TableRow();
                     row.Append(CreateCell(productName, false, null, JustificationValues.Left));
@@ -934,8 +937,20 @@ public class MenuPrinter
                     row.Append(CreateCell(totalPriceText, false, null, JustificationValues.Right));
                     return row;
                 }
+                
+                // Helper to create TempRow for the generic table generation (used in AppendTypeSection)
+                TempRow CreatePriceRow(string productName, string amountText, string unitText, string priceText, string totalPriceText)
+                {
+                    var row = new TempRow();
+                    row.AddCell(CreateCell(productName, false, null, JustificationValues.Left));
+                    row.AddCell(CreateCell(amountText, false, null, JustificationValues.Right));
+                    row.AddCell(CreateCell(unitText, false, null, JustificationValues.Center));
+                    row.AddCell(CreateCell(priceText, false, null, JustificationValues.Right));
+                    row.AddCell(CreateCell(totalPriceText, false, null, JustificationValues.Right));
+                    return row;
+                }
 
-                (string amount, string unit) FormatAmount(GroupedProduct product)
+                (string amount, string unit, decimal priceMultiplier) FormatAmount(GroupedProduct product)
                 {
                     var defaultUnit = !string.IsNullOrEmpty(product.Mera) ? product.Mera : "шт";
                     var normalizedUnit = NormalizeUnit(defaultUnit);
@@ -952,7 +967,7 @@ public class MenuPrinter
                     return discreteKeywords.Any(unit.Contains);
                 }
 
-                (string amount, string unit) FormatContinuous(
+                (string amount, string unit, decimal priceMultiplier) FormatContinuous(
                     GroupedProduct product,
                     string originalUnit,
                     string normalizedUnit)
@@ -963,6 +978,7 @@ public class MenuPrinter
                     var displayUnit = originalUnit;
                     var currentMeasure = measure;
                     const int maxUnitHops = 10;
+                    decimal priceMultiplier = 1m;
 
                     var baseUnitNormalized = normalizedUnit;
 
@@ -971,6 +987,10 @@ public class MenuPrinter
                         totalValue >= (double)product.Fass)
                     {
                         totalValue /= (double)product.Fass;
+                        // For packaged products, if we are switching to the pack unit,
+                        // the price (product.Price) is already expressed per pack.
+                        // So we set multiplier to 1 (conceptually), not multiply by Fass.
+                        priceMultiplier = 1m; 
                         displayUnit = product.FassIz;
                         normalizedUnit = NormalizeUnit(displayUnit);
 
@@ -992,6 +1012,8 @@ public class MenuPrinter
                             if (NormalizeUnit(parent.Name) == NormalizeUnit(displayUnit)) break;
 
                             totalValue /= currentMeasure.Fass;
+                            priceMultiplier *= (decimal)currentMeasure.Fass;
+
                             currentMeasure = parent;
                             displayUnit = currentMeasure.Name;
                             roundingPrecision = currentMeasure.RoundingPrecision;
@@ -999,8 +1021,10 @@ public class MenuPrinter
 
                         normalizedUnit = NormalizeUnit(displayUnit);
 
+                        // Для фасованных продуктов (Fass > 0) мы НЕ хотим конвертировать вниз,
+                        // чтобы сохранить цену за упаковку.
                         hop = 0;
-                        while (totalValue < 1 && hop++ < maxUnitHops)
+                        while (product.Fass <= 0 && totalValue < 1 && hop++ < maxUnitHops)
                         {
                             var child = FindChildMeasure(normalizedUnit);
                             if (child == null || child.Fass <= 0) break;
@@ -1008,6 +1032,8 @@ public class MenuPrinter
                             if (NormalizeUnit(child.Name) == normalizedUnit) break;
 
                             totalValue *= child.Fass;
+                            priceMultiplier /= (decimal)child.Fass;
+
                             currentMeasure = child;
                             displayUnit = child.Name;
                             roundingPrecision = child.RoundingPrecision;
@@ -1032,10 +1058,10 @@ public class MenuPrinter
                         ? ((int)roundedValue).ToString(CultureInfo.CurrentCulture)
                         : roundedValue.ToString($"F{roundingPrecision}", CultureInfo.CurrentCulture);
 
-                    return (formatted, displayUnit);
+                    return (formatted, displayUnit, priceMultiplier);
                 }
 
-                (string amount, string unit) FormatDiscrete(GroupedProduct product, string defaultUnit)
+                (string amount, string unit, decimal priceMultiplier) FormatDiscrete(GroupedProduct product, string defaultUnit)
                 {
                     var measure = FindMeasure(defaultUnit);
                     var effectivePackSize = product.Fass > 0
@@ -1049,6 +1075,9 @@ public class MenuPrinter
                         : effectivePackSize > 0
                             ? (double)(product.TotalWeight / (decimal)effectivePackSize)
                             : (double)product.TotalWeight;
+                            
+                    var priceMultiplier = (decimal)effectivePackSize;
+                    if (priceMultiplier <= 0) priceMultiplier = 1;
 
                     var precision = measure?.MenuRoundingPrecision ?? measure?.RoundingPrecision ?? 0;
 
@@ -1071,7 +1100,7 @@ public class MenuPrinter
                         ? product.FassIz
                         : defaultUnit;
 
-                    return (formatted, unitText);
+                    return (formatted, unitText, priceMultiplier);
                 }
 
                 TableCell CreateSpaceCell()

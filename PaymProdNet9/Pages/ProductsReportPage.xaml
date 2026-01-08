@@ -41,6 +41,11 @@
                     <TextBlock Text="Текущий без цен" VerticalAlignment="Center" />
                 </StackPanel>
             </Button>
+            <CheckBox x:Name="OnlyMenuProductsCheckBox"
+                      Content="Только продукты из меню"
+                      Margin="20,0,0,0"
+                      VerticalAlignment="Center"
+                      IsChecked="False" />
             <Button x:Name="SaveToWordButton"
                     Visibility="Collapsed"
                     Style="{StaticResource MaterialDesignRaisedButton}"

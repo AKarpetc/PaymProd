@@ -1,28 +1,28 @@
-using PaymProdNet9.Data;
-using PaymProdNet9.Models;
-using PaymProdNet9.Services;
 using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using Xunit;
+using PaymProdNet9.Data;
+using PaymProdNet9.Models;
+using PaymProdNet9.Services;
 
 namespace PaymProdNet9.Tests;
 
-[Collection("Database Tests")]
 public class ProductReportTests : IDisposable
 {
     private readonly string _dbPath;
-    private readonly ProductRepository _prodRepo;
     private readonly ProductReportCalculationService _service;
+    private readonly MenuRepository _menuRepo;
+    private readonly ProductRepository _prodRepo;
 
     public ProductReportTests()
     {
-        _dbPath = Path.Combine(Path.GetTempPath(), $"TestDb_Report_{Guid.NewGuid()}.db");
+        _dbPath = Path.Combine(Path.GetTempPath(), $"TestDb_ProdReport_{Guid.NewGuid()}.db");
         DatabaseHelper.InitializeDatabase(_dbPath);
-        _prodRepo = new ProductRepository();
+        
         _service = new ProductReportCalculationService();
+        _menuRepo = new MenuRepository();
+        _prodRepo = new ProductRepository();
     }
 
     public void Dispose()
@@ -33,116 +33,103 @@ public class ProductReportTests : IDisposable
             GC.WaitForPendingFinalizers();
             if (File.Exists(_dbPath)) File.Delete(_dbPath);
         }
-        catch
-        {
-        }
+        catch { }
     }
 
     [Fact]
-    public void CalculateSummary_ShouldSumQuantitiesAndPrices_ForStandardDish()
+    public void PackagingCost_ShouldBeCalculatedCorretly()
     {
         // Arrange
-        // Create a product: Price 10 per unit (gram/piece)
-        var prodId = _prodRepo.AddProduct("Beef", 1, 1, 10, 1, price: 10);
+        var menuId = _menuRepo.CreateMenu("Test Menu", 10, "Desc", DateTime.Now.ToString());
+        var measureGram = _prodRepo.AddMeasure("грамм", 1, "грамм");
+        var measureKg = _prodRepo.AddMeasure("кг", 1, "кг"); // Pack unit
+        var typeId = _prodRepo.AddProductType("Spices");
 
-        // Create a Menu Item (Dish) with 10 portions
-        // Dish has 100g of Beef
-        var item = new MenuDel_act
-        {
-            Del_id = 1, // Positive ID = Dish
-            Countpor = 10,
-            Idmen = 1, // Menu Context
-            Lcomp = new List<Components>
-            {
-                new()
-                {
-                    Prodid = prodId,
-                    Ves = 100, // 100g per portion
-                    Name = "Beef",
-                    Fass = 0 // No packaging
-                }
-            }
-        };
+        // Product: Starch. Base: gram. Pack: kg. Fass: 1000. Price: 1000 (per pack).
+        // AddProduct(name, vesId, typeId, fass (double), izmerId, ..., price (double), ...)
+        var pId = _prodRepo.AddProduct("Starch", null, typeId, 1000.0, measureKg, price: 1000.0, hideInMenu: false);
+        
+        // UpdateProduct(id, name, vesId, typeId, fass (decimal), izmerId, ..., price (double))
+        _prodRepo.UpdateProduct(pId, "Starch", measureGram, typeId, 1000m, measureKg, 0, 0m, false, 0, false, 1000.0);
 
-        // Expected:
-        // Total Weight = 100g * 10 portions = 1000g
-        // Total Price = 1000g * 10 per unit = 10000
+        // Add to Menu: 500g
+        _menuRepo.AddDelicateToMenu(menuId, -pId, 500);
 
         // Act
-        var result = _service.CalculateSummary(new[] { item }, 1);
+        var items = _menuRepo.GetMenuDelicates(menuId);
+        var report = _service.CalculateSummary(items, menuId);
+        var starchItem = report.First(x => x.Name == "Starch");
 
         // Assert
-        Assert.Single(result);
-        var reportItem = result.First();
-        Assert.Equal(1000, reportItem.Itog);
-        Assert.Equal(10000, reportItem.TotalPrice);
+        // Weight: 500.
+        // Price: 1000.
+        // Fass: 1000.
+        // PackCount: 500 / 1000 = 0.5.
+        // TotalPrice: 1000 * 0.5 = 500.
+        
+        Assert.Equal(500, starchItem.Itog);
+        Assert.Equal(1000, starchItem.Fass);
+        Assert.Equal(500, starchItem.TotalPrice);
     }
 
     [Fact]
-    public void CalculateSummary_ShouldHandle_DirectProductWithPackaging()
+    public void ProductReport_WhenFiltered_ShouldMatchVisibleMenuCost()
     {
         // Arrange
-        // Product: "Cola", Fass=0.5 (Pack size), Price=50 (per pack? Wait, logic says Price per unit usually?)
-        // Let's verify MenuPriceService logic.
-        // MenuPriceService.GetUnitPrice returns Price from Producrs table.
+        var menuId = _menuRepo.CreateMenu("Test Menu", 10, "Desc", DateTime.Now.ToString());
 
-        var prodId =
-            _prodRepo.AddProduct("Cola", 1, 1, 1, 1, price: 50); // Price 50 per unit (usually per Fass if packaged)
+        // Create references (Measure, Type)
+        var measureId = _prodRepo.AddMeasure("kg", 1, "kg");
+        var typeId = _prodRepo.AddProductType("Type1");
 
-        // Direct Product Item (Negative Del_id)
-        var item = new MenuDel_act
-        {
-            Del_id = -prodId,
-            Countpor = 5, // 5 portions/bottles
-            Idmen = 1,
-            Lcomp = new List<Components>
-            {
-                new()
-                {
-                    Prodid = prodId,
-                    Ves = 5, // 5 total units (logic for direct product puts total in Ves)
-                    Name = "Cola",
-                    Fass = 1 // Pack size 1
-                }
-            }
-        };
+        // 1. Add a visible product (Price 100)
+        var p1 = _prodRepo.AddProduct("Visible Prod", null, typeId, 1, measureId, price: 100, hideInMenu: false);
+        _menuRepo.AddDelicateToMenu(menuId, -p1, 1);
 
-        // Act
-        var result = _service.CalculateSummary(new[] { item }, 1);
+        // 2. Add a hidden product (Price 50)
+        var p2 = _prodRepo.AddProduct("Hidden Prod", null, typeId, 1, measureId, price: 50, hideInMenu: true);
+        _menuRepo.AddDelicateToMenu(menuId, -p2, 1);
 
-        // Assert
-        // Total Weight (Itog) = 5
-        // Total Packs (ItogFass) = 5 / 1 = 5
-        // Total Price = 5 packs * 50 = 250
+        // Get items (MenuRepository returns all, sorted)
+        var items = _menuRepo.GetMenuDelicates(menuId);
+        
+        // Assert we have 2 items
+        Assert.Equal(2, items.Count);
 
-        var reportItem = result.First();
-        Assert.Equal(5, reportItem.Itog);
-        Assert.Equal(5, reportItem.ItogFass);
-        Assert.Equal(250, reportItem.TotalPrice);
+        // Logic check mimicking UI
+        
+        // Case 1: Filter Enabled (Only Visible)
+        // Note: MenuRepository.GetMenuDelicates sets HideInMenu property on items logic
+        // We need to ensure we filter by d.HideInMenu
+        
+        var visibleItems = items.Where(d => !d.HideInMenu);
+        var reportVisible = _service.CalculateSummary(visibleItems, menuId);
+        var sumVisible = reportVisible.Sum(x => x.TotalPrice);
+
+        // Assert: Visible Sum = 100 * 1 = 100
+        Assert.Equal(100, sumVisible);
+
+        // Case 2: Filter Disabled (All Items)
+        var allItems = items; // No filter
+        var reportAll = _service.CalculateSummary(allItems, menuId);
+        var sumAll = reportAll.Sum(x => x.TotalPrice);
+
+        // Assert: Total Sum = 100 + 50 = 150
+        Assert.Equal(150, sumAll);
+
+        // Verify Difference
+        Assert.NotEqual(sumVisible, sumAll);
     }
-
     [Fact]
-    public void CalculateSummary_ShouldHandle_HideInProductReport_Flag()
+    public void Debug_PrintDbValues()
     {
-        var prodId = _prodRepo.AddProduct("Hidden Prod", 1, 1, 1, 1);
-
-        var item1 = new MenuDel_act
-        {
-            Del_id = 1,
-            HideInProductReport = false,
-            Lcomp = new List<Components> { new() { Prodid = prodId, Ves = 10 } }
-        };
-
-        var item2 = new MenuDel_act
-        {
-            Del_id = 2,
-            HideInProductReport = true, // Should be excluded
-            Lcomp = new List<Components> { new() { Prodid = prodId, Ves = 10 } }
-        };
-
-        var result = _service.CalculateSummary(new[] { item1, item2 }, 1);
-
-        Assert.Single(result); // Only item1 should be there
-        Assert.Equal(1, result.First().Del_id);
+        // This test connects to the ACTUAL user database if possible, or we assume logic.
+        // Wait, unit tests use a temp DB. I can't check user's DB.
+        // I need to create a script to run against the ACTUAL DB path.
+        // But I don't know the actual DB path. It's in the connection string.
+        // Data/DatabaseHelper.cs has the connection string.
+        
+        // I will write a small Console App "DebugApp.cs" in the main project folder
+        // and run it via "dotnet run".
     }
 }

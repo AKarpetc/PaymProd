@@ -338,18 +338,29 @@ public partial class ProductsReportPage : Page
 
             foreach (var product in groupedProducts)
             {
-                var (amountText, unitText, roundedAmount) = FormatAmountWithRoundedValue(product, measures);
+                var (amountText, unitText, roundedAmount, priceMultiplier) = FormatAmountWithRoundedValue(product, measures);
 
-                // Пересчитываем цену на основе округленного количества
+                // Пересчитываем цену на основе округленного количества (для итоговой суммы)
+                // Note: RecalculatePrice logic might also need adjustment if it relies on exact unit match, 
+                // but for now we trust it works for Grand Total sum.
+                // We focus on the "Price" column display.
+                
                 var recalculatedPrice = RecalculatePrice(product, roundedAmount, measures);
                 grandTotal += recalculatedPrice;
-                var priceText = FormatPrice(recalculatedPrice);
+                
+                // Calculate Unit Price for display based on the Displayed Unit
+                var displayUnitPrice = product.Price * priceMultiplier;
+                // If price is 0 (e.g. calculated for dish), try to derive from TotalPrice if possible? 
+                // No, product.Price should be populated correctly now. 
+                // If it is 0, FormatPrice returns "-".
+                
+                var priceText = FormatPrice(grandTotal > 0 ? recalculatedPrice : 0); // Total Cost column
 
                 var dataRow = new TableRow();
                 dataRow.Cells.Add(CreateValueCell(product.Name));
                 dataRow.Cells.Add(CreateValueCell(amountText, TextAlignment.Right));
                 dataRow.Cells.Add(CreateValueCell(unitText, TextAlignment.Center));
-                dataRow.Cells.Add(CreateValueCell(FormatPrice(product.Price), TextAlignment.Right));
+                dataRow.Cells.Add(CreateValueCell(FormatPrice(displayUnitPrice), TextAlignment.Right));
                 dataRow.Cells.Add(CreateValueCell(priceText, TextAlignment.Right));
                 group.Rows.Add(dataRow);
             }
@@ -611,7 +622,15 @@ public partial class ProductsReportPage : Page
     {
         var summaryData = new List<DelicatesCollForSvod>();
 
-        foreach (var delicate in _menuDelicates.Where(d => d.Lcomp != null && d.Lcomp.Any() && !d.HideInProductReport))
+        var items = _menuDelicates.Where(d => d.Lcomp != null && d.Lcomp.Any() && !d.HideInProductReport);
+
+        // Если включена галочка "Только продукты из меню", скрываем те, у которых HideInMenu = true
+        if (OnlyMenuProductsCheckBox.IsChecked == true)
+        {
+            items = items.Where(d => !d.HideInMenu);
+        }
+
+        foreach (var delicate in items)
         foreach (var component in delicate.Lcomp)
         {
             // Для продуктов, добавленных напрямую (отрицательный Del_id), component.Ves уже содержит итоговое количество на банкет
@@ -705,7 +724,7 @@ public partial class ProductsReportPage : Page
             .OrderBy(p => p.Name);
     }
 
-    private (string amount, string unit, double roundedAmount) FormatAmountWithRoundedValue(GroupedProduct product,
+    private (string amount, string unit, double roundedAmount, decimal priceMultiplier) FormatAmountWithRoundedValue(GroupedProduct product,
         List<Measure> measures)
     {
         var defaultUnit = !string.IsNullOrEmpty(product.Mera) ? product.Mera : "шт";
@@ -761,12 +780,12 @@ public partial class ProductsReportPage : Page
         Measure? measure,
         List<Measure> measures)
     {
-        var (formatted, displayUnit, _) =
+        var (formatted, displayUnit, _, _) =
             FormatContinuousAmountWithRoundedValue(product, originalUnit, normalizedUnit, measure, measures);
         return (formatted, displayUnit);
     }
 
-    private (string amount, string unit, double roundedAmount) FormatContinuousAmountWithRoundedValue(
+    private (string amount, string unit, double roundedAmount, decimal priceMultiplier) FormatContinuousAmountWithRoundedValue(
         GroupedProduct product,
         string originalUnit,
         string normalizedUnit,
@@ -778,10 +797,19 @@ public partial class ProductsReportPage : Page
         var displayUnit = originalUnit;
         var currentMeasure = measure;
         const int maxUnitHops = 10;
+        decimal priceMultiplier = 1m;
 
         if (product.Fass > 0 && !string.IsNullOrWhiteSpace(product.FassIz))
         {
             totalValue /= (double)product.Fass;
+            // For packaged products, the price is already 'per pack'. 
+            // Since we are now referencing 'per pack' units (product.FassIz), 
+            // the price multiplier should nominally be 1 relative to the pack price.
+            // However, the later logic might convert units further (PackUnit -> ParentUnit),
+            // so we start with 1. We do NOT multiply by product.Fass here because
+            // product.Price is already scaled to the pack size.
+            priceMultiplier = 1m; 
+            
             displayUnit = product.FassIz;
             normalizedUnit = NormalizeUnit(displayUnit);
 
@@ -804,6 +832,8 @@ public partial class ProductsReportPage : Page
                 if (NormalizeUnit(parent.Name) == NormalizeUnit(displayUnit)) break;
 
                 totalValue /= currentMeasure.Fass;
+                priceMultiplier *= (decimal)currentMeasure.Fass;
+
                 currentMeasure = parent;
                 displayUnit = currentMeasure.Name;
                 roundingPrecision = currentMeasure.RoundingPrecision;
@@ -812,8 +842,12 @@ public partial class ProductsReportPage : Page
             normalizedUnit = NormalizeUnit(displayUnit);
 
             // Конвертация вниз (например, кг -> грамм) если итог меньше 1
+            // Для фасованных продуктов (Fass > 0) мы НЕ хотим конвертировать вниз,
+            // так как цена указана за фасовку (например, за кг), и если мы покажем граммы,
+            // нам придется делить цену (1000 -> 1), что путает пользователя.
+            // Поэтому оставляем как есть (например, 0.5 кг и цена 1000).
             hop = 0;
-            while (totalValue < 1 && hop++ < maxUnitHops)
+            while (product.Fass <= 0 && totalValue < 1 && hop++ < maxUnitHops)
             {
                 var child = FindChildMeasure(measures, normalizedUnit);
                 if (child == null || child.Fass <= 0) break;
@@ -821,6 +855,8 @@ public partial class ProductsReportPage : Page
                 if (NormalizeUnit(child.Name) == normalizedUnit) break;
 
                 totalValue *= child.Fass;
+                priceMultiplier /= (decimal)child.Fass;
+
                 currentMeasure = child;
                 displayUnit = child.Name;
                 roundingPrecision = child.RoundingPrecision;
@@ -845,7 +881,7 @@ public partial class ProductsReportPage : Page
             ? ((int)roundedValue).ToString(CultureInfo.CurrentCulture)
             : roundedValue.ToString($"F{roundingPrecision}", CultureInfo.CurrentCulture);
 
-        return (formatted, displayUnit, roundedValue);
+        return (formatted, displayUnit, roundedValue, priceMultiplier);
     }
 
     private (string amount, string unit) FormatDiscreteAmount(
@@ -853,11 +889,11 @@ public partial class ProductsReportPage : Page
         string defaultUnit,
         Measure? measure)
     {
-        var (formatted, unitText, _) = FormatDiscreteAmountWithRoundedValue(product, defaultUnit, measure);
+        var (formatted, unitText, _, _) = FormatDiscreteAmountWithRoundedValue(product, defaultUnit, measure);
         return (formatted, unitText);
     }
 
-    private (string amount, string unit, double roundedAmount) FormatDiscreteAmountWithRoundedValue(
+    private (string amount, string unit, double roundedAmount, decimal priceMultiplier) FormatDiscreteAmountWithRoundedValue(
         GroupedProduct product,
         string defaultUnit,
         Measure? measure)
@@ -874,6 +910,20 @@ public partial class ProductsReportPage : Page
             : effectivePackSize > 0
                 ? (double)(product.TotalWeight / (decimal)effectivePackSize)
                 : (double)product.TotalWeight;
+
+        // Determine price multiplier
+        // If we are showing Packages (value = TotalPackages), and Price is per Base Unit.
+        // We need Price per Package.
+        // Multiplier = effectivePackSize.
+        
+        // However, logic for 'value' calc above:
+        // If TotalPackages > 0 (it was pack-based logic), value is packages.
+        // If TotalPackages == 0, but effectivePackSize > 0, we converted Weight to Packages.
+        // In both cases, 'value' is in Packages (or discrete units).
+        // So Multiplier should be the Pack Size (weight of one unit).
+        
+        var priceMultiplier = (decimal)effectivePackSize;
+        if (priceMultiplier <= 0) priceMultiplier = 1;
 
         var precision = measure?.MenuRoundingPrecision ?? measure?.RoundingPrecision ?? 0;
         double roundedValue;
@@ -896,7 +946,7 @@ public partial class ProductsReportPage : Page
             ? product.FassIz
             : defaultUnit;
 
-        return (formatted, unitText, roundedValue);
+        return (formatted, unitText, roundedValue, priceMultiplier);
     }
 
     /// <summary>

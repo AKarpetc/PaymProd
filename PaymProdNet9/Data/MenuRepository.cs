@@ -1420,8 +1420,7 @@ public class MenuRepository
                        CASE WHEN COALESCE(TRIM(c.Detail), '') = '' THEN p.Name 
                             ELSE p.Name || '(' || c.Detail || ')' END AS Name,
                        COALESCE(m.Name_Mera, '') as MeraName,
-                       CASE WHEN p.Fass = 0 THEN COALESCE(m.Fass_Def, 1) 
-                            ELSE COALESCE(COALESCE(p.Fass, m.Fass_Def), 1) END as Fass,
+                       COALESCE(NULLIF(p.Fass, 0), NULLIF(mPack.Fass_Def, 0), 1) as Fass,
                        COALESCE(CASE WHEN p.Izmer = p.Ves THEN m.Fass_Izmer 
                                 ELSE (SELECT m2.Name_Mera FROM Mera m2 WHERE m2.Mera_ID = p.Izmer) END, 
                                (SELECT m2.Name_Mera FROM Mera m2 WHERE m2.Mera_ID = p.Izmer)) as FassIzmer,
@@ -1429,6 +1428,7 @@ public class MenuRepository
                 FROM Components c
                 INNER JOIN Producrs p ON p.Prod_ID = c.ProductID
                 LEFT JOIN Mera m ON m.Mera_ID = p.Ves
+                LEFT JOIN Mera mPack ON mPack.Mera_ID = p.Izmer
                 INNER JOIN Produkt_Type pt ON p.Type = pt.TypeProdId
                 WHERE c.Delic_id = @delicateId";
 
@@ -1464,8 +1464,7 @@ public class MenuRepository
             SELECT c1.Comp_Id, c1.Delic_id, c1.ProductID, c1.Ves, 
                    p.Name as ProdName, 
                    COALESCE(m.Name_Mera, '') as MeraName,
-                   CASE WHEN p.Fass = 0 THEN COALESCE(m.Fass_Def, 1) 
-                        ELSE COALESCE(COALESCE(p.Fass, m.Fass_Def), 1) END as Fass,
+                   COALESCE(NULLIF(p.Fass, 0), NULLIF(mPack.Fass_Def, 0), 1) as Fass,
                    COALESCE(CASE WHEN p.Izmer = p.Ves THEN m.Fass_Izmer 
                             ELSE (SELECT m2.Name_Mera FROM Mera m2 WHERE m2.Mera_ID = p.Izmer) END, 
                            (SELECT m2.Name_Mera FROM Mera m2 WHERE m2.Mera_ID = p.Izmer)) as FassIzmer,
@@ -1474,6 +1473,7 @@ public class MenuRepository
             FROM Components1 c1
             INNER JOIN Producrs p ON p.Prod_ID = c1.ProductID
             LEFT JOIN Mera m ON m.Mera_ID = p.Ves
+            LEFT JOIN Mera mPack ON mPack.Mera_ID = p.Izmer
             INNER JOIN Produkt_Type pt ON p.Type = pt.TypeProdId
             WHERE c1.Idmen = @menuId AND c1.Delic_id = @delicateId";
 
@@ -1513,8 +1513,7 @@ public class MenuRepository
                    COALESCE(m.Name_Mera, '') as MeraName,
                    COALESCE(m.MenuRoundingPrecision, 2) as MenuRoundingPrecision,
                    COALESCE(p.DoNotConvertToPackInMenu, 0) as DoNotConvertToPackInMenu,
-                   CASE WHEN p.Fass = 0 THEN COALESCE(m.Fass_Def, 1) 
-                        ELSE COALESCE(COALESCE(p.Fass, m.Fass_Def), 1) END as Fass,
+                   COALESCE(NULLIF(p.Fass, 0), NULLIF(mPack.Fass_Def, 0), 1) as Fass,
                    COALESCE(CASE WHEN p.Izmer = p.Ves THEN m.Fass_Izmer 
                             ELSE (SELECT m2.Name_Mera FROM Mera m2 WHERE m2.Mera_ID = p.Izmer) END, 
                            (SELECT m2.Name_Mera FROM Mera m2 WHERE m2.Mera_ID = p.Izmer)) as FassIzmer,
@@ -1522,6 +1521,7 @@ public class MenuRepository
             FROM Components1 c1
             INNER JOIN Producrs p ON p.Prod_ID = c1.ProductID
             LEFT JOIN Mera m ON m.Mera_ID = p.Ves
+            LEFT JOIN Mera mPack ON mPack.Mera_ID = p.Izmer
             INNER JOIN Produkt_Type pt ON p.Type = pt.TypeProdId
             WHERE c1.Idmen = @menuId AND c1.Delic_id = -@productId AND c1.ProductID = @productId";
 
@@ -1560,8 +1560,7 @@ public class MenuRepository
             SELECT p.Prod_ID, p.Name, 
                    COALESCE(mVes.Name_Mera, COALESCE(m.Name_Mera, 'шт')) as MeraName,
                    COALESCE(m.MenuRoundingPrecision, 2) as MenuRoundingPrecision,
-                   CASE WHEN p.Fass = 0 THEN COALESCE(m.Fass_Def, 1) 
-                        ELSE COALESCE(COALESCE(p.Fass, m.Fass_Def), 1) END as Fass,
+                   COALESCE(NULLIF(p.Fass, 0), NULLIF(m.Fass_Def, 0), 1) as Fass,
                    COALESCE(CASE WHEN p.Izmer = p.Ves THEN m.Fass_Izmer 
                             ELSE (SELECT m2.Name_Mera FROM Mera m2 WHERE m2.Mera_ID = p.Izmer) END, 
                            (SELECT m2.Name_Mera FROM Mera m2 WHERE m2.Mera_ID = p.Izmer), 'шт') as FassIzmer,
