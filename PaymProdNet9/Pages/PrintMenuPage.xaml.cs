@@ -124,9 +124,26 @@ public partial class PrintMenuPage : Page
         var table = new Table();
         table.Columns.Add(new TableColumn { Width = new GridLength(250) });
         var showPriceColumn = reportMode != ReportMode.NoPrices;
-        table.Columns.Add(new TableColumn { Width = showPriceColumn ? new GridLength(500) : new GridLength(650) });
+        
         if (showPriceColumn)
-            table.Columns.Add(new TableColumn { Width = new GridLength(150) });
+        {
+            if (reportMode == ReportMode.Price)
+            {
+                table.Columns.Add(new TableColumn { Width = new GridLength(300) }); // Composition reduced
+                table.Columns.Add(new TableColumn { Width = new GridLength(100) }); // Portion Cost
+                table.Columns.Add(new TableColumn { Width = new GridLength(100) }); // Portion Price
+                table.Columns.Add(new TableColumn { Width = new GridLength(150) }); // Total Price
+            }
+            else
+            {
+                table.Columns.Add(new TableColumn { Width = new GridLength(500) });
+                table.Columns.Add(new TableColumn { Width = new GridLength(150) });
+            }
+        }
+        else
+        {
+            table.Columns.Add(new TableColumn { Width = new GridLength(650) });
+        }
 
         var rowGroup = new TableRowGroup();
         decimal totalReportSum = 0;
@@ -139,7 +156,7 @@ public partial class PrintMenuPage : Page
                 FontWeight = FontWeights.Bold
             }))
             {
-                ColumnSpan = showPriceColumn ? 3 : 2,
+                ColumnSpan = showPriceColumn ? (reportMode == ReportMode.Price ? 5 : 3) : 2,
                 Background = Brushes.LightGray,
                 TextAlignment = TextAlignment.Center,
                 Padding = new Thickness(4),
@@ -153,7 +170,18 @@ public partial class PrintMenuPage : Page
             columnsHeaderRow.Cells.Add(CreateColumnHeaderCell("Блюдо"));
             columnsHeaderRow.Cells.Add(CreateColumnHeaderCell("Состав"));
             if (showPriceColumn)
-                columnsHeaderRow.Cells.Add(CreateColumnHeaderCell("Цена, тг"));
+            {
+                if (reportMode == ReportMode.Price)
+                {
+                    columnsHeaderRow.Cells.Add(CreateColumnHeaderCell("Себ. порции"));
+                    columnsHeaderRow.Cells.Add(CreateColumnHeaderCell("Цена порции"));
+                    columnsHeaderRow.Cells.Add(CreateColumnHeaderCell("Сумма, тг"));
+                }
+                else
+                {
+                    columnsHeaderRow.Cells.Add(CreateColumnHeaderCell("Цена, тг"));
+                }
+            }
             rowGroup.Rows.Add(columnsHeaderRow);
 
             foreach (var delicate in group)
@@ -169,12 +197,7 @@ public partial class PrintMenuPage : Page
                 row.Cells.Add(nameCell);
 
                 var compositionParagraph = BuildCompositionParagraph(delicate, reportMode, out var dishPrice);
-
-                // Применяем наценку к итоговой стоимости блюда
-                if (reportMode == ReportMode.Price && delicate.DefaultMarkup > 0)
-                    // Наценка хранится в DefaultMarkup (передана из MainNavigationWindow)
-                    // Считаем, что наценка - это множитель в процентах (например, 200% = x2)
-                    dishPrice = dishPrice * (delicate.DefaultMarkup / 100);
+                
                 var compositionCell = new TableCell(compositionParagraph)
                 {
                     Padding = new Thickness(4),
@@ -186,6 +209,42 @@ public partial class PrintMenuPage : Page
 
                 if (showPriceColumn)
                 {
+                    // Сохраняем себестоимость до применения наценки
+                    var rawDishTotal = dishPrice;
+
+                    // Применяем наценку к итоговой стоимости блюда
+                    if (reportMode == ReportMode.Price && delicate.DefaultMarkup > 0)
+                        // Наценка хранится в DefaultMarkup (передана из MainNavigationWindow)
+                        // Считаем, что наценка - это множитель в процентах (например, 200% = x2)
+                        dishPrice = dishPrice * (delicate.DefaultMarkup / 100);
+
+                    if (reportMode == ReportMode.Price)
+                    {
+                        var portions = delicate.Count > 0 ? delicate.Count : 1;
+
+                        // 1. Себестоимость порции
+                        var unitCost = rawDishTotal / portions;
+                        var unitCostCell = new TableCell(new Paragraph(new Run(unitCost > 0 ? FormatCurrency(unitCost) : "—")))
+                        {
+                            Padding = new Thickness(4),
+                            BorderBrush = Brushes.Black,
+                            BorderThickness = new Thickness(1),
+                            TextAlignment = TextAlignment.Right
+                        };
+                        row.Cells.Add(unitCostCell);
+
+                        // 2. Цена порции
+                        var unitPrice = dishPrice / portions;
+                        var unitPriceCell = new TableCell(new Paragraph(new Run(unitPrice > 0 ? FormatCurrency(unitPrice) : "—")))
+                        {
+                            Padding = new Thickness(4),
+                            BorderBrush = Brushes.Black,
+                            BorderThickness = new Thickness(1),
+                            TextAlignment = TextAlignment.Right
+                        };
+                        row.Cells.Add(unitPriceCell);
+                    }
+
                     var priceCell =
                         new TableCell(new Paragraph(new Run(dishPrice > 0 ? FormatCurrency(dishPrice) : "—")))
                         {
@@ -222,7 +281,7 @@ public partial class PrintMenuPage : Page
             var subtotalTitleCell =
                 new TableCell(new Paragraph(new Run("Итого по меню") { FontWeight = FontWeights.Bold }))
                 {
-                    ColumnSpan = 2,
+                    ColumnSpan = reportMode == ReportMode.Price ? 4 : 2,
                     Padding = new Thickness(4),
                     TextAlignment = TextAlignment.Right
                 };
@@ -250,7 +309,7 @@ public partial class PrintMenuPage : Page
                     new TableCell(new Paragraph(new Run($"За обслуживание ({effectiveServicePercent:G}%)"))
                         { FontWeight = FontWeights.Bold })
                     {
-                        ColumnSpan = 2,
+                        ColumnSpan = reportMode == ReportMode.Price ? 4 : 2,
                         Padding = new Thickness(4),
                         TextAlignment = TextAlignment.Right
                     };
@@ -274,7 +333,7 @@ public partial class PrintMenuPage : Page
                 var totalTitleCell = new TableCell(new Paragraph(new Run("ИТОГ")
                     { FontWeight = FontWeights.Bold, Foreground = Brushes.DarkGreen, FontSize = 16 }))
                 {
-                    ColumnSpan = 2,
+                    ColumnSpan = reportMode == ReportMode.Price ? 4 : 2,
                     Padding = new Thickness(4),
                     TextAlignment = TextAlignment.Right
                 };
