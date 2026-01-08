@@ -341,10 +341,22 @@ public static class DatabaseHelper
                 Id_men INTEGER,
                 Id_delic INTEGER,
                 Delcount INTEGER,
+                Markup REAL DEFAULT 200,
                 FOREIGN KEY (Id_men) REFERENCES Menus(Id),
                 FOREIGN KEY (Id_delic) REFERENCES Delicates(Del_id)
             );";
             command.ExecuteNonQuery();
+
+            // Миграция: добавляем Markup, если его нет
+            try
+            {
+                command.CommandText = "ALTER TABLE Menu_Delicates ADD COLUMN Markup REAL DEFAULT 200";
+                command.ExecuteNonQuery();
+            }
+            catch
+            {
+                // Колонка уже существует
+            }
 
             // Создание таблицы для измененных компонентов
             command.CommandText = @"
