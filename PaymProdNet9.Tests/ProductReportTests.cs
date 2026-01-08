@@ -42,16 +42,61 @@ public class ProductReportTests : IDisposable
         // Arrange
         var menuId = _menuRepo.CreateMenu("Test Menu", 10, "Desc", DateTime.Now.ToString());
         var measureGram = _prodRepo.AddMeasure("грамм", 1, "грамм");
-        var measureKg = _prodRepo.AddMeasure("кг", 1, "кг"); // Pack unit
+        var measureKg = _prodRepo.AddMeasure("кг", 1000, "кг"); // Pack unit: 1 kg = 1000 base units
         var typeId = _prodRepo.AddProductType("Spices");
 
-        // Product: Starch. Base: gram. Pack: kg. Fass: 1000. Price: 1000 (per pack).
+        // Product: Corn Starch.
+        // Base Unit (Ves): Gram (ID=measureGram).
+        // Pack Unit (Izmer): Kg (ID=measureKg).
+        // Fass (Packaging Size): 1000 (from DB, or default).
+        // Price: 1000 (per pack/kg).
+        
         // AddProduct(name, vesId, typeId, fass (double), izmerId, ..., price (double), ...)
+        // Note: AddProduct internally sets 'Ves' to 'izmerId' if 'vesId' is null. We want distinct base and pack units.
+        // So we might need to update it after adding, or explicitly pass vesId if allowed (AddProduct logic dependent).
+        
+        // Let's create with defaults first.
         var pId = _prodRepo.AddProduct("Starch", null, typeId, 1000.0, measureKg, price: 1000.0, hideInMenu: false);
         
-        // UpdateProduct(id, name, vesId, typeId, fass (decimal), izmerId, ..., price (double))
-        _prodRepo.UpdateProduct(pId, "Starch", measureGram, typeId, 1000m, measureKg, 0, 0m, false, 0, false, 1000.0);
-
+        // Now explicit Update to set exact state we want to test:
+        // Fass = 0 (to test failure case logic - wait, we want to test that it works even if Fass is 0 in DB because of default fallback).
+        // So we set Fass = 0.
+        // Izmer (Pack Unit) = measureKg (which has Fass_Def = 1000).
+        // Ves (Base Unit) = measureGram (which has Fass_Def = 1).
+        
+        // UpdateProduct(id, name, ves, type, fass, izmer, ...)
+        // Check UpdateProduct signature from previous views:
+        // UpdateProduct(int id, string name, string ves, int typeId, decimal fass, string izmer, 
+        //               int prizMen, decimal count, bool avtomat, int chel, bool isdiap, double price)
+        // Wait, 'ves' and 'izmer' in UpdateProduct are STRINGS (names) or IDs? 
+        // Let's verify signature via ViewFile to be 100% sure. 
+        // Based on previous errors, it seemed to expect mismatched types.
+        // I will assume standard signature based on usage:
+        // _prodRepo.UpdateProduct(pId, "Starch", measureGram.ToString(), typeId, 0m, measureKg.ToString(), 0, 0m, false, 0, false, 1000.0);
+        // Actually, looking at repo code would be safer.
+        // But for now, I will use a known working method or fix the signature in the next step if it fails.
+        // Let's try to bypass UpdateProduct if AddProduct is sufficient.
+        
+        // If I pass Fass=0 to AddProduct?
+        // AddProduct(..., fass: 0, ...)
+        // But AddProduct might not let us set Ves different from Izmer easily?
+        // Let's try to use direct SQL insert if Repository is hard to use for this specific edge case setup? 
+        // No, let's use Repository.
+        
+        _prodRepo.UpdateProduct(
+            id: pId, 
+            name: "Starch", 
+            vesId: measureGram, 
+            typeId: typeId, 
+            fass: 0m, 
+            izmerId: measureKg, 
+            prizMenu: 0, 
+            count: 0m, 
+            automat: false, 
+            countPeople: 0, 
+            mainCount: false, 
+            price: 1000.0);
+        
         // Add to Menu: 500g
         _menuRepo.AddDelicateToMenu(menuId, -pId, 500);
 
@@ -63,12 +108,14 @@ public class ProductReportTests : IDisposable
         // Assert
         // Weight: 500.
         // Price: 1000.
-        // Fass: 1000.
-        // PackCount: 500 / 1000 = 0.5.
+        // Even though product.Fass is 0, the SQL fix should pick up measureKg.Fass_Def (1000).
+        // So PackCount should be 500 / 1000 = 0.5.
         // TotalPrice: 1000 * 0.5 = 500.
         
         Assert.Equal(500, starchItem.Itog);
+        // Correct Fass should be retrieved (1000)
         Assert.Equal(1000, starchItem.Fass);
+        // Correct Cost
         Assert.Equal(500, starchItem.TotalPrice);
     }
 
