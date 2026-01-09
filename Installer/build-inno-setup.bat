@@ -23,7 +23,7 @@ cd /d "%~dp0.."
 REM Публикация приложения
 echo [1/3] Публикация приложения...
 cd PaymProdNet9
-dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
+dotnet publish PaymProdNet9.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
 if %ERRORLEVEL% NEQ 0 (
     echo [ОШИБКА] Ошибка при публикации приложения!
     pause
