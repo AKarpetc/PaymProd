@@ -619,8 +619,15 @@ public static class DatabaseHelper
     /// <summary>
     /// Получение соединения с базой данных
     /// </summary>
-    public static SqliteConnection GetConnection()
+    /// <summary>
+    /// Получение соединения с базой данных
+    /// </summary>
+    public static SqliteConnection GetConnection(string dbPath = null)
     {
+        if (!string.IsNullOrEmpty(dbPath))
+        {
+            return new SqliteConnection($"Data Source={dbPath}");
+        }
         return new SqliteConnection(ConnectionString);
     }
 }

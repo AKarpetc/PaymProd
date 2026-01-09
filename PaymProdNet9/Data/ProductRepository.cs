@@ -9,6 +9,13 @@ namespace PaymProdNet9.Data;
 /// </summary>
 public class ProductRepository
 {
+    private readonly string? _dbPath;
+
+    public ProductRepository(string? dbPath = null)
+    {
+        _dbPath = dbPath;
+    }
+
     /// <summary>
     /// Получить все продукты
     /// </summary>
@@ -16,7 +23,7 @@ public class ProductRepository
     {
         var products = new List<ProductView>();
 
-        using var connection = DatabaseHelper.GetConnection();
+        using var connection = DatabaseHelper.GetConnection(_dbPath);
         connection.Open();
 
         var command = connection.CreateCommand();
@@ -52,7 +59,7 @@ public class ProductRepository
         decimal count = 0, bool automat = false, int countPeople = 0, bool mainCount = false, double price = 0,
         bool hideInMenu = false, bool doNotConvertToPackInMenu = false)
     {
-        using var connection = DatabaseHelper.GetConnection();
+        using var connection = DatabaseHelper.GetConnection(_dbPath);
         connection.Open();
 
         var command = connection.CreateCommand();
@@ -93,7 +100,7 @@ public class ProductRepository
         int prizMenu, decimal count, int avtomat, int chel, int isdiap, double price = 0, bool hideInMenu = false,
         bool doNotConvertToPackInMenu = false)
     {
-        using var connection = DatabaseHelper.GetConnection();
+        using var connection = DatabaseHelper.GetConnection(_dbPath);
         connection.Open();
 
         var command = connection.CreateCommand();
@@ -126,7 +133,7 @@ public class ProductRepository
         int prizMenu, decimal count, bool automat, int countPeople, bool mainCount, double price = 0,
         bool hideInMenu = false, bool doNotConvertToPackInMenu = false)
     {
-        using var connection = DatabaseHelper.GetConnection();
+        using var connection = DatabaseHelper.GetConnection(_dbPath);
         connection.Open();
 
         var command = connection.CreateCommand();
@@ -197,7 +204,7 @@ public class ProductRepository
     /// </summary>
     public bool DeleteProduct(int id)
     {
-        using var connection = DatabaseHelper.GetConnection();
+        using var connection = DatabaseHelper.GetConnection(_dbPath);
         connection.Open();
 
         // Мягкое удаление продукта:
@@ -220,7 +227,7 @@ public class ProductRepository
     /// </summary>
     public void RestoreProduct(int id)
     {
-        using var connection = DatabaseHelper.GetConnection();
+        using var connection = DatabaseHelper.GetConnection(_dbPath);
         connection.Open();
 
         var command = connection.CreateCommand();
@@ -234,7 +241,7 @@ public class ProductRepository
     /// </summary>
     public void DeleteProductWithComponents(int id)
     {
-        using var connection = DatabaseHelper.GetConnection();
+        using var connection = DatabaseHelper.GetConnection(_dbPath);
         connection.Open();
 
         // Для совместимости оставляем метод пустым: фактическое удаление
@@ -252,7 +259,7 @@ public class ProductRepository
     {
         var types = new List<ProductType>();
 
-        using var connection = DatabaseHelper.GetConnection();
+        using var connection = DatabaseHelper.GetConnection(_dbPath);
         connection.Open();
 
         var command = connection.CreateCommand();
@@ -284,7 +291,7 @@ public class ProductRepository
     {
         var measures = new List<Measure>();
 
-        using var connection = DatabaseHelper.GetConnection();
+        using var connection = DatabaseHelper.GetConnection(_dbPath);
         connection.Open();
 
         var command = connection.CreateCommand();
@@ -316,7 +323,7 @@ public class ProductRepository
     /// </summary>
     public int AddProductType(string name, int sortOrder = 0, bool hideInMenu = false)
     {
-        using var connection = DatabaseHelper.GetConnection();
+        using var connection = DatabaseHelper.GetConnection(_dbPath);
         connection.Open();
 
         var command = connection.CreateCommand();
@@ -337,7 +344,7 @@ public class ProductRepository
     public int AddMeasure(string name, double fassDef, string fassIzmer, int roundingPrecision = 2,
         int menuRoundingPrecision = 2)
     {
-        using var connection = DatabaseHelper.GetConnection();
+        using var connection = DatabaseHelper.GetConnection(_dbPath);
         connection.Open();
 
         var command = connection.CreateCommand();
@@ -360,7 +367,7 @@ public class ProductRepository
     public void UpdateMeasure(int id, string name, double fassDef, string fassIzmer, int roundingPrecision = 2,
         int menuRoundingPrecision = 2)
     {
-        using var connection = DatabaseHelper.GetConnection();
+        using var connection = DatabaseHelper.GetConnection(_dbPath);
         connection.Open();
 
         var command = connection.CreateCommand();
@@ -384,7 +391,7 @@ public class ProductRepository
     /// </summary>
     public bool DeleteMeasure(int id)
     {
-        using var connection = DatabaseHelper.GetConnection();
+        using var connection = DatabaseHelper.GetConnection(_dbPath);
         connection.Open();
 
         var command = connection.CreateCommand();
@@ -400,7 +407,7 @@ public class ProductRepository
     /// </summary>
     public void UpdateProductType(int id, string name, int sortOrder = 0, bool hideInMenu = false)
     {
-        using var connection = DatabaseHelper.GetConnection();
+        using var connection = DatabaseHelper.GetConnection(_dbPath);
         connection.Open();
 
         var command = connection.CreateCommand();
@@ -421,7 +428,7 @@ public class ProductRepository
     /// </summary>
     public bool DeleteProductType(int id)
     {
-        using var connection = DatabaseHelper.GetConnection();
+        using var connection = DatabaseHelper.GetConnection(_dbPath);
         connection.Open();
 
         var command = connection.CreateCommand();
@@ -437,7 +444,7 @@ public class ProductRepository
     /// </summary>
     public void UpdateProductPrice(int productId, double price)
     {
-        using var connection = DatabaseHelper.GetConnection();
+        using var connection = DatabaseHelper.GetConnection(_dbPath);
         connection.Open();
 
         var command = connection.CreateCommand();
@@ -456,7 +463,7 @@ public class ProductRepository
         var products = new List<ProductView>();
         var productIds = new HashSet<int>();
 
-        using var connection = DatabaseHelper.GetConnection();
+        using var connection = DatabaseHelper.GetConnection(_dbPath);
         connection.Open();
 
         // Получаем уникальные ID продуктов из Components1 для данного меню (измененные компоненты)
@@ -613,7 +620,7 @@ public class ProductRepository
     {
         var prices = new List<MenuProductPrice>();
 
-        using var connection = DatabaseHelper.GetConnection();
+        using var connection = DatabaseHelper.GetConnection(_dbPath);
         connection.Open();
 
         var command = connection.CreateCommand();
@@ -639,7 +646,7 @@ public class ProductRepository
     /// </summary>
     public void SaveMenuProductPrice(int menuId, int productId, double price)
     {
-        using var connection = DatabaseHelper.GetConnection();
+        using var connection = DatabaseHelper.GetConnection(_dbPath);
         connection.Open();
 
         var command = connection.CreateCommand();
@@ -659,7 +666,7 @@ public class ProductRepository
     /// </summary>
     public void CopyProductPriceToMenu(int menuId, int productId)
     {
-        using var connection = DatabaseHelper.GetConnection();
+        using var connection = DatabaseHelper.GetConnection(_dbPath);
         connection.Open();
 
         // Получаем цену продукта из справочника

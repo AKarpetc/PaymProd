@@ -21,6 +21,8 @@ public class MenuReportItem
     public DelicatesColl Delicate { get; set; }
     public string Name { get; set; }
     public decimal DishPrice { get; set; }
+    public decimal PortionCost { get; set; }
+    public decimal PortionPrice { get; set; }
     public List<string> CompositionLines { get; set; } = new();
 }
 
@@ -30,11 +32,11 @@ public class MenuReportCalculationService
     private readonly SettingsRepository _settingsRepository;
     private readonly MenuRepository _menuRepository;
 
-    public MenuReportCalculationService()
+    public MenuReportCalculationService(string dbPath = null)
     {
-        _priceService = new MenuPriceService();
-        _settingsRepository = new SettingsRepository();
-        _menuRepository = new MenuRepository();
+        _priceService = new MenuPriceService(dbPath);
+        _settingsRepository = string.IsNullOrEmpty(dbPath) ? new SettingsRepository() : new SettingsRepository(dbPath);
+        _menuRepository = string.IsNullOrEmpty(dbPath) ? new MenuRepository() : new MenuRepository(dbPath);
     }
 
     // Constructor for testing with mocks would be better, but sticking to no-DI simplicity for this project
@@ -86,6 +88,10 @@ public class MenuReportCalculationService
                 // Better to separate formatting. But for price calculation, this loop is what matters.)
             }
 
+            decimal portionCost = 0;
+            decimal portionPrice = 0;
+            var portions = delicate.Count > 0 ? delicate.Count : 1;
+
             if (reportMode == ReportMode.Price)
             {
                 // Apply markup logic
@@ -96,12 +102,21 @@ public class MenuReportCalculationService
                     // So 200 means x2.
                     finalPrice = rawDishPrice * (delicate.DefaultMarkup / 100m);
                 item.DishPrice = finalPrice;
+                
+                // Calculate portion values
+                portionCost = rawDishPrice / portions;
+                portionPrice = finalPrice / portions;
             }
             else
             {
                 // Cost mode or NoPrices
                 item.DishPrice = rawDishPrice;
+                // For Ref/Cost mode, PortionCost is also valid
+                portionCost = rawDishPrice / portions;
             }
+
+            item.PortionCost = portionCost;
+            item.PortionPrice = portionPrice;
 
             result.Items.Add(item);
             result.Subtotal += item.DishPrice;

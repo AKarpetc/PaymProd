@@ -14,6 +14,13 @@ namespace PaymProdNet9.Data;
 /// </summary>
 public class MenuRepository
 {
+    private readonly string? _dbPath;
+
+    public MenuRepository(string? dbPath = null)
+    {
+        _dbPath = dbPath;
+    }
+
     /// <summary>
     /// Получить все меню
     /// </summary>
@@ -21,7 +28,7 @@ public class MenuRepository
     {
         var menus = new List<Menus>();
 
-        using var connection = DatabaseHelper.GetConnection();
+        using var connection = DatabaseHelper.GetConnection(_dbPath);
         connection.Open();
 
         var command = connection.CreateCommand();
@@ -53,7 +60,7 @@ public class MenuRepository
     /// </summary>
     public Menus? GetOpenMenu()
     {
-        using var connection = DatabaseHelper.GetConnection();
+        using var connection = DatabaseHelper.GetConnection(_dbPath);
         connection.Open();
 
         var command = connection.CreateCommand();
@@ -85,7 +92,7 @@ public class MenuRepository
     /// </summary>
     public Menus? GetMenuById(int id)
     {
-        using var connection = DatabaseHelper.GetConnection();
+        using var connection = DatabaseHelper.GetConnection(_dbPath);
         connection.Open();
 
         var command = connection.CreateCommand();
@@ -118,7 +125,7 @@ public class MenuRepository
     /// </summary>
     public int CreateMenu(string name, int countPeople, string details, string dateBan)
     {
-        using var connection = DatabaseHelper.GetConnection();
+        using var connection = DatabaseHelper.GetConnection(_dbPath);
         connection.Open();
 
         var command = connection.CreateCommand();
@@ -205,7 +212,7 @@ public class MenuRepository
     /// </summary>
     public void UpdateMenu(int id, string name, int countPeople, string details, string dateBan)
     {
-        using var connection = DatabaseHelper.GetConnection();
+        using var connection = DatabaseHelper.GetConnection(_dbPath);
         connection.Open();
 
         using var transaction = connection.BeginTransaction();
@@ -256,7 +263,7 @@ public class MenuRepository
     /// </summary>
     public void CloseMenu(int id)
     {
-        using var connection = DatabaseHelper.GetConnection();
+        using var connection = DatabaseHelper.GetConnection(_dbPath);
         connection.Open();
 
         var command = connection.CreateCommand();
@@ -271,7 +278,7 @@ public class MenuRepository
     /// </summary>
     public void OpenMenu(int id)
     {
-        using var connection = DatabaseHelper.GetConnection();
+        using var connection = DatabaseHelper.GetConnection(_dbPath);
         connection.Open();
 
         // Закрываем все другие меню
@@ -290,7 +297,7 @@ public class MenuRepository
     /// </summary>
     public void DeleteMenu(int id)
     {
-        using var connection = DatabaseHelper.GetConnection();
+        using var connection = DatabaseHelper.GetConnection(_dbPath);
         connection.Open();
 
         var command = connection.CreateCommand();
@@ -312,7 +319,7 @@ public class MenuRepository
     {
         var menuDelicates = new ObservableCollection<MenuDel_act>();
 
-        using var connection = DatabaseHelper.GetConnection();
+        using var connection = DatabaseHelper.GetConnection(_dbPath);
         connection.Open();
 
         // Получаем блюда меню (включая продукты с отрицательным ID)
@@ -510,7 +517,7 @@ public class MenuRepository
     /// <returns>ID добавленной записи Menu_Delicates</returns>
     public int AddDelicateToMenu(int menuId, int delicateId, int count)
     {
-        using var connection = DatabaseHelper.GetConnection();
+        using var connection = DatabaseHelper.GetConnection(_dbPath);
         connection.Open();
 
         // Если delicateId отрицательный, это продукт (Priz_menu = 1)
@@ -745,7 +752,7 @@ public class MenuRepository
     /// </summary>
     public MenuDel_act? GetMenuDelicateById(int menuDelicateId, int menuId)
     {
-        using var connection = DatabaseHelper.GetConnection();
+        using var connection = DatabaseHelper.GetConnection(_dbPath);
         connection.Open();
 
         var command = connection.CreateCommand();
@@ -902,7 +909,7 @@ public class MenuRepository
     /// </summary>
     public void UpdateMenuDelicateMarkup(int menuDelicateId, decimal? markup)
     {
-        using var connection = DatabaseHelper.GetConnection();
+        using var connection = DatabaseHelper.GetConnection(_dbPath);
         connection.Open();
 
         var command = connection.CreateCommand();
@@ -927,7 +934,7 @@ public class MenuRepository
     {
         Logger.Debug($"EnsureAutoAddProductsInMenu: menuId={menuId}, countPeople={countPeople}");
 
-        using var connection = DatabaseHelper.GetConnection();
+        using var connection = DatabaseHelper.GetConnection(_dbPath);
         connection.Open();
 
         // Получаем все продукты с AutoAdd
@@ -1089,7 +1096,7 @@ public class MenuRepository
         Logger.Debug(
             $"AddProductDirectlyToMenu: menuId={menuId}, productId={productId}, totalCount={totalCount}, isdiap={isdiap}, portions={portions}");
 
-        using var connection = DatabaseHelper.GetConnection();
+        using var connection = DatabaseHelper.GetConnection(_dbPath);
         connection.Open();
 
         // Проверяем, не добавлен ли уже этот продукт
@@ -1162,7 +1169,7 @@ public class MenuRepository
     /// </param>
     public void RegisterAutoProductManualRemoval(int menuId, int delicateId)
     {
-        using var connection = DatabaseHelper.GetConnection();
+        using var connection = DatabaseHelper.GetConnection(_dbPath);
         connection.Open();
 
         int? productId = null;
@@ -1258,7 +1265,7 @@ public class MenuRepository
     /// </summary>
     public void RemoveDelicateFromMenu(int id)
     {
-        using var connection = DatabaseHelper.GetConnection();
+        using var connection = DatabaseHelper.GetConnection(_dbPath);
         connection.Open();
 
         var commandSelect = connection.CreateCommand();
@@ -1297,7 +1304,7 @@ public class MenuRepository
     /// </summary>
     public void SaveMenuChanges(int menuId, ObservableCollection<MenuDel_act> menuDelicates)
     {
-        using var connection = DatabaseHelper.GetConnection();
+        using var connection = DatabaseHelper.GetConnection(_dbPath);
         connection.Open();
 
         using var transaction = connection.BeginTransaction();
@@ -1360,7 +1367,7 @@ public class MenuRepository
     {
         var components = new List<Components>();
 
-        using var connection = DatabaseHelper.GetConnection();
+        using var connection = DatabaseHelper.GetConnection(_dbPath);
         connection.Open();
 
         // Сначала проверяем, есть ли измененные компоненты в Components1
@@ -1695,7 +1702,7 @@ public class MenuRepository
     /// </summary>
     public void SaveMenuDelicateComponents(int menuId, int delicateId, List<Components> components)
     {
-        using var connection = DatabaseHelper.GetConnection();
+        using var connection = DatabaseHelper.GetConnection(_dbPath);
         connection.Open();
         using var transaction = connection.BeginTransaction();
 
@@ -1760,7 +1767,7 @@ public class MenuRepository
     /// </summary>
     public int AddDelicateToMenu(int menuId, int delicateId, decimal count)
     {
-        using var connection = DatabaseHelper.GetConnection();
+        using var connection = DatabaseHelper.GetConnection(_dbPath);
         connection.Open();
 
         var command = connection.CreateCommand();
@@ -1780,7 +1787,7 @@ public class MenuRepository
     /// </summary>
     public void UpdateMenuDelicateCount(int menuId, int delicateId, decimal count)
     {
-        using var connection = DatabaseHelper.GetConnection();
+        using var connection = DatabaseHelper.GetConnection(_dbPath);
         connection.Open();
 
         var command = connection.CreateCommand();

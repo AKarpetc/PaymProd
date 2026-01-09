@@ -5,12 +5,19 @@ namespace PaymProdNet9.Data;
 
 public class SettingsRepository
 {
+    private readonly string? _dbPath;
+
+    public SettingsRepository(string? dbPath = null)
+    {
+        _dbPath = dbPath;
+    }
+
     /// <summary>
     /// Получить текущие настройки. Если их нет, создаются дефолтные.
     /// </summary>
     public AppGlobalSettings GetSettings()
     {
-        using var connection = DatabaseHelper.GetConnection();
+        using var connection = DatabaseHelper.GetConnection(_dbPath);
         connection.Open();
 
         var command = connection.CreateCommand();
@@ -34,7 +41,7 @@ public class SettingsRepository
     /// </summary>
     public void SaveSettings(AppGlobalSettings settings)
     {
-        using var connection = DatabaseHelper.GetConnection();
+        using var connection = DatabaseHelper.GetConnection(_dbPath);
         connection.Open();
 
         var command = connection.CreateCommand();

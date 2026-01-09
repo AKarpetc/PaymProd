@@ -12,9 +12,14 @@ public record ComponentPriceInfo(decimal Units, decimal UnitPrice, decimal Total
 /// </summary>
 public class MenuPriceService
 {
-    private readonly ProductRepository _productRepository = new();
+    private readonly ProductRepository _productRepository;
     private Dictionary<int, decimal>? _basePricesCache;
     private readonly Dictionary<int, Dictionary<int, decimal>> _menuPricesCache = new();
+
+    public MenuPriceService(string dbPath = null)
+    {
+        _productRepository = string.IsNullOrEmpty(dbPath) ? new ProductRepository() : new ProductRepository(dbPath);
+    }
 
     public ComponentPriceInfo GetComponentPriceInfo(int menuId, Components component, decimal dishCount)
     {
