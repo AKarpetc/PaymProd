@@ -102,6 +102,10 @@ public class MenuPrinter
                 var titleProperties = titleParagraph.AppendChild(new ParagraphProperties());
                 titleProperties.AppendChild(new Justification { Val = JustificationValues.Center });
 
+                // Removed SectionProperties from here to fix Word corruption. Will add at the end of Body.
+               
+                body.AppendChild(new Paragraph()); // Пустая строка
+               
                 body.AppendChild(new Paragraph()); // Пустая строка
 
                 // Создаем таблицу
@@ -143,10 +147,18 @@ public class MenuPrinter
                             new GridColumn { Width = "1000" },
                             new GridColumn { Width = "1000" },
                             new GridColumn { Width = "2000" })
-                        : new TableGrid(
-                            new GridColumn { Width = "2000" },
-                            new GridColumn { Width = "5000" },
-                            new GridColumn { Width = "2000" }))
+                        : (reportMode == ReportMode.Full
+                            ? new TableGrid(
+                                new GridColumn { Width = "2000" },
+                                new GridColumn { Width = "3000" },
+                                new GridColumn { Width = "1000" },
+                                new GridColumn { Width = "1000" },
+                                new GridColumn { Width = "1000" }, // Total Cost (Raw)
+                                new GridColumn { Width = "2000" })
+                            : new TableGrid(
+                                new GridColumn { Width = "2000" },
+                                new GridColumn { Width = "5000" },
+                                new GridColumn { Width = "2000" })))
                     : new TableGrid(
                         new GridColumn { Width = "2000" },
                         new GridColumn { Width = "7000" });
@@ -158,7 +170,7 @@ public class MenuPrinter
                     var headerRow = new TableRow();
                     var headerCell = new TableCell();
                     var headerCellProperties = new TableCellProperties(
-                        new GridSpan { Val = showPriceColumn ? (reportMode == ReportMode.Price ? 5 : 3) : 2 },
+                        new GridSpan { Val = showPriceColumn ? (reportMode == ReportMode.Price ? 5 : (reportMode == ReportMode.Full ? 6 : 3)) : 2 },
                         new Shading { Fill = "D3D3D3" },
                         new TableCellVerticalAlignment { Val = TableVerticalAlignmentValues.Center }
                     );
@@ -185,6 +197,13 @@ public class MenuPrinter
                             columnsRow.Append(CreateTableHeaderCell("Себ. порции"));
                             columnsRow.Append(CreateTableHeaderCell("Цена порции"));
                             columnsRow.Append(CreateTableHeaderCell("Сумма, тг"));
+                        }
+                        else if (reportMode == ReportMode.Full)
+                        {
+                            columnsRow.Append(CreateTableHeaderCell("Себ. порции"));
+                            columnsRow.Append(CreateTableHeaderCell("Цена порции"));
+                            columnsRow.Append(CreateTableHeaderCell("Итог себ."));
+                            columnsRow.Append(CreateTableHeaderCell("Итог блюда"));
                         }
                         else
                         {
@@ -274,6 +293,7 @@ public class MenuPrinter
                             // Для режима Price не показываем цены компонентов в составе
                             // В режиме Cost и NoPrices - цены компонентов уже включены в строку (или нет, в зависимости от логики BuildComponentLine)
                             // Если Price - то мы просто перечисляем компоненты без цен
+                            // В режиме Full - цены компонентов ПОКАЗЫВАЕМ (как в Cost)
 
                             if (reportMode == ReportMode.NoPrices || reportMode == ReportMode.Price)
                             {
@@ -306,17 +326,17 @@ public class MenuPrinter
                             var rawDishTotal = dishTotal;
 
                             // Если режим Price, применяем наценку
-                            if (reportMode == ReportMode.Price && delicate.DefaultMarkup > 0)
+                            if ((reportMode == ReportMode.Price) && delicate.DefaultMarkup > 0)
                                 dishTotal = dishTotal * (delicate.DefaultMarkup / 100);
 
-                            if (reportMode == ReportMode.Price)
+                            if (reportMode == ReportMode.Price || reportMode == ReportMode.Full)
                             {
-                                // --- Новые колонки для Price режима ---
+                                // --- Новые колонки для Price и Full режима ---
                                 var portions = delicate.Count > 0 ? delicate.Count : 1;
                                 
                                 // 1. Себестоимость порции
                                 var unitCost = rawDishTotal / portions;
-                                var unitCostText = unitCost > 0 ? FormatCurrency(unitCost) : "—";
+                                var unitCostText = unitCost > 0 ? unitCost.ToString("N1", System.Globalization.CultureInfo.CurrentCulture) : "—";
                                 var unitCostCell = new TableCell();
                                 unitCostCell.Append(new Paragraph(
                                     new ParagraphProperties(new Justification { Val = JustificationValues.Left }),
@@ -324,10 +344,17 @@ public class MenuPrinter
                                 EnsureVerticalCenter(unitCostCell);
                                 row.Append(unitCostCell);
 
-                                // 2. Цена порции (себестоимость * наценка)
-                                // Это по сути dishTotal (уже с наценкой) / portions
-                                var unitPrice = dishTotal / portions;
-                                var unitPriceText = unitPrice > 0 ? FormatCurrency(unitPrice) : "—";
+                                // 2. Цена порции
+                                // In Full mode dishTotal is RAW cost because we didn't apply markup above
+                                // Calculate markup price locally if mode is Full
+                                var markupPrice = rawDishTotal;
+                                if (reportMode == ReportMode.Full && delicate.DefaultMarkup > 0)
+                                    markupPrice = rawDishTotal * (delicate.DefaultMarkup / 100);
+                                else if (reportMode == ReportMode.Price)
+                                    markupPrice = dishTotal; // Already applied
+
+                                var unitPrice = markupPrice / portions;
+                                var unitPriceText = unitPrice > 0 ? unitPrice.ToString("N1", System.Globalization.CultureInfo.CurrentCulture) : "—";
                                 var unitPriceCell = new TableCell();
                                 unitPriceCell.Append(new Paragraph(
                                     new ParagraphProperties(new Justification { Val = JustificationValues.Left }),
@@ -336,8 +363,27 @@ public class MenuPrinter
                                 row.Append(unitPriceCell);
                             }
 
+
+                            
+                            if (reportMode == ReportMode.Full)
+                            {
+                                // 2.5 Total Cost (Raw)
+                                var rawCostText = rawDishTotal > 0 ? FormatCurrency(rawDishTotal) : "—";
+                                var rawCostCell = new TableCell();
+                                rawCostCell.Append(new Paragraph(
+                                    new ParagraphProperties(new Justification { Val = JustificationValues.Left }),
+                                    new Run(new Text(rawCostText))));
+                                EnsureVerticalCenter(rawCostCell);
+                                row.Append(rawCostCell);
+                            }
+                            
                             // 3. Общая сумма (Цена, тг)
-                            var priceText = dishTotal > 0 ? FormatCurrency(dishTotal) : "—";
+                            // In Full Mode, dishTotal is Raw. We need to calculate Price.
+                            var priceForTotalColumn = dishTotal;
+                             if (reportMode == ReportMode.Full && delicate.DefaultMarkup > 0)
+                                 priceForTotalColumn = dishTotal * (delicate.DefaultMarkup / 100);
+
+                            var priceText = priceForTotalColumn > 0 ? FormatCurrency(priceForTotalColumn) : "—";
                             var priceCell = new TableCell();
                             priceCell.Append(new Paragraph(
                                 new ParagraphProperties(new Justification { Val = JustificationValues.Left }),
@@ -353,6 +399,7 @@ public class MenuPrinter
                 // --- Добавляем итоговые строки ---
                 var settings = _settingsRepository.GetSettings();
                 decimal totalDishSum = 0;
+                decimal totalCostSum = 0;
 
                 // Пересчитываем сумму всех блюд для итога
                 foreach (var group in groupedDelicates)
@@ -393,7 +440,7 @@ public class MenuPrinter
                     }
 
                     // 2. В зависимости от режима добавляем к общей сумме
-                    if (reportMode == ReportMode.Price)
+                    if (reportMode == ReportMode.Price || reportMode == ReportMode.Full)
                     {
                         // Цена продажи = Себестоимость * Наценка
                         var markupMultiplier = delicate.DefaultMarkup > 0 ? delicate.DefaultMarkup / 100 : 1;
@@ -404,10 +451,15 @@ public class MenuPrinter
                         // Себестоимость
                         totalDishSum += currentDishCost;
                     }
+                    
+                    if (reportMode == ReportMode.Full)
+                    {
+                        totalCostSum += currentDishCost;
+                    }
                 }
 
                 // Вывод строк Итого
-                if (reportMode == ReportMode.Price)
+                if (reportMode == ReportMode.Price || reportMode == ReportMode.Full)
                 {
                     // Определяем процент обслуживания
                     var effectiveServicePercent = settings.ServicePercent;
@@ -419,27 +471,71 @@ public class MenuPrinter
                     }
 
                     // Строка "Подитог" (Сумма за блюда без обслуживания)
+                    
+                    // Строка "Подитог" (Сумма за блюда без обслуживания)
                     var subtotalRow = new TableRow();
-                    var subtotalTitleCell = new TableCell();
-                    subtotalTitleCell.Append(new TableCellProperties(
-                        new GridSpan { Val = (reportMode == ReportMode.Price ? 4 : 2) },
-                        new TableCellVerticalAlignment { Val = TableVerticalAlignmentValues.Center }
-                    ));
-                    subtotalTitleCell.Append(new Paragraph(
-                        new ParagraphProperties(new Justification { Val = JustificationValues.Right }),
-                        new Run(new RunProperties(new Bold()), new Text("Итого по меню"))
-                    ));
-                    subtotalRow.Append(subtotalTitleCell);
+                    
+                    if (reportMode == ReportMode.Full)
+                    {
+                        // Merged Footer: "Итого по меню" with TotalCost and TotalPrice
+                         var subtotalTitleCell = new TableCell();
+                        subtotalTitleCell.Append(new TableCellProperties(
+                            new GridSpan { Val = 4 }, 
+                            new TableCellVerticalAlignment { Val = TableVerticalAlignmentValues.Center }
+                        ));
+                         subtotalTitleCell.Append(new Paragraph(
+                            new ParagraphProperties(new Justification { Val = JustificationValues.Right }),
+                            new Run(new RunProperties(new Bold()), new Text("Итого по меню"))
+                        ));
+                        subtotalRow.Append(subtotalTitleCell);
 
-                    var subtotalValueCell = new TableCell();
-                    subtotalValueCell.Append(new TableCellProperties(
-                        new TableCellVerticalAlignment { Val = TableVerticalAlignmentValues.Center }
-                    ));
-                    subtotalValueCell.Append(new Paragraph(
-                        new ParagraphProperties(new Justification { Val = JustificationValues.Left }),
-                        new Run(new RunProperties(new Bold()), new Text(FormatCurrency(totalDishSum)))
-                    ));
-                    subtotalRow.Append(subtotalValueCell);
+                        // Cost Value
+                        var subtotalCostCell = new TableCell();
+                        subtotalCostCell.Append(new TableCellProperties(
+                            new TableCellVerticalAlignment { Val = TableVerticalAlignmentValues.Center }
+                        ));
+                        subtotalCostCell.Append(new Paragraph(
+                            new ParagraphProperties(new Justification { Val = JustificationValues.Left }),
+                            new Run(new RunProperties(new Bold()), new Text(FormatCurrency(totalCostSum)))
+                        ));
+                        subtotalRow.Append(subtotalCostCell);
+
+                         // Price Value
+                        var subtotalValueCell = new TableCell();
+                        subtotalValueCell.Append(new TableCellProperties(
+                            new TableCellVerticalAlignment { Val = TableVerticalAlignmentValues.Center }
+                        ));
+                        subtotalValueCell.Append(new Paragraph(
+                            new ParagraphProperties(new Justification { Val = JustificationValues.Left }),
+                            new Run(new RunProperties(new Bold()), new Text(FormatCurrency(totalDishSum)))
+                        ));
+                        subtotalRow.Append(subtotalValueCell);
+                    }
+                    else
+                    {
+                         // Standard Footer
+                         var subtotalTitleCell = new TableCell();
+                        subtotalTitleCell.Append(new TableCellProperties(
+                            new GridSpan { Val = (reportMode == ReportMode.Price ? 4 : 2) },
+                            new TableCellVerticalAlignment { Val = TableVerticalAlignmentValues.Center }
+                        ));
+                        subtotalTitleCell.Append(new Paragraph(
+                            new ParagraphProperties(new Justification { Val = JustificationValues.Right }),
+                            new Run(new RunProperties(new Bold()), new Text("Итого по меню"))
+                        ));
+                        subtotalRow.Append(subtotalTitleCell);
+
+                        var subtotalValueCell = new TableCell();
+                        subtotalValueCell.Append(new TableCellProperties(
+                            new TableCellVerticalAlignment { Val = TableVerticalAlignmentValues.Center }
+                        ));
+                        subtotalValueCell.Append(new Paragraph(
+                            new ParagraphProperties(new Justification { Val = JustificationValues.Left }),
+                            new Run(new RunProperties(new Bold()), new Text(FormatCurrency(totalDishSum)))
+                        ));
+                        subtotalRow.Append(subtotalValueCell);
+                    }
+                    
                     table.Append(subtotalRow);
 
                     // Строка "За обслуживание"
@@ -449,7 +545,7 @@ public class MenuPrinter
                     // Объединенная ячейка для текста "За обслуживание + %"
                     var serviceTitleCell = new TableCell();
                     serviceTitleCell.Append(new TableCellProperties(
-                        new GridSpan { Val = (reportMode == ReportMode.Price ? 4 : 2) },
+                        new GridSpan { Val = (reportMode == ReportMode.Price ? 4 : (reportMode == ReportMode.Full ? 5 : 2)) },
                         new TableCellVerticalAlignment { Val = TableVerticalAlignmentValues.Center }
                     ));
                     serviceTitleCell.Append(new Paragraph(
@@ -475,29 +571,24 @@ public class MenuPrinter
                     var grandTotal = totalDishSum + serviceAmount;
 
                     var totalRow = new TableRow();
-                    var totalTitleCell = new TableCell();
-                    totalTitleCell.Append(new TableCellProperties(
-                        new GridSpan { Val = (reportMode == ReportMode.Price ? 4 : 2) },
+                    var totalCell = new TableCell();
+                    
+                    int span = 2; // Default for Cost? Check logic. Cost doesn't enter here usually (reportMode == Cost) but if it did...
+                    // reportMode is Price or Full here.
+                    if (reportMode == ReportMode.Price) span = 5;
+                    if (reportMode == ReportMode.Full) span = 6;
+                    
+                    totalCell.Append(new TableCellProperties(
+                        new GridSpan { Val = span },
                         new Shading { Fill = "D3D3D3" },
                         new TableCellVerticalAlignment { Val = TableVerticalAlignmentValues.Center }
                     ));
-                    totalTitleCell.Append(new Paragraph(
+                    totalCell.Append(new Paragraph(
                         new ParagraphProperties(new Justification { Val = JustificationValues.Right }),
-                        new Run(new RunProperties(new Bold(), new FontSize { Val = "24" }), new Text("ИТОГ"))
+                        new Run(new RunProperties(new Bold(), new FontSize { Val = "24" }), 
+                            new Text($"ИТОГ   {FormatCurrency(grandTotal)}"))
                     ));
-                    totalRow.Append(totalTitleCell);
-
-                    var totalValueCell = new TableCell();
-                    totalValueCell.Append(new TableCellProperties(
-                        new Shading { Fill = "D3D3D3" },
-                        new TableCellVerticalAlignment { Val = TableVerticalAlignmentValues.Center }
-                    ));
-                    totalValueCell.Append(new Paragraph(
-                        new ParagraphProperties(new Justification { Val = JustificationValues.Left }),
-                        new Run(new RunProperties(new Bold(), new FontSize { Val = "24" }),
-                            new Text(FormatCurrency(grandTotal)))
-                    ));
-                    totalRow.Append(totalValueCell);
+                    totalRow.Append(totalCell);
                     table.Append(totalRow);
                 }
                 else if (reportMode == ReportMode.NoPrices)
@@ -506,6 +597,12 @@ public class MenuPrinter
                 }
 
                 body.Append(table);
+
+                // Add SectionProperties at the end of Body to avoid corruption
+                body.AppendChild(new SectionProperties(
+                    new PageSize { Width = (UInt32Value)(reportMode == ReportMode.Full ? 16838U : 11906U), Height = (UInt32Value)(reportMode == ReportMode.Full ? 11906U : 16838U), Orient = reportMode == ReportMode.Full ? PageOrientationValues.Landscape : PageOrientationValues.Portrait },
+                    new PageMargin { Top = 1440, Right = (UInt32Value)1440U, Bottom = 1440, Left = (UInt32Value)1440U, Header = (UInt32Value)720U, Footer = (UInt32Value)720U, Gutter = (UInt32Value)0U }));
+
                 mainPart.Document.Save();
             }
 

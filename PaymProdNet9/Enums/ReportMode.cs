@@ -4,5 +4,6 @@ public enum ReportMode
 {
     NoPrices,
     Cost,
-    Price
+    Price,
+    Full
 }
