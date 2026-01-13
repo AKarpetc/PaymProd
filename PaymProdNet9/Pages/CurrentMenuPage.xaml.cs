@@ -1095,38 +1095,41 @@ public partial class CurrentMenuPage : Page
 
         var oldGuests = menu.CountP;
 
-        var window = new EditMenuWindow(
+        // Use EditMenuPage with callback
+        var editPage = new EditMenuPage(
             menu.Name,
             menu.CountP,
             menu.DateBanParsed ?? DateTime.Now,
-            menu.Detail);
-        window.Title = "Редактирование банкета";
-
-        if (window.ShowDialog() == true)
-        {
-            var newGuests = window.GuestCount;
-
-            // Если изменилось количество гостей, предлагаем пересчитать
-            if (oldGuests != newGuests && oldGuests > 0 && newGuests > 0)
+            menu.Detail,
+            (success, name, guests, date, description) =>
             {
-                var result = MessageBox.Show(
-                    $"Количество гостей изменилось с {oldGuests} на {newGuests}.\nПересчитать количество блюд пропорционально?",
-                    "Пересчет меню", MessageBoxButton.YesNo, MessageBoxImage.Question);
+                if (!success) return; // Users cancelled
 
-                if (result == MessageBoxResult.Yes) RecalculateMenuQuantities(oldGuests, newGuests);
-            }
+                var newGuests = guests;
 
-            // Обновляем данные меню
-            _menuRepository.UpdateMenu(
-                _currentMenuId.Value,
-                window.BanquetName,
-                window.GuestCount,
-                window.Description,
-                window.SelectedDate.ToString("yyyy-MM-dd HH:mm"));
+                // Если изменилось количество гостей, предлагаем пересчитать
+                if (oldGuests != newGuests && oldGuests > 0 && newGuests > 0)
+                {
+                    var result = MessageBox.Show(
+                        $"Количество гостей изменилось с {oldGuests} на {newGuests}.\nПересчитать количество блюд пропорционально?",
+                        "Пересчет меню", MessageBoxButton.YesNo, MessageBoxImage.Question);
 
-            LoadMenu(_currentMenuId.Value);
-            _isDataChanged = true;
-        }
+                    if (result == MessageBoxResult.Yes) RecalculateMenuQuantities(oldGuests, newGuests);
+                }
+
+                // Обновляем данные меню
+                _menuRepository.UpdateMenu(
+                    _currentMenuId.Value,
+                    name,
+                    guests,
+                    description,
+                    date.ToString("yyyy-MM-dd HH:mm"));
+
+                LoadMenu(_currentMenuId.Value);
+                _isDataChanged = true;
+            });
+
+        Services.NavigationService.Instance.NavigateTo(editPage);
     }
 
     private void RecalculateMenuQuantities(int oldGuests, int newGuests)
@@ -1169,6 +1172,12 @@ public partial class CurrentMenuPage : Page
     {
         try
         {
+            // DEBUG: Mark button as clicked to verify handler execution in dump
+            if (sender is Button btn)
+            {
+                btn.SetValue(System.Windows.Automation.AutomationProperties.AutomationIdProperty, "ClickedNewMenuButton");
+            }
+
             // Если есть несохраненные изменения, спрашиваем
             if (_isDataChanged)
             {
@@ -1178,21 +1187,45 @@ public partial class CurrentMenuPage : Page
                 if (result == MessageBoxResult.No) return;
             }
 
-            var window = new EditMenuWindow("", 0, DateTime.Now, "");
-            window.Title = "Создание банкета";
-            if (window.ShowDialog() == true)
+            // Также проверим не открыто ли меню
+            if (_currentMenuId.HasValue)
             {
-                if (_currentMenuId.HasValue) _menuRepository.CloseMenu(_currentMenuId.Value);
+                _menuRepository.CloseMenu(_currentMenuId.Value);
+                _currentMenuId = null;
+            }
 
-                var menuId = _menuRepository.CreateMenu(
-                    window.BanquetName,
-                    window.GuestCount,
-                    window.Description,
-                    window.SelectedDate.ToString("yyyy-MM-dd HH:mm")
-                );
+            // Use EditMenuPage with callback
+            var createPage = new EditMenuPage(
+                "",
+                0,
+                DateTime.Now,
+                "",
+                (success, name, guests, date, description) =>
+                {
+                    if (!success) return;
 
-                // Load the new menu
-                LoadMenu(menuId);
+                    // This check is redundant here if _currentMenuId is already nulled above,
+                    // but kept for safety if callback is delayed or context changes.
+                    if (_currentMenuId.HasValue) _menuRepository.CloseMenu(_currentMenuId.Value);
+
+                    var menuId = _menuRepository.CreateMenu(
+                        name,
+                        guests,
+                        description,
+                        date.ToString("yyyy-MM-dd HH:mm")
+                    );
+
+                    // Load the new menu
+                    LoadMenu(menuId);
+                });
+
+            try
+            {
+                Services.NavigationService.Instance.NavigateTo(createPage);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Навигация не сработала: {ex.Message} {ex.StackTrace}");
             }
         }
         catch (Exception ex)
@@ -1344,5 +1377,20 @@ public partial class CurrentMenuPage : Page
     private void NumericOnly_PreviewTextInput(object sender, TextCompositionEventArgs e)
     {
         InputValidationHelper.IntegerOnly_PreviewTextInput(sender, e);
+    }
+    /// <summary>
+    /// Обработчик горячих клавиш страницы
+    /// </summary>
+    private void Page_PreviewKeyDown(object sender, KeyEventArgs e)
+    {
+        // F2 - Создать новое меню
+        if (e.Key == Key.F2)
+        {
+            if (NewMenuButton.IsEnabled)
+            {
+                NewMenu_Click(NewMenuButton, new RoutedEventArgs());
+                e.Handled = true;
+            }
+        }
     }
 }

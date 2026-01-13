@@ -116,12 +116,14 @@
                             <TextBox Grid.Column="0" x:Name="BanquetNameTextBox"
                                      materialDesign:HintAssist.Hint="Банкет"
                                      MaxLength="50"
-                                     LostFocus="BanquetInfo_LostFocus" Margin="0,0,10,0" />
+                                     LostFocus="BanquetInfo_LostFocus" Margin="0,0,10,0"
+                                     AutomationProperties.AutomationId="BanquetNameTextBox" />
 
                             <TextBox Grid.Column="1" x:Name="PeopleCountTextBox"
                                      materialDesign:HintAssist.Hint="Количество"
                                      PreviewTextInput="NumericTextBox_PreviewTextInput"
-                                     LostFocus="BanquetInfo_LostFocus" Margin="0,0,10,0" />
+                                     LostFocus="BanquetInfo_LostFocus" Margin="0,0,10,0"
+                                     AutomationProperties.AutomationId="PeopleCountTextBox" />
 
                             <controls:DateTimePicker Grid.Column="2" x:Name="BanquetDatePicker"
                                                      SelectedDateTimeChanged="BanquetInfo_Changed" Margin="0,0,10,0" />
@@ -135,12 +137,14 @@
                                 <Button Style="{StaticResource MaterialDesignFloatingActionMiniButton}"
                                         Click="StartMenu_Click"
                                         ToolTip="Перейти к заполнению"
-                                        Margin="0,0,5,0">
+                                        Margin="0,0,5,0"
+                                        AutomationProperties.AutomationId="StartMenuButton">
                                     <materialDesign:PackIcon Kind="PlayCircle" />
                                 </Button>
                                 <Button Style="{StaticResource MaterialDesignFloatingActionMiniButton}"
                                         Click="NewMenu_Click"
-                                        ToolTip="Новое меню">
+                                        ToolTip="Новое меню"
+                                        AutomationProperties.AutomationId="NewMenuButton">
                                     <materialDesign:PackIcon Kind="Plus" />
                                 </Button>
                             </StackPanel>
@@ -166,7 +170,8 @@
                                       SelectionMode="Single"
                                       IsReadOnly="False"
                                       materialDesign:DataGridAssist.CellPadding="10"
-                                      materialDesign:DataGridAssist.ColumnHeaderPadding="10">
+                                      materialDesign:DataGridAssist.ColumnHeaderPadding="10"
+                                      AutomationProperties.AutomationId="MenuDelicatesDataGrid">
                                 <DataGrid.Columns>
                                     <DataGridTemplateColumn Width="50">
                                         <DataGridTemplateColumn.CellTemplate>
@@ -246,7 +251,8 @@
                                                                  materialDesign:HintAssist.Hint="Кол-во"
                                                                  PreviewTextInput="NumericTextBox_PreviewTextInput"
                                                                  Tag="{Binding}"
-                                                                 FontSize="11" />
+                                                                 FontSize="11" 
+                                                                 AutomationProperties.AutomationId="QuantityBox"/>
                                                         <TextBlock VerticalAlignment="Center" Margin="3,0,0,0"
                                                                    Text="{Binding WeightInfo}"
                                                                    FontSize="10" />

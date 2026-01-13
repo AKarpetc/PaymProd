@@ -9,6 +9,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "S3UploadTool", "..\S3Upload
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PaymProdNet9.Tests", "..\PaymProdNet9.Tests\PaymProdNet9.Tests.csproj", "{72606037-0DC1-45EF-A30E-CA714E290DE4}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PaymProd.UITests", "..\PaymProd.UITests\PaymProd.UITests.csproj", "{B870CC82-98B1-4A0E-B599-03706DCECD16}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +29,10 @@ Global
 		{72606037-0DC1-45EF-A30E-CA714E290DE4}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{72606037-0DC1-45EF-A30E-CA714E290DE4}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{72606037-0DC1-45EF-A30E-CA714E290DE4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B870CC82-98B1-4A0E-B599-03706DCECD16}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B870CC82-98B1-4A0E-B599-03706DCECD16}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B870CC82-98B1-4A0E-B599-03706DCECD16}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B870CC82-98B1-4A0E-B599-03706DCECD16}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

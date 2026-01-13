@@ -6,7 +6,8 @@
       xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
       mc:Ignorable="d"
       Title="Текущее меню"
-      Loaded="Page_Loaded">
+      Loaded="Page_Loaded"
+      PreviewKeyDown="Page_PreviewKeyDown">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
@@ -151,7 +152,8 @@
                         <Button Style="{StaticResource MaterialDesignFloatingActionMiniButton}"
                                 x:Name="NewMenuButton"
                                 Click="NewMenu_Click"
-                                ToolTip="Создать новое меню">
+                                ToolTip="Создать новое меню"
+                                AutomationProperties.AutomationId="NewMenuButton">
                             <materialDesign:PackIcon Kind="Plus" />
                         </Button>
                     </StackPanel>
@@ -247,13 +249,15 @@
                                                      TextChanged="QuantityTextBox_TextChanged"
                                                      Loaded="QuantityTextBox_Loaded"
                                                      Tag="{Binding}"
-                                                     FontSize="11" />
+                                                     FontSize="11" 
+                                                     AutomationProperties.AutomationId="QuantityBox"/>
                                             <Button Style="{StaticResource MaterialDesignIconButton}"
                                                     Click="AddDelicateToMenu_Click"
                                                     Tag="{Binding}"
                                                     ToolTip="Добавить в меню"
                                                     Width="28" Height="28" Padding="2"
-                                                    x:Name="AddButton">
+                                                    x:Name="AddButton"
+                                                    AutomationProperties.AutomationId="AddDishButton">
                                                 <materialDesign:PackIcon Kind="PlusCircle" Width="18" Height="18" />
                                             </Button>
                                         </StackPanel>

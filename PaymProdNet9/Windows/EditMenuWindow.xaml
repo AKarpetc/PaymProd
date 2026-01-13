@@ -6,7 +6,8 @@
         Height="350" Width="400"
         WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize"
-        Title="Редактирование меню">
+        Title="Редактирование меню"
+        AutomationProperties.AutomationId="EditMenuWindow">
     <materialDesign:Card Padding="20">
         <Grid>
             <Grid.RowDefinitions>
@@ -23,16 +24,19 @@
                 <TextBox x:Name="NameTextBox"
                          materialDesign:HintAssist.Hint="Название банкета"
                          Style="{StaticResource MaterialDesignFloatingHintTextBox}"
-                         Margin="0,0,0,15" />
+                         Margin="0,0,0,15"
+                         AutomationProperties.AutomationId="BanquetNameTextBox" />
 
                 <TextBox x:Name="GuestsTextBox"
                          materialDesign:HintAssist.Hint="Количество гостей"
                          Style="{StaticResource MaterialDesignFloatingHintTextBox}"
                          PreviewTextInput="GuestsTextBox_PreviewTextInput"
-                         Margin="0,0,0,15" />
+                         Margin="0,0,0,15"
+                         AutomationProperties.AutomationId="PeopleCountTextBox" />
 
                 <controls:DateTimePicker x:Name="DatePicker"
-                                         Margin="0,0,0,15" />
+                                         Margin="0,0,0,15"
+                                         AutomationProperties.AutomationId="BanquetDatePicker" />
 
                 <TextBox x:Name="DescriptionTextBox"
                          materialDesign:HintAssist.Hint="Описание (необязательно)"
@@ -40,7 +44,8 @@
                          AcceptsReturn="True"
                          TextWrapping="Wrap"
                          Height="60"
-                         Margin="0,0,0,15" />
+                         Margin="0,0,0,15"
+                         AutomationProperties.AutomationId="DescriptionTextBox" />
             </StackPanel>
 
             <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right">
@@ -50,7 +55,8 @@
                         Margin="0,0,10,0" />
                 <Button Style="{StaticResource MaterialDesignRaisedButton}"
                         Content="Сохранить"
-                        Click="Save_Click" />
+                        Click="Save_Click"
+                        AutomationProperties.AutomationId="SaveMenuButton" />
             </StackPanel>
         </Grid>
     </materialDesign:Card>
