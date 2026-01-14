@@ -39,6 +39,9 @@ public class MenuPrinter
         {
             var fileName = Path.Combine(Path.GetTempPath(), $"Menu_{DateTime.Now:yyyyMMdd_HHmmss}.docx");
 
+            var settings = _settingsRepository.GetSettings();
+            var menuFontSizeStr = (settings.MenuReportFontSize * 2).ToString();
+
             var measures = _productRepository.GetMeasures();
             // Обрабатываем дубликаты - берем первую меру с таким названием
             var measureLookup = measures
@@ -96,7 +99,7 @@ public class MenuPrinter
                 var titleRun = titleParagraph.AppendChild(new Run());
                 var titleRunProperties = titleRun.AppendChild(new RunProperties());
                 titleRunProperties.AppendChild(new Bold());
-                titleRunProperties.AppendChild(new FontSize { Val = "32" });
+                titleRunProperties.AppendChild(new FontSize { Val = (settings.MenuReportFontSize * 2 + 4).ToString() });
                 titleRun.AppendChild(new Text($"Меню: {menuName}"));
 
                 var titleProperties = titleParagraph.AppendChild(new ParagraphProperties());
@@ -104,9 +107,8 @@ public class MenuPrinter
 
                 // Removed SectionProperties from here to fix Word corruption. Will add at the end of Body.
                
-                body.AppendChild(new Paragraph()); // Пустая строка
-               
-                body.AppendChild(new Paragraph()); // Пустая строка
+                // body.AppendChild(new Paragraph()); // Пустая строка
+                // body.AppendChild(new Paragraph()); // Пустая строка
 
                 // Создаем таблицу
                 var table = new Table();
@@ -179,7 +181,7 @@ public class MenuPrinter
                     var headerParagraph = new Paragraph(
                         new ParagraphProperties(new Justification { Val = JustificationValues.Center }));
                     var headerRun = new Run();
-                    var headerRunProps = new RunProperties(new Bold(), new FontSize { Val = "28" });
+                    var headerRunProps = new RunProperties(new Bold(), new FontSize { Val = (settings.MenuReportFontSize * 2 + 4).ToString() });
                     headerRun.Append(headerRunProps);
                     headerRun.Append(new Text(group.Key.Type ?? "Без типа"));
                     headerParagraph.Append(headerRun);
@@ -188,26 +190,26 @@ public class MenuPrinter
                     table.Append(headerRow);
 
                     var columnsRow = new TableRow();
-                    columnsRow.Append(CreateTableHeaderCell("Блюдо"));
-                    columnsRow.Append(CreateTableHeaderCell("Состав"));
+                    columnsRow.Append(CreateTableHeaderCell("Блюдо", menuFontSizeStr));
+                    columnsRow.Append(CreateTableHeaderCell("Состав", menuFontSizeStr));
                     if (showPriceColumn)
                     {
                         if (reportMode == ReportMode.Price)
                         {
-                            columnsRow.Append(CreateTableHeaderCell("Себ. порции"));
-                            columnsRow.Append(CreateTableHeaderCell("Цена порции"));
-                            columnsRow.Append(CreateTableHeaderCell("Сумма, тг"));
+                            columnsRow.Append(CreateTableHeaderCell("Себ. порции", menuFontSizeStr));
+                            columnsRow.Append(CreateTableHeaderCell("Цена порции", menuFontSizeStr));
+                            columnsRow.Append(CreateTableHeaderCell("Сумма, тг", menuFontSizeStr));
                         }
                         else if (reportMode == ReportMode.Full)
                         {
-                            columnsRow.Append(CreateTableHeaderCell("Себ. порции"));
-                            columnsRow.Append(CreateTableHeaderCell("Цена порции"));
-                            columnsRow.Append(CreateTableHeaderCell("Итог себ."));
-                            columnsRow.Append(CreateTableHeaderCell("Итог блюда"));
+                            columnsRow.Append(CreateTableHeaderCell("Себ. порции", menuFontSizeStr));
+                            columnsRow.Append(CreateTableHeaderCell("Цена порции", menuFontSizeStr));
+                            columnsRow.Append(CreateTableHeaderCell("Итог себ.", menuFontSizeStr));
+                            columnsRow.Append(CreateTableHeaderCell("Итог блюда", menuFontSizeStr));
                         }
                         else
                         {
-                            columnsRow.Append(CreateTableHeaderCell("Цена, тг"));
+                            columnsRow.Append(CreateTableHeaderCell("Цена, тг", menuFontSizeStr));
                         }
                     }
                     table.Append(columnsRow);
@@ -221,7 +223,7 @@ public class MenuPrinter
                         var nameCell = new TableCell();
                         nameCell.Append(new Paragraph(
                             new ParagraphProperties(new Justification { Val = JustificationValues.Left }),
-                            new Run(new Text(delicate.Name))));
+                            new Run(new RunProperties(new FontSize { Val = menuFontSizeStr }), new Text(delicate.Name))));
                         EnsureVerticalCenter(nameCell);
                         row.Append(nameCell);
 
@@ -298,21 +300,21 @@ public class MenuPrinter
                             if (reportMode == ReportMode.NoPrices || reportMode == ReportMode.Price)
                             {
                                 compositionParagraph.Append(new Break());
-                                compositionParagraph.Append(new Run(new Text(string.Join(", ", componentLines))));
+                                compositionParagraph.Append(new Run(new RunProperties(new FontSize { Val = menuFontSizeStr }), new Text(string.Join(", ", componentLines))));
                             }
                             else
                             {
                                 foreach (var line in componentLines)
                                 {
                                     compositionParagraph.Append(new Break());
-                                    compositionParagraph.Append(new Run(new Text(line)));
+                                    compositionParagraph.Append(new Run(new RunProperties(new FontSize { Val = menuFontSizeStr }), new Text(line)));
                                 }
                             }
                         }
                         else
                         {
                             compositionParagraph.Append(new Break());
-                            compositionParagraph.Append(new Run(new Text("нет данных")));
+                            compositionParagraph.Append(new Run(new RunProperties(new FontSize { Val = menuFontSizeStr }), new Text("нет данных")));
                         }
 
                         var compositionCell = new TableCell();
@@ -340,7 +342,7 @@ public class MenuPrinter
                                 var unitCostCell = new TableCell();
                                 unitCostCell.Append(new Paragraph(
                                     new ParagraphProperties(new Justification { Val = JustificationValues.Left }),
-                                    new Run(new Text(unitCostText))));
+                                    new Run(new RunProperties(new FontSize { Val = menuFontSizeStr }), new Text(unitCostText))));
                                 EnsureVerticalCenter(unitCostCell);
                                 row.Append(unitCostCell);
 
@@ -358,7 +360,7 @@ public class MenuPrinter
                                 var unitPriceCell = new TableCell();
                                 unitPriceCell.Append(new Paragraph(
                                     new ParagraphProperties(new Justification { Val = JustificationValues.Left }),
-                                    new Run(new Text(unitPriceText))));
+                                    new Run(new RunProperties(new FontSize { Val = menuFontSizeStr }), new Text(unitPriceText))));
                                 EnsureVerticalCenter(unitPriceCell);
                                 row.Append(unitPriceCell);
                             }
@@ -372,7 +374,7 @@ public class MenuPrinter
                                 var rawCostCell = new TableCell();
                                 rawCostCell.Append(new Paragraph(
                                     new ParagraphProperties(new Justification { Val = JustificationValues.Left }),
-                                    new Run(new Text(rawCostText))));
+                                    new Run(new RunProperties(new FontSize { Val = menuFontSizeStr }), new Text(rawCostText))));
                                 EnsureVerticalCenter(rawCostCell);
                                 row.Append(rawCostCell);
                             }
@@ -387,7 +389,7 @@ public class MenuPrinter
                             var priceCell = new TableCell();
                             priceCell.Append(new Paragraph(
                                 new ParagraphProperties(new Justification { Val = JustificationValues.Left }),
-                                new Run(new Text(priceText))));
+                                new Run(new RunProperties(new FontSize { Val = menuFontSizeStr }), new Text(priceText))));
                             EnsureVerticalCenter(priceCell);
                             row.Append(priceCell);
                         }
@@ -397,7 +399,8 @@ public class MenuPrinter
                 }
 
                 // --- Добавляем итоговые строки ---
-                var settings = _settingsRepository.GetSettings();
+                // --- Добавляем итоговые строки ---
+                // var settings = _settingsRepository.GetSettings(); // Removed duplicate declaration
                 decimal totalDishSum = 0;
                 decimal totalCostSum = 0;
 
@@ -635,13 +638,15 @@ public class MenuPrinter
         return $"{productName} ({displayValue}) — {FormatCurrency(priceInfo.TotalPrice)} тг";
     }
 
-    private static TableCell CreateTableHeaderCell(string text)
+    private static TableCell CreateTableHeaderCell(string text, string? fontSize = null)
     {
         var cell = new TableCell();
         EnsureVerticalCenter(cell);
         var paragraph = new Paragraph(new ParagraphProperties(new Justification { Val = JustificationValues.Center }));
         var run = new Run();
-        run.Append(new RunProperties(new Bold()));
+        var props = new RunProperties(new Bold());
+        if (!string.IsNullOrEmpty(fontSize)) props.Append(new FontSize { Val = fontSize });
+        run.Append(props);
         run.Append(new Text(text));
         paragraph.Append(run);
         cell.Append(paragraph);
@@ -691,6 +696,9 @@ public class MenuPrinter
         try
         {
             var fileName = Path.Combine(Path.GetTempPath(), $"Report_{DateTime.Now:yyyyMMdd_HHmmss}.docx");
+
+            var settings = _settingsRepository.GetSettings();
+            var productFontSizeStr = (settings.ProductReportFontSize * 2).ToString();
 
             // Получаем все меры для определения округления
             var measures = _productRepository.GetMeasures();
@@ -756,7 +764,7 @@ public class MenuPrinter
 
                 var titleParagraph = body.AppendChild(new Paragraph(
                     new ParagraphProperties(new Justification { Val = JustificationValues.Center }),
-                    new Run(new RunProperties(new Bold(), new FontSize { Val = "32" }),
+                    new Run(new RunProperties(new Bold(), new FontSize { Val = (settings.ProductReportFontSize * 2 + 4).ToString() }),
                         new Text("Отчет по товарам"))
                 ));
 
@@ -784,7 +792,7 @@ public class MenuPrinter
                 dateRun.AppendChild(new Text($"Дата, начало: {dateText}"));
                 infoParagraph.AppendChild(dateRun);
 
-                body.AppendChild(new Paragraph()); // Пустая строка
+                // body.AppendChild(new Paragraph()); // Пустая строка
 
                 var groupedList = reportData
                     .GroupBy(r => r.Type ?? "Без типа")
@@ -892,9 +900,7 @@ public class MenuPrinter
 
                     if (includePrices) // This condition is always false here, but the user's instruction implies it should be `showPriceColumn`
                     {
-                        decimal currentServicePercent = 10;
-                        var settings = _settingsRepository.GetSettings();
-                        currentServicePercent = settings.ServicePercent;
+                        decimal currentServicePercent = settings.ServicePercent;
 
                         // Assuming menuId is available in this context, perhaps from reportData or a parameter
                         // For now, let's assume it's not directly available and needs to be passed or derived.
@@ -1249,6 +1255,7 @@ public class MenuPrinter
                     var run = new Run(new Text(text ?? string.Empty));
                     var runProps = new RunProperties();
                     if (bold) runProps.Append(new Bold());
+                    runProps.Append(new FontSize { Val = productFontSizeStr });
                     run.PrependChild(runProps);
 
                     var paragraph = new Paragraph(new ParagraphProperties(new Justification { Val = justify }), run);

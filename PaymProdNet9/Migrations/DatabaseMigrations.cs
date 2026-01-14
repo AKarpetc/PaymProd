@@ -45,7 +45,8 @@ public static class MigrationRunner
         var migrations = new IDatabaseMigration[]
         {
             new AddAutoAddToDelicatesMigration(),
-            new AddHideInMenuFlagsMigration()
+            new AddHideInMenuFlagsMigration(),
+            new AddFontSizeSettingsMigration()
         }.OrderBy(m => m.Version);
 
         foreach (var migration in migrations)
@@ -199,5 +200,52 @@ internal sealed class AddHideInMenuFlagsMigration : IDatabaseMigration
         }
 
         Services.Logger.Info($"Миграция AddHideInMenuFlags: колонка {columnName} добавлена в таблицу {tableName}.");
+    }
+}
+
+/// <summary>
+/// Миграция №3: добавление настроек размера шрифта
+/// </summary>
+internal sealed class AddFontSizeSettingsMigration : IDatabaseMigration
+{
+    public int Version => 3;
+    public string Name => "Add Font Size Settings";
+
+    public void Apply(SqliteConnection connection)
+    {
+        AddColumnIfNotExists(connection, "Settings", "MenuReportFontSize", "INTEGER DEFAULT 14");
+        AddColumnIfNotExists(connection, "Settings", "ProductReportFontSize", "INTEGER DEFAULT 11");
+    }
+
+    private static void AddColumnIfNotExists(SqliteConnection connection, string tableName, string columnName,
+        string columnDefinition)
+    {
+        using (var checkCmd = connection.CreateCommand())
+        {
+            checkCmd.CommandText = $"PRAGMA table_info({tableName})";
+
+            using var reader = checkCmd.ExecuteReader();
+            var hasColumn = false;
+
+            while (reader.Read())
+            {
+                var existingName = reader.GetString(1);
+                if (string.Equals(existingName, columnName, StringComparison.OrdinalIgnoreCase))
+                {
+                    hasColumn = true;
+                    break;
+                }
+            }
+
+            if (hasColumn) return;
+        }
+
+        using (var alterCmd = connection.CreateCommand())
+        {
+            alterCmd.CommandText = $"ALTER TABLE {tableName} ADD COLUMN {columnName} {columnDefinition}";
+            alterCmd.ExecuteNonQuery();
+        }
+
+        Services.Logger.Info($"Миграция AddFontSizeSettings: колонка {columnName} добавлена в таблицу {tableName}.");
     }
 }

@@ -48,6 +48,8 @@ public partial class ParametersPage : Page
             var settings = _settingsRepository.GetSettings();
             ServicePercentTextBox.Text = settings.ServicePercent.ToString("G");
             DefaultMarkupTextBox.Text = settings.DefaultMarkup.ToString("G");
+            MenuFontSizeTextBox.Text = settings.MenuReportFontSize.ToString();
+            ProductFontSizeTextBox.Text = settings.ProductReportFontSize.ToString();
         }
         catch (Exception ex)
         {
@@ -110,35 +112,36 @@ public partial class ParametersPage : Page
     {
         try
         {
-            if (!decimal.TryParse(ServicePercentTextBox.Text, out var servicePercent))
+            if (decimal.TryParse(ServicePercentTextBox.Text, out var servicePercent) &&
+                decimal.TryParse(DefaultMarkupTextBox.Text, out var defaultMarkup) &&
+                int.TryParse(MenuFontSizeTextBox.Text, out var menuFontSize) &&
+                int.TryParse(ProductFontSizeTextBox.Text, out var productFontSize))
             {
-                MessageBox.Show("Некорректное значение процента за обслуживание", "Ошибка", MessageBoxButton.OK,
-                    MessageBoxImage.Warning);
-                return;
+                var settings = new AppGlobalSettings
+                {
+                    Id = 1,
+                    ServicePercent = servicePercent,
+                    DefaultMarkup = defaultMarkup,
+                    MenuReportFontSize = menuFontSize,
+                    ProductReportFontSize = productFontSize
+                };
+                _settingsRepository.SaveSettings(settings);
+
+                Services.Logger.Info("Настройки сохранены");
+                System.Windows.MessageBox.Show("Настройки успешно сохранены.", "Информация", MessageBoxButton.OK,
+                    MessageBoxImage.Information);
             }
-
-            if (!decimal.TryParse(DefaultMarkupTextBox.Text, out var defaultMarkup))
+            else
             {
-                MessageBox.Show("Некорректное значение надбавки по умолчанию", "Ошибка", MessageBoxButton.OK,
-                    MessageBoxImage.Warning);
-                return;
+                System.Windows.MessageBox.Show("Пожалуйста, введите корректные числовые значения.", "Ошибка",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
             }
-
-            var settings = new AppGlobalSettings
-            {
-                Id = 1,
-                ServicePercent = servicePercent,
-                DefaultMarkup = defaultMarkup
-            };
-
-            _settingsRepository.SaveSettings(settings);
-            MessageBox.Show("Настройки успешно сохранены", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
         }
         catch (Exception ex)
         {
-            Logger.Error("Ошибка при сохранении настроек", ex);
-            MessageBox.Show($"Ошибка при сохранении настроек: {ex.Message}", "Ошибка", MessageBoxButton.OK,
-                MessageBoxImage.Error);
+            Services.Logger.Error("Ошибка при сохранении настроек", ex);
+            System.Windows.MessageBox.Show($"Ошибка при сохранении: {ex.Message}", "Ошибка",
+                MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
 

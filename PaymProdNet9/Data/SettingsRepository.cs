@@ -21,7 +21,7 @@ public class SettingsRepository
         connection.Open();
 
         var command = connection.CreateCommand();
-        command.CommandText = "SELECT ServicePercent, DefaultMarkup FROM Settings WHERE Id = 1";
+        command.CommandText = "SELECT ServicePercent, DefaultMarkup, MenuReportFontSize, ProductReportFontSize FROM Settings WHERE Id = 1";
 
         using var reader = command.ExecuteReader();
         if (reader.Read())
@@ -29,7 +29,9 @@ public class SettingsRepository
             {
                 Id = 1,
                 ServicePercent = reader.GetDecimal(0),
-                DefaultMarkup = reader.GetDecimal(1)
+                DefaultMarkup = reader.GetDecimal(1),
+                MenuReportFontSize = reader.IsDBNull(2) ? 14 : reader.GetInt32(2),
+                ProductReportFontSize = reader.IsDBNull(3) ? 11 : reader.GetInt32(3)
             };
 
         // Если настроек нет (например, только создали таблицу), возвращаем дефолтные
@@ -46,14 +48,18 @@ public class SettingsRepository
 
         var command = connection.CreateCommand();
         command.CommandText = @"
-            INSERT INTO Settings (Id, ServicePercent, DefaultMarkup) 
-            VALUES (1, @servicePercent, @defaultMarkup)
+            INSERT INTO Settings (Id, ServicePercent, DefaultMarkup, MenuReportFontSize, ProductReportFontSize) 
+            VALUES (1, @servicePercent, @defaultMarkup, @menuFontSize, @productFontSize)
             ON CONFLICT(Id) DO UPDATE SET 
                 ServicePercent = excluded.ServicePercent,
-                DefaultMarkup = excluded.DefaultMarkup";
+                DefaultMarkup = excluded.DefaultMarkup,
+                MenuReportFontSize = excluded.MenuReportFontSize,
+                ProductReportFontSize = excluded.ProductReportFontSize";
 
         command.Parameters.AddWithValue("@servicePercent", settings.ServicePercent);
         command.Parameters.AddWithValue("@defaultMarkup", settings.DefaultMarkup);
+        command.Parameters.AddWithValue("@menuFontSize", settings.MenuReportFontSize);
+        command.Parameters.AddWithValue("@productFontSize", settings.ProductReportFontSize);
 
         command.ExecuteNonQuery();
     }

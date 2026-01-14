@@ -198,10 +198,41 @@
                                             ToolTip="Применить эту надбавку ко всем блюдам в справочнике и в текущем меню" />
                                 </Grid>
 
-                                <Button Content="Сохранить настройки" HorizontalAlignment="Left"
-                                        Click="SaveSettings_Click" Margin="0,10,0,0" />
-                            </StackPanel>
-                        </GroupBox>
+
+                        </StackPanel>
+                    </GroupBox>
+
+                    <GroupBox Header="Настройки печати" Padding="10" Margin="0,0,0,15">
+                        <StackPanel>
+                            <Grid Margin="0,0,0,10">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="250" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="Шрифт отчета по меню (pt):"
+                                           VerticalAlignment="Center" FontSize="14" />
+                                <TextBox Grid.Column="1" x:Name="MenuFontSizeTextBox"
+                                         Width="100" HorizontalAlignment="Left"
+                                         PreviewTextInput="NumericTextBox_PreviewTextInput"
+                                         LostFocus="ValidateNumeric_LostFocus" 
+                                         ToolTip="По умолчанию: 14" />
+                            </Grid>
+
+                            <Grid Margin="0,0,0,10">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="250" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="Шрифт отчета по товарам (pt):"
+                                           VerticalAlignment="Center" FontSize="14" />
+                                <TextBox Grid.Column="1" x:Name="ProductFontSizeTextBox"
+                                         Width="100" HorizontalAlignment="Left"
+                                         PreviewTextInput="NumericTextBox_PreviewTextInput"
+                                         LostFocus="ValidateNumeric_LostFocus" 
+                                         ToolTip="По умолчанию: 11" />
+                            </Grid>
+                        </StackPanel>
+                    </GroupBox>
 
                         <GroupBox Header="Настройки отображения" Padding="10">
                             <StackPanel>
@@ -213,6 +244,10 @@
                                           Unchecked="ShowDeletedItemsCheckBox_Changed" />
                             </StackPanel>
                         </GroupBox>
+
+                        <Button Content="Сохранить настройки" HorizontalAlignment="Left"
+                                Click="SaveSettings_Click" Margin="0,10,0,0"
+                                Style="{StaticResource MaterialDesignRaisedButton}"/>
                     </StackPanel>
                 </Grid>
             </TabItem>

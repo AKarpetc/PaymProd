@@ -1826,7 +1826,7 @@ public class MenuRepository
         connection.Open();
 
         using var command = connection.CreateCommand();
-        command.CommandText = "UPDATE Menu_Delicates SET Markup = @markup WHERE Menu_id = @menuId";
+        command.CommandText = "UPDATE Menu_Delicates SET Markup = @markup WHERE Id_men = @menuId";
         command.Parameters.AddWithValue("@markup", newMarkup);
         command.Parameters.AddWithValue("@menuId", menuId);
 
