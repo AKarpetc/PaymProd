@@ -1034,18 +1034,8 @@ public class MenuPrinter
 
                     foreach (var product in groupedProductsLeft)
                     {
-                        var (amountText, unitText, priceMultiplier) = FormatAmount(product);
-                        
-                        // Calculate Unit Price for display based on the Displayed Unit
-                        var displayUnitPrice = product.Price * priceMultiplier;
-                        var priceText = FormatCurrency(displayUnitPrice); // Unit Price
-                        
-                        // Recalculated total for display (already calculated in grouped object, but formatted here)
-                        // Actually, 'TotalPrice' in GroupedProduct is already the total sum.
-                        // We can just format it.
-                        var totalPriceText = FormatCurrency(product.TotalPrice); 
-
-                        rows.AddRange(CreatePriceRow(product.Name, amountText, unitText, priceText, totalPriceText));
+                        var (amountText, unitText, _) = FormatAmount(product);
+                        rows.AddRange(CreatePriceRow(product.Name, amountText, unitText));
                     }
 
                     return rows;
@@ -1086,14 +1076,12 @@ public class MenuPrinter
                 }
                 
                 // Helper to create TempRow for the generic table generation (used in AppendTypeSection)
-                TempRow CreatePriceRow(string productName, string amountText, string unitText, string priceText, string totalPriceText)
+                TempRow CreatePriceRow(string productName, string amountText, string unitText)
                 {
                     var row = new TempRow();
                     row.AddCell(CreateCell(productName, false, null, JustificationValues.Left));
                     row.AddCell(CreateCell(amountText, false, null, JustificationValues.Right));
                     row.AddCell(CreateCell(unitText, false, null, JustificationValues.Center));
-                    row.AddCell(CreateCell(priceText, false, null, JustificationValues.Right));
-                    row.AddCell(CreateCell(totalPriceText, false, null, JustificationValues.Right));
                     return row;
                 }
 
