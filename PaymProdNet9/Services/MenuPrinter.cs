@@ -209,7 +209,7 @@ public class MenuPrinter
                         }
                         else
                         {
-                            columnsRow.Append(CreateTableHeaderCell("Цена, тг", menuFontSizeStr));
+                            columnsRow.Append(CreateTableHeaderCell("Стоимость", menuFontSizeStr));
                         }
                     }
                     table.Append(columnsRow);
@@ -307,7 +307,7 @@ public class MenuPrinter
                                 foreach (var line in componentLines)
                                 {
                                     compositionParagraph.Append(new Break());
-                                    compositionParagraph.Append(new Run(new RunProperties(new FontSize { Val = menuFontSizeStr }), new Text(line)));
+                                    compositionParagraph.Append(new Run(new RunProperties(new FontSize { Val = menuFontSizeStr }), new Text(line + ", ")));
                                 }
                             }
                         }
@@ -591,6 +591,26 @@ public class MenuPrinter
                         new Run(new RunProperties(new Bold(), new FontSize { Val = "24" }), 
                             new Text($"ИТОГ   {FormatCurrency(grandTotal)}"))
                     ));
+                    totalRow.Append(totalCell);
+                    table.Append(totalRow);
+                }
+                else if (reportMode == ReportMode.Cost)
+                {
+                    var totalRow = new TableRow();
+                    var totalCell = new TableCell();
+
+                    totalCell.Append(new TableCellProperties(
+                        new GridSpan { Val = 3 },
+                        new Shading { Fill = "D3D3D3" },
+                        new TableCellVerticalAlignment { Val = TableVerticalAlignmentValues.Center }
+                    ));
+
+                    totalCell.Append(new Paragraph(
+                        new ParagraphProperties(new Justification { Val = JustificationValues.Right }),
+                        new Run(new RunProperties(new Bold(), new FontSize { Val = "24" }),
+                            new Text($"ИТОГ   {FormatCurrency(totalDishSum)}"))
+                    ));
+
                     totalRow.Append(totalCell);
                     table.Append(totalRow);
                 }

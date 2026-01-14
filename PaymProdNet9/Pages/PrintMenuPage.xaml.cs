@@ -207,7 +207,7 @@ public partial class PrintMenuPage : Page
                 }
                 else
                 {
-                    columnsHeaderRow.Cells.Add(CreateColumnHeaderCell("Цена, тг"));
+                    columnsHeaderRow.Cells.Add(CreateColumnHeaderCell("Стоимость"));
                 }
             }
             rowGroup.Rows.Add(columnsHeaderRow);
@@ -518,7 +518,7 @@ public partial class PrintMenuPage : Page
         for (var i = 0; i < lines.Count; i++)
         {
             if (i > 0) paragraph.Inlines.Add(new LineBreak());
-            paragraph.Inlines.Add(new Run(lines[i]));
+            paragraph.Inlines.Add(new Run(lines[i] + ", "));
         }
 
         return paragraph;
