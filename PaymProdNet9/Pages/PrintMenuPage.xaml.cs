@@ -132,7 +132,7 @@ public partial class PrintMenuPage : Page
             .ThenBy(g => g.Key.Type);
 
         var table = new Table();
-        table.Columns.Add(new TableColumn { Width = new GridLength(250) });
+        table.Columns.Add(new TableColumn { Width = new GridLength(150) });
         var showPriceColumn = reportMode != ReportMode.NoPrices;
         
         decimal totalCostSum = 0; // Accumulator for Full Report Total Cost (Raw)
@@ -146,14 +146,14 @@ public partial class PrintMenuPage : Page
                 table.Columns.Add(new TableColumn { Width = new GridLength(100) }); // Portion Price
                 table.Columns.Add(new TableColumn { Width = new GridLength(150) }); // Total Price
             }
-            else if (reportMode == ReportMode.Full)
+            else if (reportMode == ReportMode.Full || reportMode == ReportMode.Cost)
             {
-                // Full Report columns
-                table.Columns.Add(new TableColumn { Width = new GridLength(300) }); // Composition
-                table.Columns.Add(new TableColumn { Width = new GridLength(100) }); // Portion Cost
-                table.Columns.Add(new TableColumn { Width = new GridLength(100) }); // Portion Price
-                table.Columns.Add(new TableColumn { Width = new GridLength(120) }); // Total Cost (Raw)
-                table.Columns.Add(new TableColumn { Width = new GridLength(150) }); // Total Dish (Sum)
+                // Full/Cost Report columns
+                table.Columns.Add(new TableColumn { Width = new GridLength(220) }); // Composition
+                table.Columns.Add(new TableColumn { Width = new GridLength(80) }); // Portion Cost
+                table.Columns.Add(new TableColumn { Width = new GridLength(80) }); // Portion Price
+                table.Columns.Add(new TableColumn { Width = new GridLength(90) }); // Total Cost (Raw)
+                table.Columns.Add(new TableColumn { Width = new GridLength(100) }); // Total Dish (Sum)
             }
             else
             {
@@ -177,7 +177,7 @@ public partial class PrintMenuPage : Page
                 FontWeight = FontWeights.Bold
             }))
             {
-                ColumnSpan = showPriceColumn ? (reportMode == ReportMode.Price ? 5 : (reportMode == ReportMode.Full ? 6 : 3)) : 2,
+                ColumnSpan = showPriceColumn ? (reportMode == ReportMode.Price ? 5 : (reportMode == ReportMode.Full || reportMode == ReportMode.Cost ? 6 : 3)) : 2,
                 Background = Brushes.LightGray,
                 TextAlignment = TextAlignment.Center,
                 Padding = new Thickness(4),
@@ -198,12 +198,12 @@ public partial class PrintMenuPage : Page
                     columnsHeaderRow.Cells.Add(CreateColumnHeaderCell("Цена порции"));
                     columnsHeaderRow.Cells.Add(CreateColumnHeaderCell("Сумма, тг"));
                 }
-                else if (reportMode == ReportMode.Full)
+                else if (reportMode == ReportMode.Full || reportMode == ReportMode.Cost)
                 {
-                    columnsHeaderRow.Cells.Add(CreateColumnHeaderCell("Себ. порции"));
-                    columnsHeaderRow.Cells.Add(CreateColumnHeaderCell("Цена порции"));
-                    columnsHeaderRow.Cells.Add(CreateColumnHeaderCell("Итог себ."));
-                    columnsHeaderRow.Cells.Add(CreateColumnHeaderCell("Итог блюда"));
+                    columnsHeaderRow.Cells.Add(CreateColumnHeaderCell("Себ.\nпорции"));
+                    columnsHeaderRow.Cells.Add(CreateColumnHeaderCell("Отп.\nцена"));
+                    columnsHeaderRow.Cells.Add(CreateColumnHeaderCell("Итог\nсеб."));
+                    columnsHeaderRow.Cells.Add(CreateColumnHeaderCell("Итог\nотп."));
                 }
                 else
                 {
@@ -246,7 +246,7 @@ public partial class PrintMenuPage : Page
                         // Считаем, что наценка - это множитель в процентах (например, 200% = x2)
                         dishPrice = dishPrice * (delicate.DefaultMarkup / 100);
 
-                    if (reportMode == ReportMode.Price || reportMode == ReportMode.Full)
+                    if (reportMode == ReportMode.Price || reportMode == ReportMode.Full || reportMode == ReportMode.Cost)
                     {
                         var portions = delicate.Count > 0 ? delicate.Count : 1;
                         var finalPriceForCalc = dishPrice; // In Full mode dishPrice is RAW cost, in Price mode it is MARKUP price
@@ -274,7 +274,7 @@ public partial class PrintMenuPage : Page
                         
                         // Calculate markup price locally if mode is Full (since dishPrice is raw in Full mode, see logic below)
                         var markupPrice = rawDishTotal;
-                         if (reportMode == ReportMode.Full && delicate.DefaultMarkup > 0)
+                         if ((reportMode == ReportMode.Full || reportMode == ReportMode.Cost) && delicate.DefaultMarkup > 0)
                              markupPrice = rawDishTotal * (delicate.DefaultMarkup / 100);
                          else if (reportMode == ReportMode.Price)
                              markupPrice = dishPrice; // Already applied
@@ -291,7 +291,7 @@ public partial class PrintMenuPage : Page
                         row.Cells.Add(unitPriceCell);
                     }
 
-                    if (reportMode == ReportMode.Full)
+                    if (reportMode == ReportMode.Full || reportMode == ReportMode.Cost)
                     {
                         // 2.5 Total Cost (Итог себ.) - Raw Cost
                         var rawCostCell = new TableCell(new Paragraph(new Run(rawDishTotal > 0 ? FormatCurrency(rawDishTotal) : "—")))
@@ -306,7 +306,7 @@ public partial class PrintMenuPage : Page
 
                     // 3. Общая сумма (Цена, тг)
                     var priceForTotalColumn = dishPrice;
-                    if (reportMode == ReportMode.Full && delicate.DefaultMarkup > 0)
+                    if ((reportMode == ReportMode.Full || reportMode == ReportMode.Cost) && delicate.DefaultMarkup > 0)
                         priceForTotalColumn = dishPrice * (delicate.DefaultMarkup / 100);
 
                     var priceCell = new TableCell(new Paragraph(new Run(priceForTotalColumn > 0 ? FormatCurrency(priceForTotalColumn) : "—")))
@@ -319,13 +319,13 @@ public partial class PrintMenuPage : Page
                     row.Cells.Add(priceCell);
 
                     // Накапливаем итоговую сумму
-                    if (reportMode == ReportMode.Full && delicate.DefaultMarkup > 0)
+                    if ((reportMode == ReportMode.Full || reportMode == ReportMode.Cost) && delicate.DefaultMarkup > 0)
                         totalReportSum += dishPrice * (delicate.DefaultMarkup / 100);
                     else
                         totalReportSum += dishPrice;
                     
                     // For Full Report, also accumulate Total Cost
-                    if (reportMode == ReportMode.Full)
+                    if (reportMode == ReportMode.Full || reportMode == ReportMode.Cost)
                     {
                         totalCostSum += rawDishTotal;
                     }
@@ -350,11 +350,11 @@ public partial class PrintMenuPage : Page
             // 1. Подитог (Сумма без обслуживания) & Итог себестоимости (для Full)
             var subtotalRow = new TableRow();
             
-            // Если режим Full, то в этой строке выводим И себестоимость И цену
-            if (reportMode == ReportMode.Full)
+            // Если режим Full или Cost, то в этой строке выводим И себестоимость И цену
+            if (reportMode == ReportMode.Full || reportMode == ReportMode.Cost)
             {
                  // Ячейка заголовка "Итого по меню" (Span 4: Dish, Comp, PCost, PPrice)
-                 var subtotalTitleCell = new TableCell(new Paragraph(new Run("Итого по меню") { FontWeight = FontWeights.Bold }))
+                 var subtotalTitleCell = new TableCell(new Paragraph(new Run(reportMode == ReportMode.Cost ? "ИТОГ" : "Итого по меню") { FontWeight = FontWeights.Bold }))
                  {
                      ColumnSpan = 4,
                      Padding = new Thickness(4),
@@ -384,7 +384,7 @@ public partial class PrintMenuPage : Page
             }
             else
             {
-                // Стандартный режим (Cost / Price)
+                // Стандартный режим (Price)
                 var subtotalTitleCell = new TableCell(new Paragraph(new Run("Итого по меню") { FontWeight = FontWeights.Bold }))
                 {
                     ColumnSpan = reportMode == ReportMode.Price ? 4 : 2,
@@ -405,68 +405,56 @@ public partial class PrintMenuPage : Page
             
             rowGroup.Rows.Add(subtotalRow);
 
-            // 2. Обслуживание
-            // 2. Обслуживание
-            if (reportMode == ReportMode.Price || reportMode == ReportMode.Full)
+            // 2. Обслуживание (Только для Price и Full, НЕ для Cost)
+            if (reportMode != ReportMode.Cost)
             {
-                var serviceSum = totalReportSum * (effectiveServicePercent / 100);
+                if (reportMode == ReportMode.Price || reportMode == ReportMode.Full)
+                {
+                    var serviceSum = totalReportSum * (effectiveServicePercent / 100);
 
-                var serviceRow = new TableRow();
-                var serviceTitleCell =
-                    new TableCell(new Paragraph(new Run($"За обслуживание ({effectiveServicePercent:G}%)"))
-                        { FontWeight = FontWeights.Bold })
+                    var serviceRow = new TableRow();
+                    var serviceTitleCell =
+                        new TableCell(new Paragraph(new Run($"За обслуживание ({effectiveServicePercent:G}%)"))
+                            { FontWeight = FontWeights.Bold })
+                        {
+                            ColumnSpan = reportMode == ReportMode.Price ? 4 : (reportMode == ReportMode.Full ? 5 : 2),
+                            Padding = new Thickness(4),
+                            TextAlignment = TextAlignment.Right
+                        };
+                    serviceRow.Cells.Add(serviceTitleCell);
+
+                    var serviceValueCell = new TableCell(new Paragraph(new Run(FormatCurrency(serviceSum))
+                        { FontWeight = FontWeights.Bold }))
                     {
-                        ColumnSpan = reportMode == ReportMode.Price ? 4 : (reportMode == ReportMode.Full ? 5 : 2),
+                        Padding = new Thickness(4),
+                        BorderBrush = Brushes.Black,
+                        BorderThickness = new Thickness(1),
+                        TextAlignment = TextAlignment.Right
+                    };
+                    serviceRow.Cells.Add(serviceValueCell);
+                    rowGroup.Rows.Add(serviceRow);
+
+                    // 3. ИТОГ - Single cell spanning full width
+                    var grandTotal = totalReportSum + serviceSum;
+
+                    var totalRow = new TableRow();
+                    
+                    // Determine span based on mode
+                    int span = 2; // Default (Cost)
+                    if (reportMode == ReportMode.Price) span = 5;
+                    if (reportMode == ReportMode.Full) span = 6;
+
+                    var totalCell = new TableCell(new Paragraph(new Run($"ИТОГ   {FormatCurrency(grandTotal)}")
+                        { FontWeight = FontWeights.Bold, Foreground = Brushes.DarkGreen, FontSize = 16 }))
+                    {
+                        ColumnSpan = span,
                         Padding = new Thickness(4),
                         TextAlignment = TextAlignment.Right
                     };
-                serviceRow.Cells.Add(serviceTitleCell);
-
-                var serviceValueCell = new TableCell(new Paragraph(new Run(FormatCurrency(serviceSum))
-                    { FontWeight = FontWeights.Bold }))
-                {
-                    Padding = new Thickness(4),
-                    BorderBrush = Brushes.Black,
-                    BorderThickness = new Thickness(1),
-                    TextAlignment = TextAlignment.Right
-                };
-                serviceRow.Cells.Add(serviceValueCell);
-                rowGroup.Rows.Add(serviceRow);
-
-                // 3. ИТОГ - Single cell spanning full width
-                var grandTotal = totalReportSum + serviceSum;
-
-                var totalRow = new TableRow();
-                
-                // Determine span based on mode
-                int span = 2; // Default (Cost)
-                if (reportMode == ReportMode.Price) span = 5;
-                if (reportMode == ReportMode.Full) span = 6;
-
-                var totalCell = new TableCell(new Paragraph(new Run($"ИТОГ   {FormatCurrency(grandTotal)}")
-                    { FontWeight = FontWeights.Bold, Foreground = Brushes.DarkGreen, FontSize = 16 }))
-                {
-                    ColumnSpan = span,
-                    Padding = new Thickness(4),
-                    TextAlignment = TextAlignment.Right
-                };
-                totalRow.Cells.Add(totalCell);
-                
-                rowGroup.Rows.Add(totalRow);
-            }
-            else if (reportMode == ReportMode.Cost)
-            {
-                // Для отчета по себестоимости тоже можно вывести ИТОГ (сумму себестоимостей)
-                var totalRow = new TableRow();
-                var totalCell = new TableCell(new Paragraph(new Run($"ИТОГ   {FormatCurrency(totalReportSum)}") 
-                    { FontWeight = FontWeights.Bold }))
-                {
-                    ColumnSpan = 2, // Cost mode has 2 columns defined in BuildDocument
-                    Padding = new Thickness(4),
-                    TextAlignment = TextAlignment.Right
-                };
-                totalRow.Cells.Add(totalCell);
-                rowGroup.Rows.Add(totalRow);
+                    totalRow.Cells.Add(totalCell);
+                    
+                    rowGroup.Rows.Add(totalRow);
+                }
             }
         }
 

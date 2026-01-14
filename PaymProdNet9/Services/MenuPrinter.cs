@@ -149,14 +149,14 @@ public class MenuPrinter
                             new GridColumn { Width = "1000" },
                             new GridColumn { Width = "1000" },
                             new GridColumn { Width = "2000" })
-                        : (reportMode == ReportMode.Full
+                        : (reportMode == ReportMode.Full || reportMode == ReportMode.Cost
                             ? new TableGrid(
                                 new GridColumn { Width = "2000" },
                                 new GridColumn { Width = "3000" },
-                                new GridColumn { Width = "1000" },
-                                new GridColumn { Width = "1000" },
-                                new GridColumn { Width = "1000" }, // Total Cost (Raw)
-                                new GridColumn { Width = "2000" })
+                                new GridColumn { Width = "1000" }, // Unit Cost
+                                new GridColumn { Width = "1000" }, // Unit Price
+                                new GridColumn { Width = "1000" }, // Total Cost
+                                new GridColumn { Width = "2000" }) // Total Price
                             : new TableGrid(
                                 new GridColumn { Width = "2000" },
                                 new GridColumn { Width = "5000" },
@@ -172,7 +172,7 @@ public class MenuPrinter
                     var headerRow = new TableRow();
                     var headerCell = new TableCell();
                     var headerCellProperties = new TableCellProperties(
-                        new GridSpan { Val = showPriceColumn ? (reportMode == ReportMode.Price ? 5 : (reportMode == ReportMode.Full ? 6 : 3)) : 2 },
+                        new GridSpan { Val = showPriceColumn ? (reportMode == ReportMode.Price ? 5 : (reportMode == ReportMode.Full || reportMode == ReportMode.Cost ? 6 : 3)) : 2 },
                         new Shading { Fill = "D3D3D3" },
                         new TableCellVerticalAlignment { Val = TableVerticalAlignmentValues.Center }
                     );
@@ -200,12 +200,12 @@ public class MenuPrinter
                             columnsRow.Append(CreateTableHeaderCell("Цена порции", menuFontSizeStr));
                             columnsRow.Append(CreateTableHeaderCell("Сумма, тг", menuFontSizeStr));
                         }
-                        else if (reportMode == ReportMode.Full)
+                        else if (reportMode == ReportMode.Full || reportMode == ReportMode.Cost)
                         {
                             columnsRow.Append(CreateTableHeaderCell("Себ. порции", menuFontSizeStr));
-                            columnsRow.Append(CreateTableHeaderCell("Цена порции", menuFontSizeStr));
+                            columnsRow.Append(CreateTableHeaderCell("Отп. цена", menuFontSizeStr));
                             columnsRow.Append(CreateTableHeaderCell("Итог себ.", menuFontSizeStr));
-                            columnsRow.Append(CreateTableHeaderCell("Итог блюда", menuFontSizeStr));
+                            columnsRow.Append(CreateTableHeaderCell("Итог отп.", menuFontSizeStr));
                         }
                         else
                         {
@@ -331,7 +331,7 @@ public class MenuPrinter
                             if ((reportMode == ReportMode.Price) && delicate.DefaultMarkup > 0)
                                 dishTotal = dishTotal * (delicate.DefaultMarkup / 100);
 
-                            if (reportMode == ReportMode.Price || reportMode == ReportMode.Full)
+                            if (reportMode == ReportMode.Price || reportMode == ReportMode.Full || reportMode == ReportMode.Cost)
                             {
                                 // --- Новые колонки для Price и Full режима ---
                                 var portions = delicate.Count > 0 ? delicate.Count : 1;
@@ -350,7 +350,7 @@ public class MenuPrinter
                                 // In Full mode dishTotal is RAW cost because we didn't apply markup above
                                 // Calculate markup price locally if mode is Full
                                 var markupPrice = rawDishTotal;
-                                if (reportMode == ReportMode.Full && delicate.DefaultMarkup > 0)
+                                if ((reportMode == ReportMode.Full || reportMode == ReportMode.Cost) && delicate.DefaultMarkup > 0)
                                     markupPrice = rawDishTotal * (delicate.DefaultMarkup / 100);
                                 else if (reportMode == ReportMode.Price)
                                     markupPrice = dishTotal; // Already applied
@@ -367,7 +367,7 @@ public class MenuPrinter
 
 
                             
-                            if (reportMode == ReportMode.Full)
+                            if (reportMode == ReportMode.Full || reportMode == ReportMode.Cost)
                             {
                                 // 2.5 Total Cost (Raw)
                                 var rawCostText = rawDishTotal > 0 ? FormatCurrency(rawDishTotal) : "—";
@@ -382,7 +382,7 @@ public class MenuPrinter
                             // 3. Общая сумма (Цена, тг)
                             // In Full Mode, dishTotal is Raw. We need to calculate Price.
                             var priceForTotalColumn = dishTotal;
-                             if (reportMode == ReportMode.Full && delicate.DefaultMarkup > 0)
+                             if ((reportMode == ReportMode.Full || reportMode == ReportMode.Cost) && delicate.DefaultMarkup > 0)
                                  priceForTotalColumn = dishTotal * (delicate.DefaultMarkup / 100);
 
                             var priceText = priceForTotalColumn > 0 ? FormatCurrency(priceForTotalColumn) : "—";
@@ -443,7 +443,7 @@ public class MenuPrinter
                     }
 
                     // 2. В зависимости от режима добавляем к общей сумме
-                    if (reportMode == ReportMode.Price || reportMode == ReportMode.Full)
+                    if (reportMode == ReportMode.Price || reportMode == ReportMode.Full || reportMode == ReportMode.Cost)
                     {
                         // Цена продажи = Себестоимость * Наценка
                         var markupMultiplier = delicate.DefaultMarkup > 0 ? delicate.DefaultMarkup / 100 : 1;
@@ -455,14 +455,14 @@ public class MenuPrinter
                         totalDishSum += currentDishCost;
                     }
                     
-                    if (reportMode == ReportMode.Full)
+                    if (reportMode == ReportMode.Full || reportMode == ReportMode.Cost)
                     {
                         totalCostSum += currentDishCost;
                     }
                 }
 
                 // Вывод строк Итого
-                if (reportMode == ReportMode.Price || reportMode == ReportMode.Full)
+                if (reportMode == ReportMode.Price || reportMode == ReportMode.Full || reportMode == ReportMode.Cost)
                 {
                     // Определяем процент обслуживания
                     var effectiveServicePercent = settings.ServicePercent;
@@ -478,7 +478,7 @@ public class MenuPrinter
                     // Строка "Подитог" (Сумма за блюда без обслуживания)
                     var subtotalRow = new TableRow();
                     
-                    if (reportMode == ReportMode.Full)
+                    if (reportMode == ReportMode.Full || reportMode == ReportMode.Cost)
                     {
                         // Merged Footer: "Итого по меню" with TotalCost and TotalPrice
                          var subtotalTitleCell = new TableCell();
@@ -488,7 +488,7 @@ public class MenuPrinter
                         ));
                          subtotalTitleCell.Append(new Paragraph(
                             new ParagraphProperties(new Justification { Val = JustificationValues.Right }),
-                            new Run(new RunProperties(new Bold()), new Text("Итого по меню"))
+                            new Run(new RunProperties(new Bold()), new Text(reportMode == ReportMode.Cost ? "ИТОГ" : "Итого по меню"))
                         ));
                         subtotalRow.Append(subtotalTitleCell);
 
@@ -541,8 +541,10 @@ public class MenuPrinter
                     
                     table.Append(subtotalRow);
 
-                    // Строка "За обслуживание"
-                    var serviceAmount = totalDishSum * (effectiveServicePercent / 100);
+                    if (reportMode != ReportMode.Cost)
+                    {
+                        // Строка "За обслуживание"
+                        var serviceAmount = totalDishSum * (effectiveServicePercent / 100);
 
                     var serviceRow = new TableRow();
                     // Объединенная ячейка для текста "За обслуживание + %"
@@ -579,7 +581,7 @@ public class MenuPrinter
                     int span = 2; // Default for Cost? Check logic. Cost doesn't enter here usually (reportMode == Cost) but if it did...
                     // reportMode is Price or Full here.
                     if (reportMode == ReportMode.Price) span = 5;
-                    if (reportMode == ReportMode.Full) span = 6;
+                    if (reportMode == ReportMode.Full || reportMode == ReportMode.Cost) span = 6;
                     
                     totalCell.Append(new TableCellProperties(
                         new GridSpan { Val = span },
@@ -594,26 +596,8 @@ public class MenuPrinter
                     totalRow.Append(totalCell);
                     table.Append(totalRow);
                 }
-                else if (reportMode == ReportMode.Cost)
-                {
-                    var totalRow = new TableRow();
-                    var totalCell = new TableCell();
-
-                    totalCell.Append(new TableCellProperties(
-                        new GridSpan { Val = 3 },
-                        new Shading { Fill = "D3D3D3" },
-                        new TableCellVerticalAlignment { Val = TableVerticalAlignmentValues.Center }
-                    ));
-
-                    totalCell.Append(new Paragraph(
-                        new ParagraphProperties(new Justification { Val = JustificationValues.Right }),
-                        new Run(new RunProperties(new Bold(), new FontSize { Val = "24" }),
-                            new Text($"ИТОГ   {FormatCurrency(totalDishSum)}"))
-                    ));
-
-                    totalRow.Append(totalCell);
-                    table.Append(totalRow);
                 }
+
                 else if (reportMode == ReportMode.NoPrices)
                 {
                     // В режиме "Без цен" итог не выводим
@@ -723,58 +707,11 @@ public class MenuPrinter
             // Получаем все меры для определения округления
             var measures = _productRepository.GetMeasures();
 
-            // Обрабатываем дубликаты - берем первую меру с таким названием
-            static Measure PickPreferred(IEnumerable<Measure> candidates)
-            {
-                return candidates
-                    .OrderByDescending(m => m.Fass > 1 ? 1 : 0)
-                    .ThenBy(m => m.Id)
-                    .First();
-            }
-
-            var measuresDict = measures
-                .GroupBy(m => m.Name.ToLower().Trim())
-                .ToDictionary(g => g.Key, PickPreferred);
-
-            // Функция для поиска меры по имени (с учетом вариаций)
-            Measure? FindMeasure(string? measureName)
-            {
-                if (string.IsNullOrEmpty(measureName)) return null;
-
-                var lowerName = measureName.ToLower().Trim();
-
-                if (measuresDict.ContainsKey(lowerName))
-                    return measuresDict[lowerName];
-
-                var partial = measures.Where(m =>
-                    lowerName.Contains(m.Name.ToLower().Trim()) ||
-                    m.Name.ToLower().Trim().Contains(lowerName));
-                if (partial.Any())
-                    return PickPreferred(partial);
-
-                return null;
-            }
-
-            string NormalizeUnit(string unit)
-            {
-                return unit?.Trim().ToLowerInvariant() ?? string.Empty;
-            }
-
-            Measure? FindChildMeasure(string? parentUnit)
-            {
-                if (string.IsNullOrWhiteSpace(parentUnit))
-                    return null;
-
-                var normalizedParent = NormalizeUnit(parentUnit);
-                return measures.FirstOrDefault(m =>
-                    m.Fass > 0 &&
-                    !string.IsNullOrWhiteSpace(m.FassIzmer) &&
-                    NormalizeUnit(m.FassIzmer) == normalizedParent);
-            }
-
             // Получаем типы продуктов для сортировки
             var productTypes = _productRepository.GetProductTypes();
             var productTypesDict = productTypes.ToDictionary(pt => pt.Name, pt => pt.SortOrder);
+            
+            var formatter = new ProductReportFormatter(measures);
 
             using (var document = WordprocessingDocument.Create(fileName, WordprocessingDocumentType.Document))
             {
@@ -849,6 +786,7 @@ public class MenuPrinter
 
                     foreach (var group in groupedList)
                     {
+                        decimal groupTotal = 0;
                         var headerRow = new TableRow();
                         headerRow.Append(CreateCell(group.Key, true, "E3EAF2", JustificationValues.Center, 5));
                         priceTable.Append(headerRow);
@@ -865,7 +803,7 @@ public class MenuPrinter
 
                         foreach (var product in groupedProductsLeft)
                         {
-                            var (amountText, unitText, priceMultiplier) = FormatAmount(product);
+                            var (amountText, unitText, priceMultiplier) = formatter.FormatAmount(product);
                             
                             // Calculate Unit Price for display
                             var displayUnitPrice = product.Price * priceMultiplier;
@@ -876,7 +814,15 @@ public class MenuPrinter
                                 unitText,
                                 FormatCurrency(displayUnitPrice),
                                 FormatCurrency(product.TotalPrice)));
+            
+                            groupTotal += product.TotalPrice;
                         }
+
+                        // Group Subtotal Row
+                        var groupSubtotalRow = new TableRow();
+                        groupSubtotalRow.Append(CreateCell($"Итог по категории \"{group.Key}\":", true, "F5F5F5", JustificationValues.Right, 4));
+                        groupSubtotalRow.Append(CreateCell(FormatCurrency(groupTotal), true, "F5F5F5", JustificationValues.Right));
+                        priceTable.Append(groupSubtotalRow);
                     }
 
                     // Add Total Row
@@ -1051,7 +997,7 @@ public class MenuPrinter
 
                 Process.Start(new ProcessStartInfo(fileName) { UseShellExecute = true });
 
-                List<TempRow> AppendTypeSection(IGrouping<string, DelicatesCollForSvod> groupLeft)
+List<TempRow> AppendTypeSection(IGrouping<string, DelicatesCollForSvod> groupLeft)
                 {
                     var rows = new List<TempRow>();
                     rows.AddRange(CreateHeaderRow(groupLeft.Key));
@@ -1060,7 +1006,7 @@ public class MenuPrinter
 
                     foreach (var product in groupedProductsLeft)
                     {
-                        var (amountText, unitText, _) = FormatAmount(product);
+                        var (amountText, unitText, _) = formatter.FormatAmount(product);
                         rows.AddRange(CreatePriceRow(product.Name, amountText, unitText));
                     }
 
@@ -1077,8 +1023,6 @@ public class MenuPrinter
                     return row;
                 }
 
-
-
                 TempRow CreateSpacerRow()
                 {
                     var spacerRow = new TempRow();
@@ -1087,6 +1031,16 @@ public class MenuPrinter
                     spacerRow.AddCell(CreateSpaceCell());
 
                     return spacerRow;
+                }
+
+                // Helper to create TempRow for the generic table generation (used in AppendTypeSection)
+                TempRow CreatePriceRow(string productName, string amountText, string unitText)
+                {
+                    var row = new TempRow();
+                    row.AddCell(CreateCell(productName, false, null, JustificationValues.Left));
+                    row.AddCell(CreateCell(amountText, false, null, JustificationValues.Right));
+                    row.AddCell(CreateCell(unitText, false, null, JustificationValues.Center));
+                    return row;
                 }
 
                 // Helper to create TableRow directly for the price table (OpenXml Table)
@@ -1101,168 +1055,9 @@ public class MenuPrinter
                     return row;
                 }
                 
-                // Helper to create TempRow for the generic table generation (used in AppendTypeSection)
-                TempRow CreatePriceRow(string productName, string amountText, string unitText)
-                {
-                    var row = new TempRow();
-                    row.AddCell(CreateCell(productName, false, null, JustificationValues.Left));
-                    row.AddCell(CreateCell(amountText, false, null, JustificationValues.Right));
-                    row.AddCell(CreateCell(unitText, false, null, JustificationValues.Center));
-                    return row;
-                }
+                
 
-                (string amount, string unit, decimal priceMultiplier) FormatAmount(GroupedProduct product)
-                {
-                    var defaultUnit = !string.IsNullOrEmpty(product.Mera) ? product.Mera : "шт";
-                    var normalizedUnit = NormalizeUnit(defaultUnit);
-
-                    if (!IsDiscreteUnit(normalizedUnit)) return FormatContinuous(product, defaultUnit, normalizedUnit);
-
-                    return FormatDiscrete(product, defaultUnit);
-                }
-
-                bool IsDiscreteUnit(string unit)
-                {
-                    if (string.IsNullOrEmpty(unit)) return false;
-                    string[] discreteKeywords = { "шт", "бут", "бан", "пач", "рулон", "компл", "уп", "набор" };
-                    return discreteKeywords.Any(unit.Contains);
-                }
-
-                (string amount, string unit, decimal priceMultiplier) FormatContinuous(
-                    GroupedProduct product,
-                    string originalUnit,
-                    string normalizedUnit)
-                {
-                    var measure = FindMeasure(originalUnit);
-                    var roundingPrecision = measure?.RoundingPrecision ?? 2;
-                    var totalValue = (double)product.TotalWeight;
-                    var displayUnit = originalUnit;
-                    var currentMeasure = measure;
-                    const int maxUnitHops = 10;
-                    decimal priceMultiplier = 1m;
-
-                    var baseUnitNormalized = normalizedUnit;
-
-                    if (product.Fass > 0 && !string.IsNullOrWhiteSpace(product.FassIz) &&
-                        NormalizeUnit(product.FassIz) != baseUnitNormalized &&
-                        totalValue >= (double)product.Fass)
-                    {
-                        totalValue /= (double)product.Fass;
-                        // For packaged products, if we are switching to the pack unit,
-                        // the price (product.Price) is already expressed per pack.
-                        // So we set multiplier to 1 (conceptually), not multiply by Fass.
-                        priceMultiplier = 1m; 
-                        displayUnit = product.FassIz;
-                        normalizedUnit = NormalizeUnit(displayUnit);
-
-                        currentMeasure = FindMeasure(product.FassIz) ?? currentMeasure;
-                        if (currentMeasure != null) roundingPrecision = currentMeasure.RoundingPrecision;
-                    }
-
-                    if (currentMeasure != null)
-                    {
-                        var hop = 0;
-                        while (hop++ < maxUnitHops &&
-                               currentMeasure.Fass > 0 &&
-                               totalValue >= currentMeasure.Fass &&
-                               !string.IsNullOrWhiteSpace(currentMeasure.FassIzmer))
-                        {
-                            var parent = FindMeasure(currentMeasure.FassIzmer);
-                            if (parent == null) break;
-
-                            if (NormalizeUnit(parent.Name) == NormalizeUnit(displayUnit)) break;
-
-                            totalValue /= currentMeasure.Fass;
-                            priceMultiplier *= (decimal)currentMeasure.Fass;
-
-                            currentMeasure = parent;
-                            displayUnit = currentMeasure.Name;
-                            roundingPrecision = currentMeasure.RoundingPrecision;
-                        }
-
-                        normalizedUnit = NormalizeUnit(displayUnit);
-
-                        // Для фасованных продуктов (Fass > 0) мы НЕ хотим конвертировать вниз,
-                        // чтобы сохранить цену за упаковку.
-                        hop = 0;
-                        while (product.Fass <= 0 && totalValue < 1 && hop++ < maxUnitHops)
-                        {
-                            var child = FindChildMeasure(normalizedUnit);
-                            if (child == null || child.Fass <= 0) break;
-
-                            if (NormalizeUnit(child.Name) == normalizedUnit) break;
-
-                            totalValue *= child.Fass;
-                            priceMultiplier /= (decimal)child.Fass;
-
-                            currentMeasure = child;
-                            displayUnit = child.Name;
-                            roundingPrecision = child.RoundingPrecision;
-                            normalizedUnit = NormalizeUnit(displayUnit);
-
-                            if (totalValue >= 1) break;
-                        }
-                    }
-
-                    double roundedValue;
-                    if (roundingPrecision <= 0)
-                    {
-                        roundedValue = Math.Ceiling(totalValue);
-                    }
-                    else
-                    {
-                        var multiplier = Math.Pow(10, roundingPrecision);
-                        roundedValue = Math.Ceiling(totalValue * multiplier) / multiplier;
-                    }
-
-                    var formatted = roundingPrecision <= 0
-                        ? ((int)roundedValue).ToString(CultureInfo.CurrentCulture)
-                        : roundedValue.ToString($"F{roundingPrecision}", CultureInfo.CurrentCulture);
-
-                    return (formatted, displayUnit, priceMultiplier);
-                }
-
-                (string amount, string unit, decimal priceMultiplier) FormatDiscrete(GroupedProduct product, string defaultUnit)
-                {
-                    var measure = FindMeasure(defaultUnit);
-                    var effectivePackSize = product.Fass > 0
-                        ? (double)product.Fass
-                        : measure?.Fass > 0
-                            ? measure.Fass
-                            : 1d;
-
-                    var value = product.TotalPackages > 0
-                        ? (double)product.TotalPackages
-                        : effectivePackSize > 0
-                            ? (double)(product.TotalWeight / (decimal)effectivePackSize)
-                            : (double)product.TotalWeight;
-                            
-                    var priceMultiplier = (decimal)effectivePackSize;
-                    if (priceMultiplier <= 0) priceMultiplier = 1;
-
-                    var precision = measure?.MenuRoundingPrecision ?? measure?.RoundingPrecision ?? 0;
-
-                    double roundedValue;
-                    if (precision <= 0)
-                    {
-                        roundedValue = Math.Ceiling(value);
-                    }
-                    else
-                    {
-                        var multiplier = Math.Pow(10, precision);
-                        roundedValue = Math.Ceiling(value * multiplier) / multiplier;
-                    }
-
-                    var formatted = precision <= 0
-                        ? ((int)roundedValue).ToString(CultureInfo.CurrentCulture)
-                        : roundedValue.ToString($"F{precision}", CultureInfo.CurrentCulture);
-
-                    var unitText = !string.IsNullOrWhiteSpace(product.FassIz)
-                        ? product.FassIz
-                        : defaultUnit;
-
-                    return (formatted, unitText, priceMultiplier);
-                }
+                
 
                 TableCell CreateSpaceCell()
                 {
@@ -1370,17 +1165,7 @@ public class MenuPrinter
     }
 }
 
-public record GroupedProduct
-{
-    public string Name { get; init; } = string.Empty;
-    public decimal TotalWeight { get; init; }
-    public decimal TotalPackages { get; init; }
-    public string? FassIz { get; init; }
-    public string? Mera { get; init; }
-    public decimal Fass { get; init; }
-    public decimal Price { get; init; }
-    public decimal TotalPrice { get; init; }
-}
+
 
 public record TempRow
 {

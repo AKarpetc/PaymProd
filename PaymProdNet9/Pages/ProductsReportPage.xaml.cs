@@ -190,6 +190,7 @@ public partial class ProductsReportPage : Page
             var measures = productRepository.GetMeasures();
             var productTypes = productRepository.GetProductTypes();
             var productTypesDict = productTypes.ToDictionary(pt => pt.Name, pt => pt.SortOrder);
+            var formatter = new ProductReportFormatter(measures);
 
             var groupedByType = summaryData
                 .GroupBy(r => r.Type ?? "Без типа")
@@ -198,9 +199,9 @@ public partial class ProductsReportPage : Page
                 .ToList();
 
             if (includePrices)
-                BuildSingleColumnTableWithPrices(groupedByType, measures);
+                BuildSingleColumnTableWithPrices(groupedByType, formatter);
             else
-                BuildStandardTable(groupedByType, measures, summaryData.Count);
+                BuildStandardTable(groupedByType, formatter, summaryData.Count);
 
             _currentReportWithPrices = includePrices;
             SaveToWordButton.Visibility = Visibility.Visible;
@@ -215,7 +216,7 @@ public partial class ProductsReportPage : Page
     }
 
     private void BuildStandardTable(List<IGrouping<string, DelicatesCollForSvod>> groupedByType,
-        List<Measure> measures, int totalItems)
+        ProductReportFormatter formatter, int totalItems)
     {
         var singleColumnMode = totalItems < 20;
 
@@ -250,7 +251,7 @@ public partial class ProductsReportPage : Page
 
         foreach (var group in groupedByType)
         {
-            var groupRows = CreateTypeSectionRows(group, measures);
+            var groupRows = CreateTypeSectionRows(group, formatter);
             rows.AddRange(groupRows);
             rows.Add(CreateSpacerRow());
         }
@@ -300,7 +301,7 @@ public partial class ProductsReportPage : Page
     }
 
     private void BuildSingleColumnTableWithPrices(List<IGrouping<string, DelicatesCollForSvod>> groupedByType,
-        List<Measure> measures)
+        ProductReportFormatter formatter)
     {
         var table = new Table
         {
@@ -322,6 +323,7 @@ public partial class ProductsReportPage : Page
 
         foreach (var typeGroup in groupedByType)
         {
+            decimal groupTotal = 0;
             var headerRow = new TableRow();
             headerRow.Cells.Add(CreateHeaderCell(typeGroup.Key, 5));
             group.Rows.Add(headerRow);
@@ -338,15 +340,16 @@ public partial class ProductsReportPage : Page
 
             foreach (var product in groupedProducts)
             {
-                var (amountText, unitText, roundedAmount, priceMultiplier) = FormatAmountWithRoundedValue(product, measures);
+                var (amountText, unitText, roundedAmount, priceMultiplier) = formatter.FormatAmountWithRoundedValue(product);
 
                 // Пересчитываем цену на основе округленного количества (для итоговой суммы)
                 // Note: RecalculatePrice logic might also need adjustment if it relies on exact unit match, 
                 // but for now we trust it works for Grand Total sum.
                 // We focus on the "Price" column display.
                 
-                var recalculatedPrice = RecalculatePrice(product, roundedAmount, measures);
+                var recalculatedPrice = formatter.RecalculatePrice(product, roundedAmount);
                 grandTotal += recalculatedPrice;
+                groupTotal += recalculatedPrice;
                 
                 // Calculate Unit Price for display based on the Displayed Unit
                 var displayUnitPrice = product.Price * priceMultiplier;
@@ -364,6 +367,30 @@ public partial class ProductsReportPage : Page
                 dataRow.Cells.Add(CreateValueCell(priceText, TextAlignment.Right));
                 group.Rows.Add(dataRow);
             }
+
+            // Group Subtotal Row
+            var groupSubtotalRow = new TableRow();
+            var groupTitleCell = new TableCell(new Paragraph(new Run($"Итог по категории \"{typeGroup.Key}\"") { FontWeight = FontWeights.Bold }))
+            {
+                ColumnSpan = 4,
+                TextAlignment = TextAlignment.Right,
+                Background = Brushes.WhiteSmoke, // Light gray for group totals
+                BorderBrush = Brushes.Black,
+                BorderThickness = new Thickness(1),
+                Padding = new Thickness(4)
+            };
+            groupSubtotalRow.Cells.Add(groupTitleCell);
+
+            var groupValueCell = new TableCell(new Paragraph(new Run(FormatPrice(groupTotal)) { FontWeight = FontWeights.Bold }))
+            {
+                TextAlignment = TextAlignment.Right,
+                 Background = Brushes.WhiteSmoke,
+                BorderBrush = Brushes.Black,
+                BorderThickness = new Thickness(1),
+                Padding = new Thickness(4)
+            };
+            groupSubtotalRow.Cells.Add(groupValueCell);
+            group.Rows.Add(groupSubtotalRow);
         }
 
         // Add Grand Total Row
@@ -417,7 +444,7 @@ public partial class ProductsReportPage : Page
     }
 
     private List<List<TableCell>> CreateTypeSectionRows(IGrouping<string, DelicatesCollForSvod> group,
-        List<Measure> measures)
+        ProductReportFormatter formatter)
     {
         var rows = new List<List<TableCell>>();
 
@@ -442,7 +469,7 @@ public partial class ProductsReportPage : Page
 
         foreach (var product in groupedProducts)
         {
-            var (amountText, unitText) = FormatAmount(product, measures);
+            var (amountText, unitText, _) = formatter.FormatAmount(product);
 
             var productRow = new List<TableCell>
             {
@@ -533,32 +560,7 @@ public partial class ProductsReportPage : Page
         };
     }
 
-    private Measure? FindMeasure(List<Measure> measures, string? measureUnit)
-    {
-        if (string.IsNullOrWhiteSpace(measureUnit))
-            return null;
-
-        static Measure? PickPreferred(IEnumerable<Measure> candidates)
-        {
-            return candidates
-                .OrderByDescending(m => m.Fass > 1 ? 1 : 0)
-                .ThenBy(m => m.Id)
-                .FirstOrDefault();
-        }
-
-        var lower = measureUnit.ToLower().Trim();
-
-        var exactMatches = measures.Where(m =>
-            m.Name.Equals(measureUnit, StringComparison.OrdinalIgnoreCase));
-        var exact = PickPreferred(exactMatches);
-        if (exact != null)
-            return exact;
-
-        var partialMatches = measures.Where(m =>
-            lower.Contains(m.Name.ToLower().Trim()) ||
-            m.Name.ToLower().Trim().Contains(lower));
-        return PickPreferred(partialMatches);
-    }
+    
 
     /// <summary>
     /// Сохранение в Word
@@ -724,283 +726,7 @@ public partial class ProductsReportPage : Page
             .OrderBy(p => p.Name);
     }
 
-    private (string amount, string unit, double roundedAmount, decimal priceMultiplier) FormatAmountWithRoundedValue(GroupedProduct product,
-        List<Measure> measures)
-    {
-        var defaultUnit = !string.IsNullOrEmpty(product.Mera) ? product.Mera : "шт";
-        var normalizedUnit = NormalizeUnit(defaultUnit);
-        var measure = FindMeasure(measures, defaultUnit);
-
-        if (!IsDiscreteUnit(normalizedUnit))
-            return FormatContinuousAmountWithRoundedValue(product, defaultUnit, normalizedUnit, measure, measures);
-
-        return FormatDiscreteAmountWithRoundedValue(product, defaultUnit, measure);
-    }
-
-    private (string amount, string unit) FormatAmount(GroupedProduct product, List<Measure> measures)
-    {
-        var defaultUnit = !string.IsNullOrEmpty(product.Mera) ? product.Mera : "шт";
-        var normalizedUnit = NormalizeUnit(defaultUnit);
-        var measure = FindMeasure(measures, defaultUnit);
-
-        if (!IsDiscreteUnit(normalizedUnit))
-            return FormatContinuousAmount(product, defaultUnit, normalizedUnit, measure, measures);
-
-        return FormatDiscreteAmount(product, defaultUnit, measure);
-    }
-
-    private static string NormalizeUnit(string unit)
-    {
-        return unit?.Trim().ToLowerInvariant() ?? string.Empty;
-    }
-
-    private static bool IsDiscreteUnit(string unit)
-    {
-        if (string.IsNullOrEmpty(unit)) return false;
-
-        string[] discreteKeywords = { "шт", "бут", "бан", "пач", "рулон", "компл", "уп", "набор" };
-        return discreteKeywords.Any(unit.Contains);
-    }
-
-    private static Measure? FindChildMeasure(List<Measure> measures, string? parentUnit)
-    {
-        if (string.IsNullOrWhiteSpace(parentUnit)) return null;
-
-        var normalizedParent = NormalizeUnit(parentUnit);
-        return measures.FirstOrDefault(m =>
-            m.Fass > 0 &&
-            !string.IsNullOrWhiteSpace(m.FassIzmer) &&
-            NormalizeUnit(m.FassIzmer) == normalizedParent);
-    }
-
-    private (string amount, string unit) FormatContinuousAmount(
-        GroupedProduct product,
-        string originalUnit,
-        string normalizedUnit,
-        Measure? measure,
-        List<Measure> measures)
-    {
-        var (formatted, displayUnit, _, _) =
-            FormatContinuousAmountWithRoundedValue(product, originalUnit, normalizedUnit, measure, measures);
-        return (formatted, displayUnit);
-    }
-
-    private (string amount, string unit, double roundedAmount, decimal priceMultiplier) FormatContinuousAmountWithRoundedValue(
-        GroupedProduct product,
-        string originalUnit,
-        string normalizedUnit,
-        Measure? measure,
-        List<Measure> measures)
-    {
-        var roundingPrecision = measure?.RoundingPrecision ?? 2;
-        var totalValue = (double)product.TotalWeight;
-        var displayUnit = originalUnit;
-        var currentMeasure = measure;
-        const int maxUnitHops = 10;
-        decimal priceMultiplier = 1m;
-
-        if (product.Fass > 0 && !string.IsNullOrWhiteSpace(product.FassIz))
-        {
-            totalValue /= (double)product.Fass;
-            // For packaged products, the price is already 'per pack'. 
-            // Since we are now referencing 'per pack' units (product.FassIz), 
-            // the price multiplier should nominally be 1 relative to the pack price.
-            // However, the later logic might convert units further (PackUnit -> ParentUnit),
-            // so we start with 1. We do NOT multiply by product.Fass here because
-            // product.Price is already scaled to the pack size.
-            priceMultiplier = 1m; 
-            
-            displayUnit = product.FassIz;
-            normalizedUnit = NormalizeUnit(displayUnit);
-
-            currentMeasure = FindMeasure(measures, product.FassIz) ?? currentMeasure;
-            if (currentMeasure != null) roundingPrecision = currentMeasure.RoundingPrecision;
-        }
-
-        if (currentMeasure != null)
-        {
-            // Конвертация вверх (например, грамм -> кг) при достижении фасовки
-            var hop = 0;
-            while (hop++ < maxUnitHops &&
-                   currentMeasure.Fass > 0 &&
-                   totalValue >= currentMeasure.Fass &&
-                   !string.IsNullOrWhiteSpace(currentMeasure.FassIzmer))
-            {
-                var parent = FindMeasure(measures, currentMeasure.FassIzmer);
-                if (parent == null) break;
-
-                if (NormalizeUnit(parent.Name) == NormalizeUnit(displayUnit)) break;
-
-                totalValue /= currentMeasure.Fass;
-                priceMultiplier *= (decimal)currentMeasure.Fass;
-
-                currentMeasure = parent;
-                displayUnit = currentMeasure.Name;
-                roundingPrecision = currentMeasure.RoundingPrecision;
-            }
-
-            normalizedUnit = NormalizeUnit(displayUnit);
-
-            // Конвертация вниз (например, кг -> грамм) если итог меньше 1
-            // Для фасованных продуктов (Fass > 0) мы НЕ хотим конвертировать вниз,
-            // так как цена указана за фасовку (например, за кг), и если мы покажем граммы,
-            // нам придется делить цену (1000 -> 1), что путает пользователя.
-            // Поэтому оставляем как есть (например, 0.5 кг и цена 1000).
-            hop = 0;
-            while (product.Fass <= 0 && totalValue < 1 && hop++ < maxUnitHops)
-            {
-                var child = FindChildMeasure(measures, normalizedUnit);
-                if (child == null || child.Fass <= 0) break;
-
-                if (NormalizeUnit(child.Name) == normalizedUnit) break;
-
-                totalValue *= child.Fass;
-                priceMultiplier /= (decimal)child.Fass;
-
-                currentMeasure = child;
-                displayUnit = child.Name;
-                roundingPrecision = child.RoundingPrecision;
-                normalizedUnit = NormalizeUnit(displayUnit);
-
-                if (totalValue >= 1) break;
-            }
-        }
-
-        double roundedValue;
-        if (roundingPrecision <= 0)
-        {
-            roundedValue = Math.Ceiling(totalValue);
-        }
-        else
-        {
-            var multiplier = Math.Pow(10, roundingPrecision);
-            roundedValue = Math.Ceiling(totalValue * multiplier) / multiplier;
-        }
-
-        var formatted = roundingPrecision <= 0
-            ? ((int)roundedValue).ToString(CultureInfo.CurrentCulture)
-            : roundedValue.ToString($"F{roundingPrecision}", CultureInfo.CurrentCulture);
-
-        return (formatted, displayUnit, roundedValue, priceMultiplier);
-    }
-
-    private (string amount, string unit) FormatDiscreteAmount(
-        GroupedProduct product,
-        string defaultUnit,
-        Measure? measure)
-    {
-        var (formatted, unitText, _, _) = FormatDiscreteAmountWithRoundedValue(product, defaultUnit, measure);
-        return (formatted, unitText);
-    }
-
-    private (string amount, string unit, double roundedAmount, decimal priceMultiplier) FormatDiscreteAmountWithRoundedValue(
-        GroupedProduct product,
-        string defaultUnit,
-        Measure? measure)
-    {
-        var effectiveMeasure = measure;
-        var effectivePackSize = product.Fass > 0
-            ? (double)product.Fass
-            : effectiveMeasure?.Fass > 0
-                ? effectiveMeasure.Fass
-                : 1d;
-
-        var value = product.TotalPackages > 0
-            ? (double)product.TotalPackages
-            : effectivePackSize > 0
-                ? (double)(product.TotalWeight / (decimal)effectivePackSize)
-                : (double)product.TotalWeight;
-
-        // Determine price multiplier
-        // If we are showing Packages (value = TotalPackages), and Price is per Base Unit.
-        // We need Price per Package.
-        // Multiplier = effectivePackSize.
-        
-        // However, logic for 'value' calc above:
-        // If TotalPackages > 0 (it was pack-based logic), value is packages.
-        // If TotalPackages == 0, but effectivePackSize > 0, we converted Weight to Packages.
-        // In both cases, 'value' is in Packages (or discrete units).
-        // So Multiplier should be the Pack Size (weight of one unit).
-        
-        var priceMultiplier = (decimal)effectivePackSize;
-        if (priceMultiplier <= 0) priceMultiplier = 1;
-
-        var precision = measure?.MenuRoundingPrecision ?? measure?.RoundingPrecision ?? 0;
-        double roundedValue;
-
-        if (precision <= 0)
-        {
-            roundedValue = Math.Ceiling(value);
-        }
-        else
-        {
-            var multiplier = Math.Pow(10, precision);
-            roundedValue = Math.Ceiling(value * multiplier) / multiplier;
-        }
-
-        var formatted = precision <= 0
-            ? ((int)roundedValue).ToString(CultureInfo.CurrentCulture)
-            : roundedValue.ToString($"F{precision}", CultureInfo.CurrentCulture);
-
-        var unitText = !string.IsNullOrWhiteSpace(product.FassIz)
-            ? product.FassIz
-            : defaultUnit;
-
-        return (formatted, unitText, roundedValue, priceMultiplier);
-    }
-
-    /// <summary>
-    /// Пересчитывает цену на основе округленного количества
-    /// </summary>
-    private decimal RecalculatePrice(GroupedProduct product, double roundedAmount, List<Measure> measures)
-    {
-        if (product.TotalPrice <= 0 || roundedAmount <= 0)
-            return product.TotalPrice;
-
-        // Определяем исходное количество для расчета единичной цены
-        // Используем ту же логику, что и в FormatAmount для определения исходного количества
-        double originalAmount;
-        var defaultUnit = !string.IsNullOrEmpty(product.Mera) ? product.Mera : "шт";
-        var normalizedUnit = NormalizeUnit(defaultUnit);
-        var measure = FindMeasure(measures, defaultUnit);
-
-        if (!IsDiscreteUnit(normalizedUnit))
-        {
-            // Для непрерывных единиц: если есть фасовка, используем TotalPackages, иначе TotalWeight
-            // Это соответствует логике в FormatContinuousAmount
-            if (product.Fass > 0 && !string.IsNullOrWhiteSpace(product.FassIz))
-                // Исходное количество в единицах фасовки (до округления)
-                originalAmount = (double)product.TotalPackages;
-            else
-                // Исходное количество в базовых единицах
-                originalAmount = (double)product.TotalWeight;
-        }
-        else
-        {
-            // Для дискретных единиц: используем TotalPackages или TotalWeight / Fass
-            // Это соответствует логике в FormatDiscreteAmount
-            var effectivePackSize = product.Fass > 0
-                ? (double)product.Fass
-                : measure?.Fass > 0
-                    ? measure.Fass
-                    : 1d;
-
-            originalAmount = product.TotalPackages > 0
-                ? (double)product.TotalPackages
-                : effectivePackSize > 0
-                    ? (double)(product.TotalWeight / (decimal)effectivePackSize)
-                    : (double)product.TotalWeight;
-        }
-
-        if (originalAmount <= 0)
-            return product.TotalPrice;
-
-        // Вычисляем единичную цену на основе исходного количества
-        var unitPrice = product.TotalPrice / (decimal)originalAmount;
-
-        // Пересчитываем цену на основе округленного количества
-        return decimal.Round(unitPrice * (decimal)roundedAmount, 2, MidpointRounding.AwayFromZero);
-    }
+    
 
 
     private string FormatPrice(decimal value)
