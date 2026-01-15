@@ -30,8 +30,8 @@ public class SettingsRepository
                 Id = 1,
                 ServicePercent = reader.GetDecimal(0),
                 DefaultMarkup = reader.GetDecimal(1),
-                MenuReportFontSize = reader.IsDBNull(2) ? 14 : reader.GetInt32(2),
-                ProductReportFontSize = reader.IsDBNull(3) ? 11 : reader.GetInt32(3)
+                MenuReportFontSize = reader.IsDBNull(2) ? 12 : reader.GetInt32(2),
+                ProductReportFontSize = reader.IsDBNull(3) ? 12 : reader.GetInt32(3)
             };
 
         // Если настроек нет (например, только создали таблицу), возвращаем дефолтные
