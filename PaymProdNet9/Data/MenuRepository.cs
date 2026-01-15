@@ -210,7 +210,7 @@ public class MenuRepository
     /// <summary>
     /// Обновить меню
     /// </summary>
-    public void UpdateMenu(int id, string name, int countPeople, string details, string dateBan)
+    public void UpdateMenu(int id, string name, int countPeople, string details, string dateBan, bool recalculatePortions = false)
     {
         using var connection = DatabaseHelper.GetConnection(_dbPath);
         connection.Open();
@@ -224,7 +224,8 @@ public class MenuRepository
             getOldCountCommand.Transaction = transaction;
             getOldCountCommand.CommandText = "SELECT Count_people FROM Menus WHERE Id = @id";
             getOldCountCommand.Parameters.AddWithValue("@id", id);
-            var oldCountPeople = Convert.ToInt32(getOldCountCommand.ExecuteScalarWithLog());
+            var result = getOldCountCommand.ExecuteScalarWithLog();
+            var oldCountPeople = result != null ? Convert.ToInt32(result) : 0;
 
             // Обновляем меню
             var command = connection.CreateCommand();
@@ -242,11 +243,10 @@ public class MenuRepository
 
             command.ExecuteNonQueryWithLog();
 
-            command.ExecuteNonQueryWithLog();
-
-            // Автоматический пересчет блюд здесь УДАЛЕН.
-            // Теперь пересчет выполняется явно через метод UpdateMenuDelicateCount из UI (CurrentMenuPage.xaml.cs),
-            // чтобы пользователь мог контролировать процесс и сохранять ручные правки.
+            if (recalculatePortions && oldCountPeople != countPeople && oldCountPeople > 0)
+            {
+                RecalculateMenuPortions(connection, transaction, id, oldCountPeople, countPeople);
+            }
 
             transaction.Commit();
         }
@@ -255,6 +255,49 @@ public class MenuRepository
             transaction.Rollback();
             Logger.Error("Ошибка при обновлении меню", ex);
             throw;
+        }
+    }
+
+    private void RecalculateMenuPortions(SqliteConnection connection, SqliteTransaction transaction, int menuId, int oldGuests, int newGuests)
+    {
+        var command = connection.CreateCommand();
+        command.Transaction = transaction;
+        command.CommandText = @"
+            SELECT md.Id, md.Id_delic, md.Delcount, 
+                   CASE WHEN md.Id_delic < 0 THEN COALESCE(p.Isdiap, 0) ELSE 0 END as Isdiap
+            FROM Menu_Delicates md
+            LEFT JOIN Producrs p ON p.Prod_ID = -md.Id_delic AND md.Id_delic < 0
+            WHERE md.Id_men = @menuId";
+        command.Parameters.AddWithValue("@menuId", menuId);
+
+        var itemsToUpdate = new List<int>();
+        using (var reader = command.ExecuteReader())
+        {
+            while (reader.Read())
+            {
+                var id = reader.GetInt32(0);
+                var delId = reader.GetInt32(1);
+                var count = reader.GetDecimal(2);
+                var isDiap = reader.IsDBNull(3) ? false : reader.GetInt32(3) == 1;
+
+                if (count == oldGuests)
+                {
+                    // Если это продукт с Isdiap = 1 (общее количество), не обновляем
+                    if (delId < 0 && isDiap) continue;
+                    
+                    itemsToUpdate.Add(id);
+                }
+            }
+        }
+
+        foreach (var id in itemsToUpdate)
+        {
+            var updateCmd = connection.CreateCommand();
+            updateCmd.Transaction = transaction;
+            updateCmd.CommandText = "UPDATE Menu_Delicates SET Delcount = @newCount WHERE Id = @id";
+            updateCmd.Parameters.AddWithValue("@newCount", newGuests);
+            updateCmd.Parameters.AddWithValue("@id", id);
+            updateCmd.ExecuteNonQuery();
         }
     }
 

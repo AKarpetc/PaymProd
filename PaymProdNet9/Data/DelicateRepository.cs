@@ -9,6 +9,13 @@ namespace PaymProdNet9.Data;
 /// </summary>
 public class DelicateRepository
 {
+    private readonly string? _dbPath;
+
+    public DelicateRepository(string? dbPath = null)
+    {
+        _dbPath = dbPath;
+    }
+
     /// <summary>
     /// Получить все блюда (включая продукты с Priz_menu = 1)
     /// </summary>
@@ -16,7 +23,7 @@ public class DelicateRepository
     {
         var delicates = new ObservableCollection<DelicatesColl>();
 
-        using var connection = DatabaseHelper.GetConnection();
+        using var connection = DatabaseHelper.GetConnection(_dbPath);
         connection.Open();
 
         // Получаем все компоненты
@@ -109,7 +116,7 @@ public class DelicateRepository
     /// </summary>
     public DelicatesColl? GetDelicateById(int id)
     {
-        using var connection = DatabaseHelper.GetConnection();
+        using var connection = DatabaseHelper.GetConnection(_dbPath);
         connection.Open();
 
         // Получаем компоненты блюда
@@ -209,7 +216,7 @@ public class DelicateRepository
     public int AddDelicate(int typeId, string name, decimal ves, decimal count, bool autoAdd, bool hideInMenu = false,
         bool hideInProductReport = false)
     {
-        using var connection = DatabaseHelper.GetConnection();
+        using var connection = DatabaseHelper.GetConnection(_dbPath);
         connection.Open();
 
         // Получаем настройки по умолчанию
@@ -241,7 +248,7 @@ public class DelicateRepository
     public void UpdateDelicate(int id, int typeId, string name, decimal ves, decimal count, bool autoAdd,
         bool hideInMenu = false, bool hideInProductReport = false)
     {
-        using var connection = DatabaseHelper.GetConnection();
+        using var connection = DatabaseHelper.GetConnection(_dbPath);
         connection.Open();
 
         var command = connection.CreateCommand();
@@ -268,7 +275,7 @@ public class DelicateRepository
     /// </summary>
     public void UpdateDelicateDefaultMarkup(int id, decimal markup)
     {
-        using var connection = DatabaseHelper.GetConnection();
+        using var connection = DatabaseHelper.GetConnection(_dbPath);
         connection.Open();
 
         var command = connection.CreateCommand();
@@ -283,7 +290,7 @@ public class DelicateRepository
     /// </summary>
     public void DeleteDelicate(int id)
     {
-        using var connection = DatabaseHelper.GetConnection();
+        using var connection = DatabaseHelper.GetConnection(_dbPath);
         connection.Open();
 
         // Мягкое удаление блюда:
@@ -300,7 +307,7 @@ public class DelicateRepository
     /// </summary>
     public void RestoreDelicate(int id)
     {
-        using var connection = DatabaseHelper.GetConnection();
+        using var connection = DatabaseHelper.GetConnection(_dbPath);
         connection.Open();
 
         var command = connection.CreateCommand();
@@ -314,7 +321,7 @@ public class DelicateRepository
     /// </summary>
     public void AddComponent(int delicateId, int productId, decimal ves, string? detail = null)
     {
-        using var connection = DatabaseHelper.GetConnection();
+        using var connection = DatabaseHelper.GetConnection(_dbPath);
         connection.Open();
 
         var command = connection.CreateCommand();
@@ -335,7 +342,7 @@ public class DelicateRepository
     /// </summary>
     public void DeleteComponent(int componentId)
     {
-        using var connection = DatabaseHelper.GetConnection();
+        using var connection = DatabaseHelper.GetConnection(_dbPath);
         connection.Open();
 
         var command = connection.CreateCommand();
@@ -350,7 +357,7 @@ public class DelicateRepository
     /// </summary>
     public void DeleteComponentByProductAndDelicate(int productId, int delicateId)
     {
-        using var connection = DatabaseHelper.GetConnection();
+        using var connection = DatabaseHelper.GetConnection(_dbPath);
         connection.Open();
 
         var command = connection.CreateCommand();
@@ -366,7 +373,7 @@ public class DelicateRepository
     /// </summary>
     public void UpdateComponentWeight(int delicateId, int productId, decimal ves)
     {
-        using var connection = DatabaseHelper.GetConnection();
+        using var connection = DatabaseHelper.GetConnection(_dbPath);
         connection.Open();
 
         var command = connection.CreateCommand();
@@ -389,7 +396,7 @@ public class DelicateRepository
     {
         var types = new List<DelicateType>();
 
-        using var connection = DatabaseHelper.GetConnection();
+        using var connection = DatabaseHelper.GetConnection(_dbPath);
         connection.Open();
 
         // Получаем типы блюд
@@ -420,7 +427,7 @@ public class DelicateRepository
     /// </summary>
     public int AddDelicateType(string name, int sortOrder = 0)
     {
-        using var connection = DatabaseHelper.GetConnection();
+        using var connection = DatabaseHelper.GetConnection(_dbPath);
         connection.Open();
 
         var command = connection.CreateCommand();
@@ -438,7 +445,7 @@ public class DelicateRepository
     /// </summary>
     public void UpdateDelicateType(int id, string name, int sortOrder = 0)
     {
-        using var connection = DatabaseHelper.GetConnection();
+        using var connection = DatabaseHelper.GetConnection(_dbPath);
         connection.Open();
 
         var command = connection.CreateCommand();
@@ -458,7 +465,7 @@ public class DelicateRepository
     /// </summary>
     public bool DeleteDelicateType(int id)
     {
-        using var connection = DatabaseHelper.GetConnection();
+        using var connection = DatabaseHelper.GetConnection(_dbPath);
         connection.Open();
 
         var command = connection.CreateCommand();
@@ -476,7 +483,7 @@ public class DelicateRepository
     {
         var delicates = new List<DelicatesColl>();
 
-        using var connection = DatabaseHelper.GetConnection();
+        using var connection = DatabaseHelper.GetConnection(_dbPath);
         connection.Open();
 
         // Получаем обычные блюда (только не удалённые)
