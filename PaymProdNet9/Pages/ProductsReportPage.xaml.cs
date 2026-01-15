@@ -653,6 +653,15 @@ public partial class ProductsReportPage : Page
                 dishCountForPrice = delicate.Countpor;
             }
 
+            decimal itogFass = 0;
+            if (component.Fass > 0)
+            {
+                var rawFass = totalWeight / component.Fass;
+                itogFass = component.RoundToInteger
+                    ? Math.Ceiling(rawFass)
+                    : rawFass;
+            }
+
             var item = new DelicatesCollForSvod
             {
                 Del = delicate.Del,
@@ -666,9 +675,7 @@ public partial class ProductsReportPage : Page
                 FassIz = component.FassIz,
                 NameT = component.NameT,
                 Itog = totalWeight,
-                ItogFass = component.Fass > 0
-                    ? totalWeight / component.Fass
-                    : 0
+                ItogFass = itogFass
             };
 
             if (delicate.Idmen > 0 || MenuId > 0)
@@ -684,6 +691,9 @@ public partial class ProductsReportPage : Page
                     {
                         // Если есть фасовка, рассчитываем количество упаковок
                         var packageCount = totalWeight / component.Fass;
+                        if (component.RoundToInteger)
+                            packageCount = Math.Ceiling(packageCount);
+                            
                         item.TotalPrice = decimal.Round(unitPrice * packageCount, 2, MidpointRounding.AwayFromZero);
                     }
                     else

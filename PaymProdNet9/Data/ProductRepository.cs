@@ -40,7 +40,8 @@ public class ProductRepository
                    COALESCE(p.Price, 0),
                    COALESCE(p.HideInMenu, 0),
                    COALESCE(p.DoNotConvertToPackInMenu, 0),
-                   COALESCE(p.IsDeleted, 0)
+                   COALESCE(p.IsDeleted, 0),
+                   COALESCE(p.RoundToInteger, 0)
             FROM Producrs p
             INNER JOIN Produkt_Type pt ON p.Type = pt.TypeProdId
             LEFT JOIN Mera m ON m.Mera_ID = p.Ves
@@ -57,7 +58,7 @@ public class ProductRepository
     /// </summary>
     public int AddProduct(string name, int? vesId, int typeId, double fass, int izmerId, int prizMenu = 0,
         decimal count = 0, bool automat = false, int countPeople = 0, bool mainCount = false, double price = 0,
-        bool hideInMenu = false, bool doNotConvertToPackInMenu = false)
+        bool hideInMenu = false, bool doNotConvertToPackInMenu = false, bool roundToInteger = false)
     {
         using var connection = DatabaseHelper.GetConnection(_dbPath);
         connection.Open();
@@ -82,6 +83,7 @@ public class ProductRepository
         command.Parameters.AddWithValue("@price", price);
         command.Parameters.AddWithValue("@hideInMenu", hideInMenu ? 1 : 0);
         command.Parameters.AddWithValue("@doNotConvert", doNotConvertToPackInMenu ? 1 : 0);
+        command.Parameters.AddWithValue("@roundToInteger", roundToInteger ? 1 : 0);
 
         var productId = Convert.ToInt32(command.ExecuteScalar());
 
@@ -98,7 +100,7 @@ public class ProductRepository
     /// </summary>
     public int AddProductWithAutoAdd(string name, int vesId, int typeId, double fass, int izmerId,
         int prizMenu, decimal count, int avtomat, int chel, int isdiap, double price = 0, bool hideInMenu = false,
-        bool doNotConvertToPackInMenu = false)
+        bool doNotConvertToPackInMenu = false, bool roundToInteger = false)
     {
         using var connection = DatabaseHelper.GetConnection(_dbPath);
         connection.Open();
@@ -122,6 +124,7 @@ public class ProductRepository
         command.Parameters.AddWithValue("@price", price);
         command.Parameters.AddWithValue("@hideInMenu", hideInMenu ? 1 : 0);
         command.Parameters.AddWithValue("@doNotConvert", doNotConvertToPackInMenu ? 1 : 0);
+        command.Parameters.AddWithValue("@roundToInteger", roundToInteger ? 1 : 0);
 
         return Convert.ToInt32(command.ExecuteScalar());
     }
@@ -131,7 +134,7 @@ public class ProductRepository
     /// </summary>
     public void UpdateProduct(int id, string name, int? vesId, int typeId, decimal fass, int izmerId,
         int prizMenu, decimal count, bool automat, int countPeople, bool mainCount, double price = 0,
-        bool hideInMenu = false, bool doNotConvertToPackInMenu = false)
+        bool hideInMenu = false, bool doNotConvertToPackInMenu = false, bool roundToInteger = false)
     {
         using var connection = DatabaseHelper.GetConnection(_dbPath);
         connection.Open();
@@ -141,7 +144,7 @@ public class ProductRepository
             UPDATE Producrs 
             SET Name = @name, Type = @type, Ves = @ves, Fass = @fass, Izmer = @izmer, 
                 Priz_menu = @prizMenu, Count = @count, Avtomat = @avtomat, Chel = @chel, Isdiap = @isdiap,
-                Price = @price, HideInMenu = @hideInMenu, DoNotConvertToPackInMenu = @doNotConvert
+                Price = @price, HideInMenu = @hideInMenu, DoNotConvertToPackInMenu = @doNotConvert, RoundToInteger = @roundToInteger
             WHERE Prod_ID = @id";
 
         command.Parameters.AddWithValue("@id", id);
@@ -160,6 +163,7 @@ public class ProductRepository
         command.Parameters.AddWithValue("@price", price);
         command.Parameters.AddWithValue("@hideInMenu", hideInMenu ? 1 : 0);
         command.Parameters.AddWithValue("@doNotConvert", doNotConvertToPackInMenu ? 1 : 0);
+        command.Parameters.AddWithValue("@roundToInteger", roundToInteger ? 1 : 0);
 
         var rowsAffected = command.ExecuteNonQueryWithLog();
         Logger.Debug($"UpdateProduct: Обновлено строк: {rowsAffected}");
@@ -511,7 +515,8 @@ public class ProductRepository
                        COALESCE(p.Price, 0),
                        COALESCE(p.HideInMenu, 0),
                        COALESCE(p.DoNotConvertToPackInMenu, 0),
-                       COALESCE(p.IsDeleted, 0)
+                       COALESCE(p.IsDeleted, 0),
+                       COALESCE(p.RoundToInteger, 0)
                 FROM Producrs p
                 INNER JOIN Produkt_Type pt ON p.Type = pt.TypeProdId
                 LEFT JOIN Mera m ON m.Mera_ID = p.Ves
@@ -545,14 +550,15 @@ public class ProductRepository
             IzName = reader.IsDBNull(8) ? string.Empty : reader.GetString(8),
             PrizMen = reader.GetInt32(13),
             PrizMen1 = reader.GetInt32(13) == 1,
-            Count = reader.GetDecimal(14),
-            AutoAdd = reader.GetInt32(15) == 1,
-            CountPeople = reader.GetInt32(16),
-            MainCount = reader.GetInt32(17) == 1,
+            Count = reader.IsDBNull(14) ? 0 : reader.GetDecimal(14),
+            AutoAdd = !reader.IsDBNull(15) && reader.GetInt32(15) == 1,
+            CountPeople = reader.IsDBNull(16) ? 0 : reader.GetInt32(16),
+            MainCount = !reader.IsDBNull(17) && reader.GetInt32(17) == 1,
             Price = reader.IsDBNull(18) ? 0 : Convert.ToDecimal(reader.GetDouble(18)),
-            HideInMenu = reader.GetInt32(19) == 1,
-            DoNotConvertToPackInMenu = reader.GetInt32(20) == 1,
-            IsDeleted = !reader.IsDBNull(21) && reader.GetInt32(21) == 1
+            HideInMenu = !reader.IsDBNull(19) && reader.GetInt32(19) == 1,
+            DoNotConvertToPackInMenu = !reader.IsDBNull(20) && reader.GetInt32(20) == 1,
+            IsDeleted = !reader.IsDBNull(21) && reader.GetInt32(21) == 1,
+            RoundToInteger = !reader.IsDBNull(22) && reader.GetInt32(22) == 1
         };
 
         var baseFassDef = reader.IsDBNull(9) ? 0 : Convert.ToDecimal(reader.GetDouble(9));

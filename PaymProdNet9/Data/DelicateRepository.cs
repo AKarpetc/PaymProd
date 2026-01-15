@@ -86,7 +86,8 @@ public class DelicateRepository
             SELECT c.Comp_Id, c.Delic_id, c.ProductID, 
                    p.Name, c.Ves, m.Name_Mera, pt.Type_Opis,
                    COALESCE(p.Fass, 1), p.Name,
-                   COALESCE(p.DoNotConvertToPackInMenu, 0)
+                   COALESCE(p.DoNotConvertToPackInMenu, 0),
+                   COALESCE(p.RoundToInteger, 0)
             FROM Components c
             INNER JOIN Producrs p ON p.Prod_ID = c.ProductID
             INNER JOIN Produkt_Type pt ON p.Type = pt.TypeProdId
@@ -105,7 +106,8 @@ public class DelicateRepository
                 Type = reader.GetString(6),
                 Fass = reader.GetDecimal(7),
                 Name = reader.GetString(8),
-                DoNotConvertToPackInMenu = !reader.IsDBNull(9) && reader.GetInt32(9) == 1
+                DoNotConvertToPackInMenu = !reader.IsDBNull(9) && reader.GetInt32(9) == 1,
+                RoundToInteger = !reader.IsDBNull(10) && reader.GetInt32(10) == 1
             });
 
         return components;
@@ -181,7 +183,8 @@ public class DelicateRepository
                             ELSE (SELECT m2.Name_Mera FROM Mera m2 WHERE m2.Mera_ID = p.Izmer) END, 
                            (SELECT m2.Name_Mera FROM Mera m2 WHERE m2.Mera_ID = p.Izmer)) as FassIzmer,
                    CASE WHEN p.Izmer != p.Ves AND p.Izmer IS NOT NULL THEN 1 ELSE 0 END as Flag,
-                   p.Name as ProdName
+                   p.Name as ProdName,
+                   COALESCE(p.RoundToInteger, 0) as RoundToInteger
             FROM Components c
             INNER JOIN Producrs p ON p.Prod_ID = c.ProductID
             INNER JOIN Produkt_Type pt ON p.Type = pt.TypeProdId
@@ -204,7 +207,8 @@ public class DelicateRepository
                 Fass = reader.GetDecimal(7),
                 FassIz = reader.IsDBNull(8) ? string.Empty : reader.GetString(8),
                 Flag = reader.GetInt32(9),
-                Name = reader.GetString(10)
+                Name = reader.GetString(10),
+                RoundToInteger = !reader.IsDBNull(11) && reader.GetInt32(11) == 1
             });
 
         return components;
@@ -604,7 +608,8 @@ public class DelicateRepository
                        (SELECT m2.Name_Mera FROM Mera m2 WHERE m2.Mera_ID = p.Izmer)
                    ) as FassIzmer,
                    CASE WHEN p.Izmer != p.Ves AND p.Izmer IS NOT NULL THEN 1 ELSE 0 END as Flag,
-                   p.Name as ProdName
+                   p.Name as ProdName,
+                   COALESCE(p.RoundToInteger, 0) as RoundToInteger
             FROM Components c
             INNER JOIN Producrs p ON p.Prod_ID = c.ProductID
             INNER JOIN Produkt_Type pt ON p.Type = pt.TypeProdId
@@ -637,7 +642,8 @@ public class DelicateRepository
                 Fass = reader.GetDecimal(7),
                 FassIz = reader.IsDBNull(8) ? string.Empty : reader.GetString(8),
                 Flag = reader.GetInt32(9),
-                Name = reader.GetString(10)
+                Name = reader.GetString(10),
+                RoundToInteger = !reader.IsDBNull(11) && reader.GetInt32(11) == 1
             });
         }
 

@@ -172,6 +172,8 @@ public static class DatabaseHelper
                 Price REAL DEFAULT 0,
                 HideInMenu INTEGER DEFAULT 0,
                 IsDeleted INTEGER DEFAULT 0,
+                DoNotConvertToPackInMenu INTEGER DEFAULT 0,
+                RoundToInteger INTEGER DEFAULT 0,
                 FOREIGN KEY (Type) REFERENCES Produkt_Type(TypeProdId),
                 FOREIGN KEY (Ves) REFERENCES Mera(Mera_ID),
                 FOREIGN KEY (Izmer) REFERENCES Mera(Mera_ID)
@@ -244,7 +246,6 @@ public static class DatabaseHelper
                 // Колонка уже существует
             }
 
-            // Миграция: добавляем IsDeleted для продуктов, если его нет
             try
             {
                 command.CommandText = "ALTER TABLE Producrs ADD COLUMN IsDeleted INTEGER DEFAULT 0";
@@ -253,6 +254,24 @@ public static class DatabaseHelper
             catch
             {
                 // Колонка уже существует, игнорируем ошибку
+            }
+
+            // Миграция: флаг "округлять до целого при расчете фасовки"
+            try
+            {
+                command.CommandText = "ALTER TABLE Producrs ADD COLUMN RoundToInteger INTEGER DEFAULT 0";
+                command.ExecuteNonQuery();
+
+                // Обновляем флаг для категории "Хозтовары" только при создании колонки
+                command.CommandText = @"
+                    UPDATE Producrs 
+                    SET RoundToInteger = 1 
+                    WHERE Type IN (SELECT TypeProdId FROM Produkt_Type WHERE Type_Opis LIKE 'Хозтовары%')";
+                command.ExecuteNonQuery();
+            }
+            catch
+            {
+                // Колонка уже существует
             }
 
             // Создание таблицы блюд

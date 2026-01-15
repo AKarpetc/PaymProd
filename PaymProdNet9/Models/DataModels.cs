@@ -250,7 +250,19 @@ public class Components : INotifyPropertyChanged
     private int _flag;
     private string _nameT = string.Empty;
     private int _menuRoundingPrecision = 2;
+
     private bool _doNotConvertToPackInMenu;
+    private bool _roundToInteger;
+
+    public bool RoundToInteger
+    {
+        get => _roundToInteger;
+        set
+        {
+            _roundToInteger = value;
+            OnPropertyChanged(nameof(RoundToInteger));
+        }
+    }
 
     public decimal Fass1
     {
@@ -458,6 +470,7 @@ public class ProductView : INotifyPropertyChanged
     private bool _hideInMenu;
     private bool _doNotConvertToPackInMenu;
     private bool _isDeleted;
+    private bool _roundToInteger;
 
     public string Name
     {
@@ -692,8 +705,27 @@ public class ProductView : INotifyPropertyChanged
         get => _isDeleted;
         set
         {
-            _isDeleted = value;
-            OnPropertyChanged(nameof(IsDeleted));
+            if (_isDeleted != value)
+            {
+                _isDeleted = value;
+                OnPropertyChanged(nameof(IsDeleted));
+            }
+        }
+    }
+
+    /// <summary>
+    /// Флаг "округлять до целого при расчете фасовки"
+    /// </summary>
+    public bool RoundToInteger
+    {
+        get => _roundToInteger;
+        set
+        {
+             if (_roundToInteger != value)
+             {
+                _roundToInteger = value;
+                OnPropertyChanged(nameof(RoundToInteger));
+             }
         }
     }
 

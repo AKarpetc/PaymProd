@@ -266,7 +266,6 @@ public class MenuPrinter
                                 }
                                 else
                                 {
-                                    // Проверяем, нужно ли пересчитывать в фасовку (как в отчете по товарам)
                                     // Пересчитываем только если: есть фасовка, единица фасовки отличается от базовой, и вес >= фасовка
                                     if (component.Fass > 0 &&
                                         !string.IsNullOrWhiteSpace(component.FassIz) &&
@@ -275,6 +274,9 @@ public class MenuPrinter
                                     {
                                         // Есть перерасчет в фасовку - показываем в фасовке
                                         var packageCount = totalWeight / component.Fass;
+                                        if (component.RoundToInteger)
+                                            packageCount = Math.Ceiling(packageCount);
+
                                         var packageUnit = GetPackageMeasure(component, baseMeasure);
                                         displayValue = FormatMenuValue(
                                             Math.Round(packageCount, 2, MidpointRounding.AwayFromZero), packageUnit);
@@ -282,8 +284,13 @@ public class MenuPrinter
                                     else
                                     {
                                         // Нет перерасчета в фасовку - показываем в основных единицах
+                                        // Если нужно округлять до целого (например, штучный товар)
+                                        var val = totalWeight;
+                                        if (component.RoundToInteger)
+                                            val = Math.Ceiling(val);
+
                                         displayValue = FormatMenuValue(
-                                            Math.Round(totalWeight, 2, MidpointRounding.AwayFromZero), baseMeasure);
+                                            Math.Round(val, 2, MidpointRounding.AwayFromZero), baseMeasure);
                                     }
                                 }
 

@@ -329,6 +329,7 @@ public partial class ProductsPage : Page
         ProductMainCountCheckBox.IsChecked = product.MainCount;
         ProductHideInMenuCheckBox.IsChecked = product.HideInMenu;
         ProductDoNotConvertToPackInMenuCheckBox.IsChecked = product.DoNotConvertToPackInMenu;
+        ProductRoundToIntegerCheckBox.IsChecked = product.RoundToInteger;
 
         ShowEditView(true);
     }
@@ -350,6 +351,7 @@ public partial class ProductsPage : Page
         ProductMainCountCheckBox.IsChecked = false;
         ProductHideInMenuCheckBox.IsChecked = false;
         ProductDoNotConvertToPackInMenuCheckBox.IsChecked = false;
+        ProductRoundToIntegerCheckBox.IsChecked = false;
 
         ShowEditView(false);
         ProductNameTextBox.Focus();
@@ -524,6 +526,7 @@ public partial class ProductsPage : Page
             var mainCount = ProductMainCountCheckBox.IsChecked == true;
             var hideInMenu = ProductHideInMenuCheckBox.IsChecked == true;
             var doNotConvertToPackInMenu = ProductDoNotConvertToPackInMenuCheckBox.IsChecked == true;
+            var roundToInteger = ProductRoundToIntegerCheckBox.IsChecked == true;
 
             double price = 0;
             if (!string.IsNullOrWhiteSpace(ProductPriceTextBox.Text))
@@ -553,7 +556,8 @@ public partial class ProductsPage : Page
                     mainCount,
                     price,
                     hideInMenu,
-                    doNotConvertToPackInMenu
+                    doNotConvertToPackInMenu,
+                    roundToInteger
                 );
                 productId = _currentProductId.Value;
 
@@ -577,7 +581,8 @@ public partial class ProductsPage : Page
                     mainCount,
                     price,
                     hideInMenu,
-                    doNotConvertToPackInMenu
+                    doNotConvertToPackInMenu,
+                    roundToInteger
                 );
 
                 MessageBox.Show("Продукт создан!",

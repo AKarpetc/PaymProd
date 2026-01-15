@@ -67,10 +67,16 @@ public class MenuPriceService
             // Для компонентов блюд умножаем на количество порций
             totalWeight = component.Ves * safeCount;
 
+        decimal count;
         if (component.Fass > 0)
-            return totalWeight / component.Fass;
+            count = totalWeight / component.Fass;
+        else
+            // Если фасовка не указана, считаем по общему весу
+            count = totalWeight;
 
-        // Если фасовка не указана, считаем по общему весу
-        return totalWeight;
+        if (component.RoundToInteger)
+            return Math.Ceiling(count);
+
+        return count;
     }
 }

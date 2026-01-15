@@ -416,6 +416,11 @@
                                     <TextBlock Text="Не переводить в фасованные в меню (отчет по меню)"
                                                TextWrapping="Wrap" />
                                 </CheckBox>
+                                <CheckBox x:Name="ProductRoundToIntegerCheckBox" Margin="0,5"
+                                          ToolTip="Если отмечено, при расчете количества упаковок/штук значение округляется до целого числа (в большую сторону по модулю)">
+                                    <TextBlock Text="Округлять количество до целого числа (в отчетах)"
+                                               TextWrapping="Wrap" />
+                                </CheckBox>
                             </StackPanel>
                         </Grid>
                     </StackPanel>

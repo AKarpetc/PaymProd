@@ -1428,7 +1428,8 @@ public class MenuRepository
                        mBase.Fass_Izmer,
                        ''
                    ) as FassIzmer,
-                   pt.Type_Opis
+                   pt.Type_Opis,
+                   COALESCE(p.RoundToInteger, 0)
             FROM Components1 c1
             INNER JOIN Producrs p ON p.Prod_ID = c1.ProductID
             LEFT JOIN Mera mBase ON mBase.Mera_ID = p.Ves
@@ -1458,7 +1459,8 @@ public class MenuRepository
                     MenuRoundingPrecision = reader.GetInt32(6),
                     Fass = reader.GetDecimal(7),
                     FassIz = reader.GetString(8),
-                    Type = reader.GetString(9)
+                    Type = reader.GetString(9),
+                    RoundToInteger = !reader.IsDBNull(10) && reader.GetInt32(10) == 1
                 });
         }
         else
@@ -1474,7 +1476,8 @@ public class MenuRepository
                        COALESCE(CASE WHEN p.Izmer = p.Ves THEN m.Fass_Izmer 
                                 ELSE (SELECT m2.Name_Mera FROM Mera m2 WHERE m2.Mera_ID = p.Izmer) END, 
                                (SELECT m2.Name_Mera FROM Mera m2 WHERE m2.Mera_ID = p.Izmer)) as FassIzmer,
-                       pt.Type_Opis
+                       pt.Type_Opis,
+                       COALESCE(p.RoundToInteger, 0)
                 FROM Components c
                 INNER JOIN Producrs p ON p.Prod_ID = c.ProductID
                 LEFT JOIN Mera m ON m.Mera_ID = p.Ves
@@ -1495,7 +1498,8 @@ public class MenuRepository
                     NameT = reader2.GetString(4),
                     Mera = reader2.IsDBNull(5) ? "" : reader2.GetString(5),
                     Fass = reader2.GetDecimal(6),
-                    FassIz = reader2.IsDBNull(7) ? "" : reader2.GetString(7)
+                    FassIz = reader2.IsDBNull(7) ? "" : reader2.GetString(7),
+                    RoundToInteger = !reader2.IsDBNull(9) && reader2.GetInt32(9) == 1
                 });
         }
 
@@ -1519,7 +1523,8 @@ public class MenuRepository
                             ELSE (SELECT m2.Name_Mera FROM Mera m2 WHERE m2.Mera_ID = p.Izmer) END, 
                            (SELECT m2.Name_Mera FROM Mera m2 WHERE m2.Mera_ID = p.Izmer)) as FassIzmer,
                    pt.Type_Opis,
-                   COALESCE(p.DoNotConvertToPackInMenu, 0)
+                   COALESCE(p.DoNotConvertToPackInMenu, 0),
+                   COALESCE(p.RoundToInteger, 0)
             FROM Components1 c1
             INNER JOIN Producrs p ON p.Prod_ID = c1.ProductID
             LEFT JOIN Mera m ON m.Mera_ID = p.Ves
@@ -1543,7 +1548,8 @@ public class MenuRepository
                 Fass = reader.GetDecimal(6),
                 FassIz = reader.IsDBNull(7) ? "" : reader.GetString(7),
                 Type = reader.GetString(8),
-                DoNotConvertToPackInMenu = !reader.IsDBNull(9) && reader.GetInt32(9) == 1
+                DoNotConvertToPackInMenu = !reader.IsDBNull(9) && reader.GetInt32(9) == 1,
+                RoundToInteger = !reader.IsDBNull(10) && reader.GetInt32(10) == 1
             });
 
         return components;
@@ -1567,7 +1573,8 @@ public class MenuRepository
                    COALESCE(CASE WHEN p.Izmer = p.Ves THEN m.Fass_Izmer 
                             ELSE (SELECT m2.Name_Mera FROM Mera m2 WHERE m2.Mera_ID = p.Izmer) END, 
                            (SELECT m2.Name_Mera FROM Mera m2 WHERE m2.Mera_ID = p.Izmer)) as FassIzmer,
-                   pt.Type_Opis
+                   pt.Type_Opis,
+                   COALESCE(p.RoundToInteger, 0)
             FROM Components1 c1
             INNER JOIN Producrs p ON p.Prod_ID = c1.ProductID
             LEFT JOIN Mera m ON m.Mera_ID = p.Ves
@@ -1592,7 +1599,8 @@ public class MenuRepository
                 DoNotConvertToPackInMenu = !reader.IsDBNull(7) && reader.GetInt32(7) == 1,
                 Fass = reader.GetDecimal(8),
                 FassIz = reader.IsDBNull(9) ? "" : reader.GetString(9),
-                Type = reader.GetString(10)
+                Type = reader.GetString(10),
+                RoundToInteger = !reader.IsDBNull(11) && reader.GetInt32(11) == 1
             });
 
         return components;
@@ -1616,7 +1624,8 @@ public class MenuRepository
                            (SELECT m2.Name_Mera FROM Mera m2 WHERE m2.Mera_ID = p.Izmer), 'шт') as FassIzmer,
                    pt.Type_Opis,
                    COALESCE(p.Count, 0) as ProductCount,
-                   p.Isdiap
+                   p.Isdiap,
+                   COALESCE(p.RoundToInteger, 0)
             FROM Producrs p
             LEFT JOIN Mera m ON m.Mera_ID = p.Izmer
             LEFT JOIN Mera mVes ON mVes.Mera_ID = p.Ves
@@ -1631,6 +1640,7 @@ public class MenuRepository
             // Индексы колонок: 0=Prod_ID, 1=Name, 2=MeraName, 3=MenuRoundingPrecision, 4=Fass, 5=FassIzmer, 6=Type_Opis, 7=ProductCount, 8=Isdiap
             var productCount = reader.GetDecimal(7); // ProductCount
             var isdiap = reader.GetInt32(8) == 1; // Isdiap
+            var roundToInteger = !reader.IsDBNull(9) && reader.GetInt32(9) == 1;
 
             // Определяем вес компонента
             // Если Isdiap = 1 (общее количество), используем Count из продукта
@@ -1659,7 +1669,8 @@ public class MenuRepository
                 MenuRoundingPrecision = reader.GetInt32(3),
                 Fass = reader.GetDecimal(4),
                 FassIz = reader.IsDBNull(5) ? "шт" : reader.GetString(5),
-                Type = reader.GetString(6)
+                Type = reader.GetString(6),
+                RoundToInteger = roundToInteger
             });
         }
 
@@ -1685,7 +1696,8 @@ public class MenuRepository
                             ELSE (SELECT m2.Name_Mera FROM Mera m2 WHERE m2.Mera_ID = p.Izmer) END, 
                            (SELECT m2.Name_Mera FROM Mera m2 WHERE m2.Mera_ID = p.Izmer)) as FassIzmer,
                    pt.Type_Opis,
-                   COALESCE(p.DoNotConvertToPackInMenu, 0)
+                   COALESCE(p.DoNotConvertToPackInMenu, 0),
+                   COALESCE(p.RoundToInteger, 0)
             FROM Components c
             INNER JOIN Producrs p ON p.Prod_ID = c.ProductID
             LEFT JOIN Mera m ON m.Mera_ID = p.Ves
@@ -1707,7 +1719,8 @@ public class MenuRepository
                 Fass = reader.GetDecimal(6),
                 FassIz = reader.IsDBNull(7) ? "" : reader.GetString(7),
                 Type = reader.GetString(8),
-                DoNotConvertToPackInMenu = !reader.IsDBNull(9) && reader.GetInt32(9) == 1
+                DoNotConvertToPackInMenu = !reader.IsDBNull(9) && reader.GetInt32(9) == 1,
+                RoundToInteger = !reader.IsDBNull(10) && reader.GetInt32(10) == 1
             });
 
         return components;
