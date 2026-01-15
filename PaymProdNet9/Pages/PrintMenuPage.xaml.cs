@@ -577,7 +577,7 @@ public partial class PrintMenuPage : Page
             if (reportMode == ReportMode.Cost || reportMode == ReportMode.Full)
                 line = priceInfo.TotalPrice > 0
                     ? $"{productName} ({formattedWeight}) — {FormatCurrency(priceInfo.TotalPrice)} тг"
-                    : $"{productName} ({formattedWeight}) — цена не указана";
+                    : $"{productName} ({formattedWeight}) — 0";
             else
                 // Price или NoPrices - без цены
                 line = $"{productName} ({formattedWeight})";

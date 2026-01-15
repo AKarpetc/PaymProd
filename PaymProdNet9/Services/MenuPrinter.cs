@@ -637,7 +637,7 @@ public class MenuPrinter
 
         // Если режим Cost - показываем цену компонента
         if (priceInfo.TotalPrice <= 0)
-            return $"{productName} ({displayValue}) — цена не указана";
+            return $"{productName} ({displayValue}) — 0";
 
         return $"{productName} ({displayValue}) — {FormatCurrency(priceInfo.TotalPrice)} тг";
     }
