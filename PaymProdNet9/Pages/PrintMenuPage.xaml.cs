@@ -109,6 +109,7 @@ public partial class PrintMenuPage : Page
             FontSize = 14,
             PagePadding = new Thickness(5),
             ColumnWidth = double.PositiveInfinity,
+            MinPageWidth = 1000,
             // PageWidth = reportMode == ReportMode.Full ? 1122 : 980 // Commented out to allow full width expansion
         };
 
@@ -132,7 +133,8 @@ public partial class PrintMenuPage : Page
             .ThenBy(g => g.Key.Type);
 
         var table = new Table();
-        table.Columns.Add(new TableColumn { Width = new GridLength(120) });
+        // Dish Column: ~10% (1024/10000)
+        table.Columns.Add(new TableColumn { Width = new GridLength(1.0, GridUnitType.Star) });
         var showPriceColumn = reportMode != ReportMode.NoPrices;
         
         decimal totalCostSum = 0; // Accumulator for Full Report Total Cost (Raw)
@@ -141,24 +143,24 @@ public partial class PrintMenuPage : Page
         {
             if (reportMode == ReportMode.Price)
             {
-                table.Columns.Add(new TableColumn { Width = new GridLength(1, GridUnitType.Star) }); // Composition expands
-                table.Columns.Add(new TableColumn { Width = new GridLength(100) }); // Portion Cost
-                table.Columns.Add(new TableColumn { Width = new GridLength(100) }); // Portion Price
-                table.Columns.Add(new TableColumn { Width = new GridLength(150) }); // Total Price
+                table.Columns.Add(new TableColumn { Width = new GridLength(4.0, GridUnitType.Star) }); // Composition (~40%)
+                table.Columns.Add(new TableColumn { Width = new GridLength(1.0, GridUnitType.Star) }); // Portion Cost (~10%)
+                table.Columns.Add(new TableColumn { Width = new GridLength(1.0, GridUnitType.Star) }); // Portion Price (~10%)
+                table.Columns.Add(new TableColumn { Width = new GridLength(1.5, GridUnitType.Star) }); // Total Price (~15%)
             }
             else if (reportMode == ReportMode.Full || reportMode == ReportMode.Cost)
             {
                 // Full/Cost Report columns
-                table.Columns.Add(new TableColumn { Width = new GridLength(1, GridUnitType.Star) }); // Composition expands
-                table.Columns.Add(new TableColumn { Width = new GridLength(80) }); // Portion Cost
-                table.Columns.Add(new TableColumn { Width = new GridLength(80) }); // Portion Price
-                table.Columns.Add(new TableColumn { Width = new GridLength(90) }); // Total Cost (Raw)
-                table.Columns.Add(new TableColumn { Width = new GridLength(100) }); // Total Dish (Sum)
+                table.Columns.Add(new TableColumn { Width = new GridLength(4.0, GridUnitType.Star) }); // Composition (~40%)
+                table.Columns.Add(new TableColumn { Width = new GridLength(1.0, GridUnitType.Star) }); // Portion Cost (~10%)
+                table.Columns.Add(new TableColumn { Width = new GridLength(1.0, GridUnitType.Star) }); // Portion Price (~10%)
+                table.Columns.Add(new TableColumn { Width = new GridLength(1.0, GridUnitType.Star) }); // Total Cost (~10%)
+                table.Columns.Add(new TableColumn { Width = new GridLength(2.0, GridUnitType.Star) }); // Total Dish (~20%)
             }
             else
             {
-                table.Columns.Add(new TableColumn { Width = new GridLength(1, GridUnitType.Star) });
-                table.Columns.Add(new TableColumn { Width = new GridLength(150) });
+                table.Columns.Add(new TableColumn { Width = new GridLength(5.0, GridUnitType.Star) });
+                table.Columns.Add(new TableColumn { Width = new GridLength(1.5, GridUnitType.Star) });
             }
         }
         else

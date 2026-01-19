@@ -142,29 +142,41 @@ public class MenuPrinter
 
                 var showPriceColumn = reportMode != ReportMode.NoPrices;
 
-                var tableGrid = showPriceColumn
-                    ? (reportMode == ReportMode.Price 
-                        ? new TableGrid(
-                            new GridColumn { Width = "2000" },
-                            new GridColumn { Width = "3000" },
-                            new GridColumn { Width = "1000" },
-                            new GridColumn { Width = "1000" },
-                            new GridColumn { Width = "2000" })
-                        : (reportMode == ReportMode.Full || reportMode == ReportMode.Cost
-                            ? new TableGrid(
-                                new GridColumn { Width = "1600" },
-                                new GridColumn { Width = "3400" },
-                                new GridColumn { Width = "1000" }, // Unit Cost
-                                new GridColumn { Width = "1000" }, // Unit Price
-                                new GridColumn { Width = "1000" }, // Total Cost
-                                new GridColumn { Width = "2000" }) // Total Price
-                            : new TableGrid(
-                                new GridColumn { Width = "2000" },
-                                new GridColumn { Width = "5000" },
-                                new GridColumn { Width = "2000" })))
-                    : new TableGrid(
-                        new GridColumn { Width = "2000" },
-                        new GridColumn { Width = "7000" });
+                long dishWidth = 2000;
+                long compWidth = 3000;
+
+                if (reportMode == ReportMode.Price) { dishWidth = 2000; compWidth = 3000; }
+                else if (reportMode == ReportMode.Full) { dishWidth = 920; compWidth = 4080; }
+                else if (reportMode == ReportMode.Cost) { dishWidth = 736; compWidth = 4264; } // Special Cost mode (-20% Dish)
+                else if (reportMode == ReportMode.NoPrices) { dishWidth = 2000; compWidth = 7000; }
+                else { dishWidth = 2000; compWidth = 5000; } // Fallback
+
+                var tableGrid = new TableGrid();
+                tableGrid.Append(new GridColumn { Width = dishWidth.ToString() });
+                tableGrid.Append(new GridColumn { Width = compWidth.ToString() });
+
+                if (showPriceColumn) 
+                {
+                     if (reportMode == ReportMode.Price) 
+                     {
+                         tableGrid.Append(new GridColumn { Width = "1000" });
+                         tableGrid.Append(new GridColumn { Width = "1000" });
+                         tableGrid.Append(new GridColumn { Width = "2000" });
+                     }
+                     else if (reportMode == ReportMode.Full || reportMode == ReportMode.Cost)
+                     {
+                         tableGrid.Append(new GridColumn { Width = "1000" });
+                         tableGrid.Append(new GridColumn { Width = "1000" });
+                         tableGrid.Append(new GridColumn { Width = "1000" });
+                         tableGrid.Append(new GridColumn { Width = "2000" });
+                     }
+                     else 
+                     {
+                         // Fallback else
+                         tableGrid.Append(new GridColumn { Width = "2000" });
+                     }
+                }
+                
                 table.AppendChild(tableGrid);
 
                 foreach (var group in groupedDelicates)
@@ -229,7 +241,7 @@ public class MenuPrinter
                         row.Append(nameCell);
 
                         var compositionElement = CreateCompositionElement(delicate, reportMode, menuFontSizeStr, menuId,
-                            out var dishTotal, measureLookup, productLookup);
+                            out var dishTotal, measureLookup, productLookup, compWidth);
                         
                         var compositionCell = new TableCell();
                         compositionCell.Append(compositionElement);
@@ -553,7 +565,7 @@ public class MenuPrinter
     }
 
     private OpenXmlElement CreateCompositionElement(DelicatesColl delicate, ReportMode reportMode, string fontSizeStr,
-        int? menuId, out decimal dishTotal, Dictionary<string, Measure> measureLookup, Dictionary<int, ProductView> productLookup)
+        int? menuId, out decimal dishTotal, Dictionary<string, Measure> measureLookup, Dictionary<int, ProductView> productLookup, long compositionWidth)
     {
         dishTotal = 0;
         var components = delicate.Lcomp ?? new List<Components>();
@@ -628,6 +640,9 @@ public class MenuPrinter
             return p;
         }
 
+        long width1 = (long)(compositionWidth * 0.7);
+        long width2 = compositionWidth - width1;
+
         // Table for Cost/Full
         var table = new Table();
         // Transparent borders
@@ -640,16 +655,18 @@ public class MenuPrinter
                 new InsideHorizontalBorder { Val = new EnumValue<BorderValues>(BorderValues.Nil) },
                 new InsideVerticalBorder { Val = new EnumValue<BorderValues>(BorderValues.Nil) }
             ),
-             new TableWidth { Width = "3400", Type = TableWidthUnitValues.Dxa } // Explicit 3400 Twips
+             new TableWidth { Width = compositionWidth.ToString(), Type = TableWidthUnitValues.Dxa }
         );
         table.AppendChild(tableProps);
 
-        // Grid - 2 columns (Total 3000 Dxa to match parent column)
-        var tableGrid = new TableGrid(
-             new GridColumn { Width = "2380" }, // 70%
-             new GridColumn { Width = "1020" }   // 30%
-        );
-        table.AppendChild(tableGrid);
+            // Grid - 2 columns
+            var tableGrid = new TableGrid(
+                 new GridColumn { Width = width1.ToString() }, // 70%
+                 new GridColumn { Width = width2.ToString() }   // 30%
+            );
+            table.AppendChild(tableGrid);
+
+
 
         foreach (var item in items)
         {
@@ -657,7 +674,7 @@ public class MenuPrinter
             
             // Name + Weight
             var cell1 = new TableCell();
-            cell1.Append(new TableCellProperties(new TableCellWidth { Type = TableWidthUnitValues.Dxa, Width = "2380" }));
+            cell1.Append(new TableCellProperties(new TableCellWidth { Type = TableWidthUnitValues.Dxa, Width = width1.ToString() }));
             cell1.Append(new Paragraph(
                 new ParagraphProperties(new SpacingBetweenLines { After = "0" }), // Compact
                 new Run(new RunProperties(new FontSize { Val = fontSizeStr }), new Text($"{item.Name} ({item.Weight})"))
@@ -666,7 +683,7 @@ public class MenuPrinter
 
             // Price (no currency symbol)
             var cell2 = new TableCell();
-            cell2.Append(new TableCellProperties(new TableCellWidth { Type = TableWidthUnitValues.Dxa, Width = "1020" }));
+            cell2.Append(new TableCellProperties(new TableCellWidth { Type = TableWidthUnitValues.Dxa, Width = width2.ToString() }));
             var priceText = item.Price > 0 ? FormatCurrency(item.Price) : "0"; // "0" or empty? User image has "0" in one line but prices in others.
             cell2.Append(new Paragraph(
                 new ParagraphProperties(new Justification { Val = JustificationValues.Right }, new SpacingBetweenLines { After = "0" }),
