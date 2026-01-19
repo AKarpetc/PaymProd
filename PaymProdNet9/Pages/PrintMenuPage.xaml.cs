@@ -165,6 +165,7 @@ public partial class PrintMenuPage : Page
                 table.Columns.Add(new TableColumn { Width = new GridLength(4.0, GridUnitType.Star) }); // Composition (~40%)
                 table.Columns.Add(new TableColumn { Width = new GridLength(1.0, GridUnitType.Star) }); // Portion Cost (~10%)
                 table.Columns.Add(new TableColumn { Width = new GridLength(1.0, GridUnitType.Star) }); // Portion Price (~10%)
+                table.Columns.Add(new TableColumn { Width = new GridLength(1.0, GridUnitType.Star) }); // Total Cost (~10%) [NEW]
                 table.Columns.Add(new TableColumn { Width = new GridLength(1.5, GridUnitType.Star) }); // Total Price (~15%)
             }
             else if (reportMode == ReportMode.Full || reportMode == ReportMode.Cost)
@@ -198,7 +199,7 @@ public partial class PrintMenuPage : Page
                 FontWeight = FontWeights.Bold
             }))
             {
-                ColumnSpan = showPriceColumn ? (reportMode == ReportMode.Price ? 5 : (reportMode == ReportMode.Full || reportMode == ReportMode.Cost ? 6 : 3)) : 2,
+                ColumnSpan = showPriceColumn ? (reportMode == ReportMode.Price ? 6 : (reportMode == ReportMode.Full || reportMode == ReportMode.Cost ? 6 : 3)) : 2,
                 Background = Brushes.LightGray,
                 TextAlignment = TextAlignment.Center,
                 Padding = new Thickness(4),
@@ -217,6 +218,7 @@ public partial class PrintMenuPage : Page
                 {
                     columnsHeaderRow.Cells.Add(CreateColumnHeaderCell("Себ. порции"));
                     columnsHeaderRow.Cells.Add(CreateColumnHeaderCell("Цена порции"));
+                    columnsHeaderRow.Cells.Add(CreateColumnHeaderCell("Себест."));
                     columnsHeaderRow.Cells.Add(CreateColumnHeaderCell("Сумма, тг"));
                 }
                 else if (reportMode == ReportMode.Full || reportMode == ReportMode.Cost)
@@ -311,8 +313,8 @@ public partial class PrintMenuPage : Page
                         };
                         row.Cells.Add(unitPriceCell);
                     }
-
-                    if (reportMode == ReportMode.Full || reportMode == ReportMode.Cost)
+                    
+                    if (reportMode == ReportMode.Price || reportMode == ReportMode.Full || reportMode == ReportMode.Cost)
                     {
                         // 2.5 Total Cost (Итог себ.) - Raw Cost
                         var rawCostCell = new TableCell(new Paragraph(new Run(rawDishTotal > 0 ? FormatCurrency(rawDishTotal) : "—")))
@@ -346,7 +348,7 @@ public partial class PrintMenuPage : Page
                         totalReportSum += dishPrice;
                     
                     // For Full Report, also accumulate Total Cost
-                    if (reportMode == ReportMode.Full || reportMode == ReportMode.Cost)
+                    if (reportMode == ReportMode.Full || reportMode == ReportMode.Cost || reportMode == ReportMode.Price)
                     {
                         totalCostSum += rawDishTotal;
                     }
@@ -372,9 +374,12 @@ public partial class PrintMenuPage : Page
             var subtotalRow = new TableRow();
             
             // Если режим Full или Cost, то в этой строке выводим И себестоимость И цену
-            if (reportMode == ReportMode.Full || reportMode == ReportMode.Cost)
+            if (reportMode == ReportMode.Full || reportMode == ReportMode.Cost || reportMode == ReportMode.Price)
             {
-                 // Ячейка заголовка "Итого по меню" (Span 4: Dish, Comp, PCost, PPrice)
+                 // Ячейка заголовка "Итого по меню"
+                 // Price mode: 6 cols total. Dish, Comp, PCost, PPrice, TCost, TPrice.
+                 // Subtotal Header spans 4 (Dish, Comp, PCost, PPrice).
+                 // Full/Cost mode: 6 cols total.
                  var subtotalTitleCell = new TableCell(new Paragraph(new Run(reportMode == ReportMode.Cost ? "ИТОГ" : "Итого по меню") { FontWeight = FontWeights.Bold }))
                  {
                      ColumnSpan = 4,
@@ -405,10 +410,14 @@ public partial class PrintMenuPage : Page
             }
             else
             {
-                // Стандартный режим (Price)
+                // Стандартный режим (Fallback / NoPrices?? if NoPrices comes here)
+                // Actually NoPrices shouldn't show subtotal if showPriceColumn is false.
+                // But check showPriceColumn is true here.
+                // So this else is practically unreachable given current modes or just ReportMode.NoPrices logic logic higher up.
+                // Keeping minimal fallback.
                 var subtotalTitleCell = new TableCell(new Paragraph(new Run("Итого по меню") { FontWeight = FontWeights.Bold }))
                 {
-                    ColumnSpan = reportMode == ReportMode.Price ? 4 : 2,
+                    ColumnSpan = 2,
                     Padding = new Thickness(4),
                     TextAlignment = TextAlignment.Right
                 };
@@ -438,7 +447,7 @@ public partial class PrintMenuPage : Page
                         new TableCell(new Paragraph(new Run($"За обслуживание ({effectiveServicePercent:G}%)"))
                             { FontWeight = FontWeights.Bold })
                         {
-                            ColumnSpan = reportMode == ReportMode.Price ? 4 : (reportMode == ReportMode.Full ? 5 : 2),
+                            ColumnSpan = reportMode == ReportMode.Price ? 5 : (reportMode == ReportMode.Full ? 5 : 2),
                             Padding = new Thickness(4),
                             TextAlignment = TextAlignment.Right
                         };
@@ -462,7 +471,7 @@ public partial class PrintMenuPage : Page
                     
                     // Determine span based on mode
                     int span = 2; // Default (Cost)
-                    if (reportMode == ReportMode.Price) span = 5;
+                    if (reportMode == ReportMode.Price) span = 6; // Now 6 columns loop
                     if (reportMode == ReportMode.Full) span = 6;
 
                     var totalCell = new TableCell(new Paragraph(new Run($"ИТОГ   {FormatCurrency(grandTotal)}")

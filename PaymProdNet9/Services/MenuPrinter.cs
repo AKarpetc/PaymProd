@@ -161,6 +161,7 @@ public class MenuPrinter
                      {
                          tableGrid.Append(new GridColumn { Width = "1000" });
                          tableGrid.Append(new GridColumn { Width = "1000" });
+                         tableGrid.Append(new GridColumn { Width = "1000" }); // Total Cost [NEW]
                          tableGrid.Append(new GridColumn { Width = "2000" });
                      }
                      else if (reportMode == ReportMode.Full || reportMode == ReportMode.Cost)
@@ -185,7 +186,7 @@ public class MenuPrinter
                     var headerRow = new TableRow();
                     var headerCell = new TableCell();
                     var headerCellProperties = new TableCellProperties(
-                        new GridSpan { Val = showPriceColumn ? (reportMode == ReportMode.Price ? 5 : (reportMode == ReportMode.Full || reportMode == ReportMode.Cost ? 6 : 3)) : 2 },
+                        new GridSpan { Val = showPriceColumn ? (reportMode == ReportMode.Price ? 6 : (reportMode == ReportMode.Full || reportMode == ReportMode.Cost ? 6 : 3)) : 2 },
                         new Shading { Fill = "D3D3D3" },
                         new TableCellVerticalAlignment { Val = TableVerticalAlignmentValues.Center }
                     );
@@ -211,6 +212,7 @@ public class MenuPrinter
                         {
                             columnsRow.Append(CreateTableHeaderCell("Себ. порции", menuFontSizeStr));
                             columnsRow.Append(CreateTableHeaderCell("Цена порции", menuFontSizeStr));
+                            columnsRow.Append(CreateTableHeaderCell("Себест.", menuFontSizeStr));
                             columnsRow.Append(CreateTableHeaderCell("Сумма, тг", menuFontSizeStr));
                         }
                         else if (reportMode == ReportMode.Full || reportMode == ReportMode.Cost)
@@ -299,7 +301,7 @@ public class MenuPrinter
                             }
 
                             
-                            if (reportMode == ReportMode.Full || reportMode == ReportMode.Cost)
+                            if (reportMode == ReportMode.Full || reportMode == ReportMode.Cost || reportMode == ReportMode.Price)
                             {
                                 // 2.5 Total Cost (Raw)
                                 var rawCostText = rawDishTotal > 0 ? FormatCurrency(rawDishTotal) : "—";
@@ -387,7 +389,7 @@ public class MenuPrinter
                         totalDishSum += currentDishCost;
                     }
                     
-                    if (reportMode == ReportMode.Full || reportMode == ReportMode.Cost)
+                    if (reportMode == ReportMode.Full || reportMode == ReportMode.Cost || reportMode == ReportMode.Price)
                     {
                         totalCostSum += currentDishCost;
                     }
@@ -410,7 +412,7 @@ public class MenuPrinter
                     // Строка "Подитог" (Сумма за блюда без обслуживания)
                     var subtotalRow = new TableRow();
                     
-                    if (reportMode == ReportMode.Full || reportMode == ReportMode.Cost)
+                    if (reportMode == ReportMode.Full || reportMode == ReportMode.Cost || reportMode == ReportMode.Price)
                     {
                         // Merged Footer: "Итого по меню" with TotalCost and TotalPrice
                          var subtotalTitleCell = new TableCell();
@@ -482,7 +484,7 @@ public class MenuPrinter
                     // Объединенная ячейка для текста "За обслуживание + %"
                     var serviceTitleCell = new TableCell();
                     serviceTitleCell.Append(new TableCellProperties(
-                        new GridSpan { Val = (reportMode == ReportMode.Price ? 4 : (reportMode == ReportMode.Full ? 5 : 2)) },
+                        new GridSpan { Val = (reportMode == ReportMode.Price ? 5 : (reportMode == ReportMode.Full ? 5 : 2)) },
                         new TableCellVerticalAlignment { Val = TableVerticalAlignmentValues.Center }
                     ));
                     serviceTitleCell.Append(new Paragraph(
@@ -512,7 +514,7 @@ public class MenuPrinter
                     
                     int span = 2; // Default for Cost? Check logic. Cost doesn't enter here usually (reportMode == Cost) but if it did...
                     // reportMode is Price or Full here.
-                    if (reportMode == ReportMode.Price) span = 5;
+                    if (reportMode == ReportMode.Price) span = 6;
                     if (reportMode == ReportMode.Full || reportMode == ReportMode.Cost) span = 6;
                     
                     totalCell.Append(new TableCellProperties(
@@ -542,10 +544,10 @@ public class MenuPrinter
                     new PageSize { Width = (UInt32Value)(reportMode == ReportMode.Full ? 16838U : 11906U), Height = (UInt32Value)(reportMode == ReportMode.Full ? 11906U : 16838U), Orient = reportMode == ReportMode.Full ? PageOrientationValues.Landscape : PageOrientationValues.Portrait },
                     new PageMargin
                     {
-                        Top = (Int32)(reportMode == ReportMode.Cost ? 720 : 1440),
-                        Right = (UInt32Value)(reportMode == ReportMode.Cost ? 720U : 1440U),
-                        Bottom = (Int32)(reportMode == ReportMode.Cost ? 720 : 1440),
-                        Left = (UInt32Value)(reportMode == ReportMode.Cost ? 720U : 1440U),
+                        Top = (Int32)(reportMode == ReportMode.Cost || reportMode == ReportMode.Price ? 720 : 1440),
+                        Right = (UInt32Value)(reportMode == ReportMode.Cost || reportMode == ReportMode.Price ? 720U : 1440U),
+                        Bottom = (Int32)(reportMode == ReportMode.Cost || reportMode == ReportMode.Price ? 720 : 1440),
+                        Left = (UInt32Value)(reportMode == ReportMode.Cost || reportMode == ReportMode.Price ? 720U : 1440U),
                         Header = (UInt32Value)720U,
                         Footer = (UInt32Value)720U,
                         Gutter = (UInt32Value)0U
@@ -1054,6 +1056,20 @@ public class MenuPrinter
 
                     body.Append(table);
                 }
+
+                // Set Narrow Margins for Products Report
+                body.AppendChild(new SectionProperties(
+                    new PageSize { Width = 11906U, Height = 16838U, Orient = PageOrientationValues.Portrait },
+                    new PageMargin
+                    {
+                        Top = 720,
+                        Right = 720U,
+                        Bottom = 720,
+                        Left = 720U,
+                        Header = 720U,
+                        Footer = 720U,
+                        Gutter = 0U
+                    }));
 
                 mainPart.Document.Save();
 
