@@ -16,6 +16,7 @@ namespace PaymProdNet9.Services;
 /// </summary>
 public class MenuPrinter
 {
+
     private readonly ProductRepository _productRepository;
     private readonly MenuPriceService _menuPriceService;
     private readonly SettingsRepository _settingsRepository;
@@ -151,8 +152,8 @@ public class MenuPrinter
                             new GridColumn { Width = "2000" })
                         : (reportMode == ReportMode.Full || reportMode == ReportMode.Cost
                             ? new TableGrid(
-                                new GridColumn { Width = "2000" },
-                                new GridColumn { Width = "3000" },
+                                new GridColumn { Width = "1600" },
+                                new GridColumn { Width = "3400" },
                                 new GridColumn { Width = "1000" }, // Unit Cost
                                 new GridColumn { Width = "1000" }, // Unit Price
                                 new GridColumn { Width = "1000" }, // Total Cost
@@ -227,108 +228,21 @@ public class MenuPrinter
                         EnsureVerticalCenter(nameCell);
                         row.Append(nameCell);
 
-                        var compositionParagraph = new Paragraph(
-                            new ParagraphProperties(new Justification { Val = JustificationValues.Left }));
-
-                        var components = delicate.Lcomp ?? new List<Components>();
-                        decimal dishTotal = 0;
-                        if (components.Any())
-                        {
-                            var componentLines = new List<string>();
-                            foreach (var component in components)
-                            {
-                                var baseMeasure = GetBaseMeasure(component);
-                                var productName = !string.IsNullOrEmpty(component.NameT)
-                                    ? component.NameT
-                                    : component.Name;
-                                var count = delicate.Count > 0 ? delicate.Count : 1;
-
-                                // Логика как в отчете по товарам: показываем основную единицу, если нет перерасчета в фасовку
-                                string displayValue;
-                                var totalWeight = component.Ves * count;
-
-                                // Локальная функция для нормализации единиц
-                                string NormalizeUnitLocal(string unit)
-                                {
-                                    return unit?.Trim().ToLowerInvariant() ?? string.Empty;
-                                }
-
-                                // Нормализуем единицы для сравнения (как в отчете по товарам)
-                                var baseUnitNormalized = NormalizeUnitLocal(baseMeasure);
-                                var fassIzNormalized = NormalizeUnitLocal(component.FassIz ?? string.Empty);
-
-                                // Если на продукте стоит флаг "не переводить в фасованные" — всегда показываем в базовой единице
-                                if (component.DoNotConvertToPackInMenu)
-                                {
-                                    displayValue =
-                                        FormatMenuValue(Math.Round(totalWeight, 2, MidpointRounding.AwayFromZero),
-                                            baseMeasure);
-                                }
-                                else
-                                {
-                                    // Пересчитываем только если: есть фасовка, единица фасовки отличается от базовой, и вес >= фасовка
-                                    if (component.Fass > 0 &&
-                                        !string.IsNullOrWhiteSpace(component.FassIz) &&
-                                        fassIzNormalized != baseUnitNormalized &&
-                                        totalWeight >= component.Fass)
-                                    {
-                                        // Есть перерасчет в фасовку - показываем в фасовке
-                                        var packageCount = totalWeight / component.Fass;
-                                        if (component.RoundToInteger)
-                                            packageCount = Math.Ceiling(packageCount);
-
-                                        var packageUnit = GetPackageMeasure(component, baseMeasure);
-                                        displayValue = FormatMenuValue(
-                                            Math.Round(packageCount, 2, MidpointRounding.AwayFromZero), packageUnit);
-                                    }
-                                    else
-                                    {
-                                        // Нет перерасчета в фасовку - показываем в основных единицах
-                                        // Если нужно округлять до целого (например, штучный товар)
-                                        var val = totalWeight;
-                                        if (component.RoundToInteger)
-                                            val = Math.Ceiling(val);
-
-                                        displayValue = FormatMenuValue(
-                                            Math.Round(val, 2, MidpointRounding.AwayFromZero), baseMeasure);
-                                    }
-                                }
-
-                                var line = BuildComponentLine(reportMode, component, productName, displayValue,
-                                    menuId, delicate.Count, ref dishTotal);
-                                componentLines.Add(line);
-                            }
-
-                            // Для режима Price не показываем цены компонентов в составе
-                            // В режиме Cost и NoPrices - цены компонентов уже включены в строку (или нет, в зависимости от логики BuildComponentLine)
-                            // Если Price - то мы просто перечисляем компоненты без цен
-                            // В режиме Full - цены компонентов ПОКАЗЫВАЕМ (как в Cost)
-
-                            if (reportMode == ReportMode.NoPrices || reportMode == ReportMode.Price)
-                            {
-                                compositionParagraph.Append(new Break());
-                                compositionParagraph.Append(new Run(new RunProperties(new FontSize { Val = menuFontSizeStr }), new Text(string.Join(", ", componentLines))));
-                            }
-                            else
-                            {
-                                foreach (var line in componentLines)
-                                {
-                                    compositionParagraph.Append(new Break());
-                                    compositionParagraph.Append(new Run(new RunProperties(new FontSize { Val = menuFontSizeStr }), new Text(line + ", ")));
-                                }
-                            }
-                        }
-                        else
-                        {
-                            compositionParagraph.Append(new Break());
-                            compositionParagraph.Append(new Run(new RunProperties(new FontSize { Val = menuFontSizeStr }), new Text("нет данных")));
-                        }
-
+                        var compositionElement = CreateCompositionElement(delicate, reportMode, menuFontSizeStr, menuId,
+                            out var dishTotal, measureLookup, productLookup);
+                        
                         var compositionCell = new TableCell();
-                        compositionCell.Append(compositionParagraph);
+                        compositionCell.Append(compositionElement);
+                        
+                        // Fix for Word corruption: Cell must end with a paragraph, not a table
+                        if (compositionElement is Table)
+                        {
+                            compositionCell.Append(new Paragraph());
+                        }
+
                         EnsureVerticalCenter(compositionCell);
                         row.Append(compositionCell);
-
+                        
                         if (showPriceColumn)
                         {
                             // Сохраняем себестоимость до применения наценки
@@ -371,7 +285,6 @@ public class MenuPrinter
                                 EnsureVerticalCenter(unitPriceCell);
                                 row.Append(unitPriceCell);
                             }
-
 
                             
                             if (reportMode == ReportMode.Full || reportMode == ReportMode.Cost)
@@ -615,7 +528,16 @@ public class MenuPrinter
                 // Add SectionProperties at the end of Body to avoid corruption
                 body.AppendChild(new SectionProperties(
                     new PageSize { Width = (UInt32Value)(reportMode == ReportMode.Full ? 16838U : 11906U), Height = (UInt32Value)(reportMode == ReportMode.Full ? 11906U : 16838U), Orient = reportMode == ReportMode.Full ? PageOrientationValues.Landscape : PageOrientationValues.Portrait },
-                    new PageMargin { Top = 1440, Right = (UInt32Value)1440U, Bottom = 1440, Left = (UInt32Value)1440U, Header = (UInt32Value)720U, Footer = (UInt32Value)720U, Gutter = (UInt32Value)0U }));
+                    new PageMargin
+                    {
+                        Top = (Int32)(reportMode == ReportMode.Cost ? 720 : 1440),
+                        Right = (UInt32Value)(reportMode == ReportMode.Cost ? 720U : 1440U),
+                        Bottom = (Int32)(reportMode == ReportMode.Cost ? 720 : 1440),
+                        Left = (UInt32Value)(reportMode == ReportMode.Cost ? 720U : 1440U),
+                        Header = (UInt32Value)720U,
+                        Footer = (UInt32Value)720U,
+                        Gutter = (UInt32Value)0U
+                    }));
 
                 mainPart.Document.Save();
             }
@@ -630,23 +552,139 @@ public class MenuPrinter
         }
     }
 
-    private string BuildComponentLine(ReportMode reportMode, Components component, string productName,
-        string displayValue,
-        int? menuId, decimal dishCount, ref decimal dishTotal)
+    private OpenXmlElement CreateCompositionElement(DelicatesColl delicate, ReportMode reportMode, string fontSizeStr,
+        int? menuId, out decimal dishTotal, Dictionary<string, Measure> measureLookup, Dictionary<int, ProductView> productLookup)
     {
-        // Считаем цену компонента всегда, чтобы накопить dishTotal
-        var priceInfo = _menuPriceService.GetComponentPriceInfo(menuId ?? 0, component, dishCount);
-        dishTotal += priceInfo.TotalPrice;
+        dishTotal = 0;
+        var components = delicate.Lcomp ?? new List<Components>();
 
-        // Если режим Price или NoPrices - не показываем цену компонента в строке
-        if (reportMode == ReportMode.Price || reportMode == ReportMode.NoPrices)
-            return $"{productName} ({displayValue})";
+        if (!components.Any())
+        {
+            var p = new Paragraph(new ParagraphProperties(new Justification { Val = JustificationValues.Left }));
+            p.Append(new Run(new RunProperties(new FontSize { Val = fontSizeStr }), new Text("нет данных")));
+            return p;
+        }
 
-        // Если режим Cost - показываем цену компонента
-        if (priceInfo.TotalPrice <= 0)
-            return $"{productName} ({displayValue}) — 0";
+        var items = new List<(string Name, string Weight, decimal Price)>();
 
-        return $"{productName} ({displayValue}) — {FormatCurrency(priceInfo.TotalPrice)} тг";
+        foreach (var component in components)
+        {
+            var baseMeasure = string.IsNullOrWhiteSpace(component.Mera) ? "г" : component.Mera;
+            
+            // Local helper for package measure
+            string GetPackageMeasure(Components c, string bMeasure)
+            {
+                if (!string.IsNullOrWhiteSpace(c.FassIz)) return c.FassIz;
+                if (productLookup.TryGetValue(c.Prodid, out var product) && !string.IsNullOrWhiteSpace(product.IzName)) return product.IzName;
+                if (measureLookup.TryGetValue(bMeasure.ToLower().Trim(), out var measureInfo) && !string.IsNullOrWhiteSpace(measureInfo.FassIzmer)) return measureInfo.FassIzmer;
+                return bMeasure;
+            }
+
+            var count = delicate.Count > 0 ? delicate.Count : 1;
+            decimal displayValue;
+            string displayUnit;
+            var totalWeight = component.Ves * count;
+
+            string NormalizeUnitLocal(string unit) => unit?.Trim().ToLowerInvariant() ?? string.Empty;
+            var baseUnitNormalized = NormalizeUnitLocal(baseMeasure);
+            var fassIzNormalized = NormalizeUnitLocal(component.FassIz ?? string.Empty);
+
+            if (component.DoNotConvertToPackInMenu)
+            {
+                displayValue = Math.Round(totalWeight, 2, MidpointRounding.AwayFromZero);
+                displayUnit = baseMeasure;
+            }
+            else
+            {
+                if (component.Fass > 0 && !string.IsNullOrWhiteSpace(component.FassIz) &&
+                    fassIzNormalized != baseUnitNormalized && totalWeight >= component.Fass)
+                {
+                    var packageCount = totalWeight / component.Fass;
+                    displayValue = Math.Round(component.RoundToInteger ? Math.Ceiling(packageCount) : packageCount, 2, MidpointRounding.AwayFromZero);
+                    displayUnit = GetPackageMeasure(component, baseMeasure);
+                }
+                else
+                {
+                    var val = component.RoundToInteger ? Math.Ceiling(totalWeight) : totalWeight;
+                    displayValue = Math.Round(val, 2, MidpointRounding.AwayFromZero);
+                    displayUnit = baseMeasure;
+                }
+            }
+
+            // Shorten unit
+            displayUnit = ShortenUnit(displayUnit);
+            var formattedWeight = FormatMenuValue(displayValue, displayUnit);
+
+            var priceInfo = _menuPriceService.GetComponentPriceInfo(menuId ?? 0, component, delicate.Count);
+            dishTotal += priceInfo.TotalPrice;
+
+            items.Add((!string.IsNullOrEmpty(component.NameT) ? component.NameT : component.Name, formattedWeight, priceInfo.TotalPrice));
+        }
+
+        if (reportMode == ReportMode.NoPrices || reportMode == ReportMode.Price)
+        {
+            var p = new Paragraph(new ParagraphProperties(new Justification { Val = JustificationValues.Left }));
+            p.Append(new Run(new RunProperties(new FontSize { Val = fontSizeStr }), new Text(string.Join(", ", items.Select(i => $"{i.Name} ({i.Weight})")))));
+            return p;
+        }
+
+        // Table for Cost/Full
+        var table = new Table();
+        // Transparent borders
+        var tableProps = new TableProperties(
+            new TableBorders(
+                new TopBorder { Val = new EnumValue<BorderValues>(BorderValues.Nil) },
+                new BottomBorder { Val = new EnumValue<BorderValues>(BorderValues.Nil) },
+                new LeftBorder { Val = new EnumValue<BorderValues>(BorderValues.Nil) },
+                new RightBorder { Val = new EnumValue<BorderValues>(BorderValues.Nil) },
+                new InsideHorizontalBorder { Val = new EnumValue<BorderValues>(BorderValues.Nil) },
+                new InsideVerticalBorder { Val = new EnumValue<BorderValues>(BorderValues.Nil) }
+            ),
+             new TableWidth { Width = "3400", Type = TableWidthUnitValues.Dxa } // Explicit 3400 Twips
+        );
+        table.AppendChild(tableProps);
+
+        // Grid - 2 columns (Total 3000 Dxa to match parent column)
+        var tableGrid = new TableGrid(
+             new GridColumn { Width = "2380" }, // 70%
+             new GridColumn { Width = "1020" }   // 30%
+        );
+        table.AppendChild(tableGrid);
+
+        foreach (var item in items)
+        {
+            var tr = new TableRow();
+            
+            // Name + Weight
+            var cell1 = new TableCell();
+            cell1.Append(new TableCellProperties(new TableCellWidth { Type = TableWidthUnitValues.Dxa, Width = "2380" }));
+            cell1.Append(new Paragraph(
+                new ParagraphProperties(new SpacingBetweenLines { After = "0" }), // Compact
+                new Run(new RunProperties(new FontSize { Val = fontSizeStr }), new Text($"{item.Name} ({item.Weight})"))
+            ));
+            tr.Append(cell1);
+
+            // Price (no currency symbol)
+            var cell2 = new TableCell();
+            cell2.Append(new TableCellProperties(new TableCellWidth { Type = TableWidthUnitValues.Dxa, Width = "1020" }));
+            var priceText = item.Price > 0 ? FormatCurrency(item.Price) : "0"; // "0" or empty? User image has "0" in one line but prices in others.
+            cell2.Append(new Paragraph(
+                new ParagraphProperties(new Justification { Val = JustificationValues.Right }, new SpacingBetweenLines { After = "0" }),
+                new Run(new RunProperties(new FontSize { Val = fontSizeStr }), new Text(priceText))
+            ));
+            tr.Append(cell2);
+
+            table.Append(tr);
+        }
+
+        return table;
+    }
+
+    private static string ShortenUnit(string unit)
+    {
+        if (string.IsNullOrWhiteSpace(unit)) return string.Empty;
+        var trimmed = unit.Trim();
+        return trimmed.Length > 2 ? trimmed.Substring(0, 2) : trimmed;
     }
 
     private static TableCell CreateTableHeaderCell(string text, string? fontSize = null)

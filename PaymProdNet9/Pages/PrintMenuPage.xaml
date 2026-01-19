@@ -73,17 +73,16 @@
         </StackPanel>
 
         <Grid Grid.Row="1">
-            <Border HorizontalAlignment="Center"
-                    Margin="20,0"
-                    MaxWidth="1100"
+            <Border HorizontalAlignment="Stretch"
+                    Margin="20"
                     BorderBrush="#CCCCCC"
                     BorderThickness="1"
                     CornerRadius="6">
-                <materialDesign:Card Padding="20" Background="White">
+                <materialDesign:Card Padding="5" Background="White">
                     <FlowDocumentScrollViewer x:Name="DocumentViewer"
                                               VerticalScrollBarVisibility="Auto"
                                               HorizontalScrollBarVisibility="Auto"
-                                              HorizontalAlignment="Center"
+                                              HorizontalAlignment="Stretch"
                                               MinHeight="600" />
                 </materialDesign:Card>
             </Border>

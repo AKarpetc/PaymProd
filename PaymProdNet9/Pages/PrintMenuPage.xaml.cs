@@ -107,9 +107,9 @@ public partial class PrintMenuPage : Page
         {
             FontFamily = new FontFamily("Segoe UI"),
             FontSize = 14,
-            PagePadding = new Thickness(30),
+            PagePadding = new Thickness(5),
             ColumnWidth = double.PositiveInfinity,
-            PageWidth = reportMode == ReportMode.Full ? 1122 : 980 // 980 was old default ?? A4 is ~793px at 96dpi. 980 is wide. Kept 980 for compat, 1122 for full.
+            // PageWidth = reportMode == ReportMode.Full ? 1122 : 980 // Commented out to allow full width expansion
         };
 
         var titleParagraph = new Paragraph
@@ -132,7 +132,7 @@ public partial class PrintMenuPage : Page
             .ThenBy(g => g.Key.Type);
 
         var table = new Table();
-        table.Columns.Add(new TableColumn { Width = new GridLength(150) });
+        table.Columns.Add(new TableColumn { Width = new GridLength(120) });
         var showPriceColumn = reportMode != ReportMode.NoPrices;
         
         decimal totalCostSum = 0; // Accumulator for Full Report Total Cost (Raw)
@@ -141,7 +141,7 @@ public partial class PrintMenuPage : Page
         {
             if (reportMode == ReportMode.Price)
             {
-                table.Columns.Add(new TableColumn { Width = new GridLength(300) }); // Composition reduced
+                table.Columns.Add(new TableColumn { Width = new GridLength(1, GridUnitType.Star) }); // Composition expands
                 table.Columns.Add(new TableColumn { Width = new GridLength(100) }); // Portion Cost
                 table.Columns.Add(new TableColumn { Width = new GridLength(100) }); // Portion Price
                 table.Columns.Add(new TableColumn { Width = new GridLength(150) }); // Total Price
@@ -149,7 +149,7 @@ public partial class PrintMenuPage : Page
             else if (reportMode == ReportMode.Full || reportMode == ReportMode.Cost)
             {
                 // Full/Cost Report columns
-                table.Columns.Add(new TableColumn { Width = new GridLength(220) }); // Composition
+                table.Columns.Add(new TableColumn { Width = new GridLength(1, GridUnitType.Star) }); // Composition expands
                 table.Columns.Add(new TableColumn { Width = new GridLength(80) }); // Portion Cost
                 table.Columns.Add(new TableColumn { Width = new GridLength(80) }); // Portion Price
                 table.Columns.Add(new TableColumn { Width = new GridLength(90) }); // Total Cost (Raw)
@@ -157,13 +157,13 @@ public partial class PrintMenuPage : Page
             }
             else
             {
-                table.Columns.Add(new TableColumn { Width = new GridLength(500) });
+                table.Columns.Add(new TableColumn { Width = new GridLength(1, GridUnitType.Star) });
                 table.Columns.Add(new TableColumn { Width = new GridLength(150) });
             }
         }
         else
         {
-            table.Columns.Add(new TableColumn { Width = new GridLength(650) });
+            table.Columns.Add(new TableColumn { Width = new GridLength(1, GridUnitType.Star) });
         }
 
         var rowGroup = new TableRowGroup();
@@ -224,9 +224,9 @@ public partial class PrintMenuPage : Page
                 };
                 row.Cells.Add(nameCell);
 
-                var compositionParagraph = BuildCompositionParagraph(delicate, reportMode, out var dishPrice);
+                var compositionBlock = BuildCompositionTable(delicate, reportMode, out var dishPrice);
                 
-                var compositionCell = new TableCell(compositionParagraph)
+                var compositionCell = new TableCell(compositionBlock)
                 {
                     Padding = new Thickness(4),
                     BorderBrush = Brushes.Black,
@@ -478,45 +478,96 @@ public partial class PrintMenuPage : Page
         return cell;
     }
 
-    private Paragraph BuildCompositionParagraph(DelicatesColl delicate, ReportMode reportMode, out decimal dishTotal)
+    private static string ShortenUnit(string unit)
     {
-        var paragraph = new Paragraph();
-        var lines = BuildCompositionLines(delicate, reportMode, out dishTotal);
+        if (string.IsNullOrWhiteSpace(unit)) return string.Empty;
+        var trimmed = unit.Trim();
+        return trimmed.Length > 2 ? trimmed.Substring(0, 2) : trimmed;
+    }
 
-        if (lines.Count == 0)
+    private Block BuildCompositionTable(DelicatesColl delicate, ReportMode reportMode, out decimal dishTotal)
+    {
+        var items = GetCompositionItems(delicate, out dishTotal);
+
+        if (items.Count == 0)
         {
-            paragraph.Inlines.Add(new Run("Без состава"));
-            return paragraph;
+            return new Paragraph(new Run("Без состава"));
         }
 
-        // Если режим Price, мы не показываем цены компонентов, поэтому разделяем запятыми или новой строкой?
-        // В старом коде для includePrices=true использовалась новая строка.
-        // Для includePrices=false использовалась запятая.
-        // Новая логика:
-        // Price: новая строка (т.к. состав может быть длинным), но без цен.
-        // Cost: новая строка, с ценами (как было).
-        // NoPrices: запятая (как было).
+        // Если режим Price или NoPrices - мы не показываем цены, и, возможно, структура таблицы не нужна?
+        // Но пользователь просил "внутри этого поля таблицу на весь столбец... границы прозрачные".
+        // Для Price/NoPrices цена не нужна, но табличная структура может быть полезна для выравнивания веса.
+        // Однако, в примере на картинке и в запросе речь шла про "оставить только цену" (т.е. Price Mode?).
+        // Нет, "для отчета по меню нужно...". Скорее всего для всех.
+        // Но если цен нет, таблица 2-я колонка пустая?
+        // Для Price/NoPrices просто список через запятую или строки?
+        // В старом коде: Price/NoPrices -> comma separated.
+        // "нужно что бы отчет по меню с себестоимостью выгружался именно с узкими полями" -> Context is Cost Report largely.
+        // Let's assume table structure is key for Cost/Full. For others, maybe stick to efficient layout.
+        // User asked "в поле состав... добавить таблицу". 
+        // Let's use table for all.
 
         if (reportMode == ReportMode.NoPrices || reportMode == ReportMode.Price)
         {
-            paragraph.Inlines.Add(new Run(string.Join(", ", lines)));
-            return paragraph;
+            // Old behavior: comma separated.
+            // Let's keep comma separated for Price/NoPrice to save space, unless requested.
+            // User request seems focused on "Cost" details in context of "Narrow margins for cost report".
+            // "для отчета по меню нужно... убрать тг... добавить таблицу". Implicitly for reports showing composition details.
+            // Let's use simple list for Price/NoPrices because they typically don't show component prices.
+            var simpleLines = items.Select(i => $"{i.Name} ({i.Weight})").ToList();
+            return new Paragraph(new Run(string.Join(", ", simpleLines)));
         }
 
-        for (var i = 0; i < lines.Count; i++)
+        // For Cost / Full: Table with 2 columns.
+        var table = new Table { CellSpacing = 0, BorderThickness = new Thickness(0) };
+        // Column 1: Name + Weight (Auto/Star?)
+        // Column 2: Price (Auto/Fixed?)
+        // Let's try Star/Auto.
+        table.Columns.Add(new TableColumn { Width = new GridLength(7, GridUnitType.Star) });
+        table.Columns.Add(new TableColumn { Width = new GridLength(3, GridUnitType.Star) });
+
+        var rowGroup = new TableRowGroup();
+        foreach (var item in items)
         {
-            if (i > 0) paragraph.Inlines.Add(new LineBreak());
-            paragraph.Inlines.Add(new Run(lines[i] + ", "));
-        }
+            var tr = new TableRow();
+            
+            // Name + Weight
+            var cell1 = new TableCell(new Paragraph(new Run($"{item.Name} ({item.Weight})")))
+            {
+                Padding = new Thickness(0, 0, 4, 0), // Right padding for spacing
+                BorderThickness = new Thickness(0)
+            };
+            tr.Cells.Add(cell1);
 
-        return paragraph;
+            // Price
+            var priceText = item.TotalPrice > 0 ? FormatCurrency(item.TotalPrice) : "0";
+            var cell2 = new TableCell(new Paragraph(new Run(priceText)))
+            {
+                Padding = new Thickness(0),
+                BorderThickness = new Thickness(0),
+                TextAlignment = TextAlignment.Right
+            };
+            tr.Cells.Add(cell2);
+
+            rowGroup.Rows.Add(tr);
+        }
+        table.RowGroups.Add(rowGroup);
+
+        return table;
     }
 
-    private List<string> BuildCompositionLines(DelicatesColl delicate, ReportMode reportMode, out decimal dishTotal)
+    private struct CompositionItem
     {
-        var lines = new List<string>();
+        public string Name;
+        public string Weight;
+        public decimal TotalPrice;
+    }
+
+    private List<CompositionItem> GetCompositionItems(DelicatesColl delicate, out decimal dishTotal)
+    {
+        var result = new List<CompositionItem>();
         dishTotal = 0;
-        if (delicate.Lcomp == null || !delicate.Lcomp.Any()) return lines;
+        if (delicate.Lcomp == null || !delicate.Lcomp.Any()) return result;
 
         foreach (var component in delicate.Lcomp)
         {
@@ -524,22 +575,18 @@ public partial class PrintMenuPage : Page
             var baseUnit = !string.IsNullOrWhiteSpace(component.Mera) ? component.Mera : "г";
             var count = delicate.Count > 0 ? delicate.Count : 1;
 
-            // Логика как в отчете по товарам: показываем основную единицу, если нет перерасчета в фасовку
             decimal displayValue;
             string displayUnit;
             var totalWeight = component.Ves * count;
 
-            // Локальная функция для нормализации единиц
             string NormalizeUnitLocal(string unit)
             {
                 return unit?.Trim().ToLowerInvariant() ?? string.Empty;
             }
 
-            // Нормализуем единицы для сравнения (как в отчете по товарам)
             var baseUnitNormalized = NormalizeUnitLocal(baseUnit);
             var fassIzNormalized = NormalizeUnitLocal(component.FassIz ?? string.Empty);
 
-            // Если на продукте стоит флаг "не переводить в фасованные" — всегда показываем в базовой единице
             if (component.DoNotConvertToPackInMenu)
             {
                 displayValue = Math.Round(totalWeight, 2, MidpointRounding.AwayFromZero);
@@ -547,45 +594,39 @@ public partial class PrintMenuPage : Page
             }
             else
             {
-                // Проверяем, нужно ли пересчитывать в фасовку (как в отчете по товарам)
-                // Пересчитываем только если: есть фасовка, единица фасовки отличается от базовой, и вес >= фасовка
                 if (component.Fass > 0 &&
                     !string.IsNullOrWhiteSpace(component.FassIz) &&
                     fassIzNormalized != baseUnitNormalized &&
                     totalWeight >= component.Fass)
                 {
-                    // Есть перерасчет в фасовку - показываем в фасовке
                     var packageCount = totalWeight / component.Fass;
                     displayValue = Math.Round(packageCount, 2, MidpointRounding.AwayFromZero);
                     displayUnit = !string.IsNullOrWhiteSpace(component.FassIz) ? component.FassIz : baseUnit;
                 }
                 else
                 {
-                    // Нет перерасчета в фасовку - показываем в основных единицах
                     displayValue = Math.Round(totalWeight, 2, MidpointRounding.AwayFromZero);
                     displayUnit = baseUnit;
                 }
             }
 
+            // Shorten the unit here
+            displayUnit = ShortenUnit(displayUnit);
+
             var formattedWeight = FormatValueOld(displayValue, displayUnit);
 
-            // Считаем цену компонента всегда, чтобы накопить dishTotal
             var priceInfo = _menuPriceService.GetComponentPriceInfo(MenuId, component, delicate.Count);
             dishTotal += priceInfo.TotalPrice;
 
-            string line;
-            if (reportMode == ReportMode.Cost || reportMode == ReportMode.Full)
-                line = priceInfo.TotalPrice > 0
-                    ? $"{productName} ({formattedWeight}) — {FormatCurrency(priceInfo.TotalPrice)} тг"
-                    : $"{productName} ({formattedWeight}) — 0";
-            else
-                // Price или NoPrices - без цены
-                line = $"{productName} ({formattedWeight})";
-
-            lines.Add(line);
+            result.Add(new CompositionItem
+            {
+                Name = productName,
+                Weight = formattedWeight,
+                TotalPrice = priceInfo.TotalPrice
+            });
         }
 
-        return lines;
+        return result;
     }
 
     /// <summary>
