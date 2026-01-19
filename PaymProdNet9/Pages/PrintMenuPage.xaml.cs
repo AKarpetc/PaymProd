@@ -31,6 +31,7 @@ public partial class PrintMenuPage : Page
         _menuPriceService = new MenuPriceService();
         _settingsRepository = new SettingsRepository();
         _menuRepository = new MenuRepository();
+        this.SizeChanged += Page_SizeChanged;
     }
 
     private void Page_Loaded(object sender, RoutedEventArgs e)
@@ -44,6 +45,24 @@ public partial class PrintMenuPage : Page
         DocumentViewer.Document = new FlowDocument(new Paragraph(new Run(text)));
         SaveToWordButton.Visibility = Visibility.Collapsed;
         _currentReportMode = null;
+    }
+
+    private void Page_SizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        if (DocumentViewer.Document is FlowDocument doc)
+        {
+            // If the available width is less than 1000, fix the PageWidth to 1000 to force scrolling.
+            // Otherwise, set it to NaN to let it stretch.
+            // We use a small buffer (e.g. 20px) to prevent flickering or edge cases.
+            if (DocumentViewer.ActualWidth < 1000)
+            {
+                doc.PageWidth = 1000;
+            }
+            else
+            {
+                doc.PageWidth = double.NaN;
+            }
+        }
     }
 
     private void GenerateReportWithPrices_Click(object sender, RoutedEventArgs e)
@@ -109,7 +128,7 @@ public partial class PrintMenuPage : Page
             FontSize = 14,
             PagePadding = new Thickness(5),
             ColumnWidth = double.PositiveInfinity,
-            MinPageWidth = 1000,
+            // MinPageWidth = 1000, 
             // PageWidth = reportMode == ReportMode.Full ? 1122 : 980 // Commented out to allow full width expansion
         };
 
