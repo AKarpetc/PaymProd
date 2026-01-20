@@ -333,10 +333,11 @@ public class MenuPrinter
                 }
 
                 // --- Добавляем итоговые строки ---
-                // --- Добавляем итоговые строки ---
                 // var settings = _settingsRepository.GetSettings(); // Removed duplicate declaration
                 decimal totalDishSum = 0;
                 decimal totalCostSum = 0;
+                decimal totalUnitCostSum = 0;
+                decimal totalUnitPriceSum = 0;
 
                 // Пересчитываем сумму всех блюд для итога
                 foreach (var group in groupedDelicates)
@@ -392,6 +393,25 @@ public class MenuPrinter
                     if (reportMode == ReportMode.Full || reportMode == ReportMode.Cost || reportMode == ReportMode.Price)
                     {
                         totalCostSum += currentDishCost;
+
+                        var portions = delicate.Count > 0 ? delicate.Count : 1;
+                        var unitCost = currentDishCost / portions;
+                        totalUnitCostSum += unitCost;
+
+                        var markupMultiplier = delicate.DefaultMarkup > 0 ? delicate.DefaultMarkup / 100 : 1; 
+                        var finalDishPrice = currentDishCost; // Default to raw
+                        
+                         if (delicate.DefaultMarkup > 0)
+                        {
+                            if (reportMode == ReportMode.Full || reportMode == ReportMode.Cost)
+                                finalDishPrice = currentDishCost * markupMultiplier;
+                            else if (reportMode == ReportMode.Price)
+                                finalDishPrice = currentDishCost * markupMultiplier; // Same logic actually
+                        }
+                        
+                         // NOTE: logic matches PrintMenuPage logic now
+                        var unitPrice = finalDishPrice / portions;
+                        totalUnitPriceSum += unitPrice;
                     }
                 }
 
@@ -414,10 +434,10 @@ public class MenuPrinter
                     
                     if (reportMode == ReportMode.Full || reportMode == ReportMode.Cost || reportMode == ReportMode.Price)
                     {
-                        // Merged Footer: "Итого по меню" with TotalCost and TotalPrice
+                        // Merged Footer: "Итого по меню" with UnitCost, UnitPrice, TotalCost and TotalDish
                          var subtotalTitleCell = new TableCell();
                         subtotalTitleCell.Append(new TableCellProperties(
-                            new GridSpan { Val = 4 }, 
+                            new GridSpan { Val = 2 }, 
                             new TableCellVerticalAlignment { Val = TableVerticalAlignmentValues.Center }
                         ));
                          subtotalTitleCell.Append(new Paragraph(
@@ -425,6 +445,28 @@ public class MenuPrinter
                             new Run(new RunProperties(new Bold()), new Text(reportMode == ReportMode.Cost ? "ИТОГ" : "Итого по меню"))
                         ));
                         subtotalRow.Append(subtotalTitleCell);
+
+                        // Unit Cost Sum (New)
+                        var subtotalUnitCostCell = new TableCell();
+                        subtotalUnitCostCell.Append(new TableCellProperties(
+                            new TableCellVerticalAlignment { Val = TableVerticalAlignmentValues.Center }
+                        ));
+                        subtotalUnitCostCell.Append(new Paragraph(
+                            new ParagraphProperties(new Justification { Val = JustificationValues.Left }),
+                            new Run(new RunProperties(new Bold()), new Text(FormatCurrency(totalUnitCostSum)))
+                        ));
+                        subtotalRow.Append(subtotalUnitCostCell);
+
+                        // Unit Price Sum (New)
+                        var subtotalUnitPriceCell = new TableCell();
+                        subtotalUnitPriceCell.Append(new TableCellProperties(
+                            new TableCellVerticalAlignment { Val = TableVerticalAlignmentValues.Center }
+                        ));
+                        subtotalUnitPriceCell.Append(new Paragraph(
+                            new ParagraphProperties(new Justification { Val = JustificationValues.Left }),
+                            new Run(new RunProperties(new Bold()), new Text(FormatCurrency(totalUnitPriceSum)))
+                        ));
+                        subtotalRow.Append(subtotalUnitPriceCell);
 
                         // Cost Value
                         var subtotalCostCell = new TableCell();

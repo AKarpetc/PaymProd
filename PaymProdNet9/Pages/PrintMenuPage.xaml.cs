@@ -157,6 +157,8 @@ public partial class PrintMenuPage : Page
         var showPriceColumn = reportMode != ReportMode.NoPrices;
         
         decimal totalCostSum = 0; // Accumulator for Full Report Total Cost (Raw)
+        decimal totalUnitCostSum = 0; // Accumulator for Unit Cost
+        decimal totalUnitPriceSum = 0; // Accumulator for Unit Price
         
         if (showPriceColumn)
         {
@@ -341,7 +343,7 @@ public partial class PrintMenuPage : Page
                     };
                     row.Cells.Add(priceCell);
 
-                    // Накапливаем итоговую сумму
+                // Накапливаем итоговую сумму
                     if ((reportMode == ReportMode.Full || reportMode == ReportMode.Cost) && delicate.DefaultMarkup > 0)
                         totalReportSum += dishPrice * (delicate.DefaultMarkup / 100);
                     else
@@ -351,6 +353,19 @@ public partial class PrintMenuPage : Page
                     if (reportMode == ReportMode.Full || reportMode == ReportMode.Cost || reportMode == ReportMode.Price)
                     {
                         totalCostSum += rawDishTotal;
+
+                        var portions = delicate.Count > 0 ? delicate.Count : 1;
+                        var unitCost = rawDishTotal / portions;
+                        totalUnitCostSum += unitCost;
+
+                        var markupPrice = rawDishTotal;
+                        if ((reportMode == ReportMode.Full || reportMode == ReportMode.Cost) && delicate.DefaultMarkup > 0)
+                            markupPrice = rawDishTotal * (delicate.DefaultMarkup / 100);
+                        else if (reportMode == ReportMode.Price)
+                            markupPrice = dishPrice; // Already applied
+
+                        var unitPrice = markupPrice / portions;
+                        totalUnitPriceSum += unitPrice;
                     }
                 }
 
@@ -376,17 +391,36 @@ public partial class PrintMenuPage : Page
             // Если режим Full или Cost, то в этой строке выводим И себестоимость И цену
             if (reportMode == ReportMode.Full || reportMode == ReportMode.Cost || reportMode == ReportMode.Price)
             {
-                 // Ячейка заголовка "Итого по меню"
-                 // Price mode: 6 cols total. Dish, Comp, PCost, PPrice, TCost, TPrice.
-                 // Subtotal Header spans 4 (Dish, Comp, PCost, PPrice).
-                 // Full/Cost mode: 6 cols total.
+                // Ячейка заголовка "Итого по меню"
+                 // Price/Full/Cost mode: 6 cols total. Dish, Comp, PCost, PPrice, TCost, TPrice.
+                 // Subtotal Header now spans 2 (Dish, Comp).
                  var subtotalTitleCell = new TableCell(new Paragraph(new Run(reportMode == ReportMode.Cost ? "ИТОГ" : "Итого по меню") { FontWeight = FontWeights.Bold }))
                  {
-                     ColumnSpan = 4,
+                     ColumnSpan = 2,
                      Padding = new Thickness(4),
                      TextAlignment = TextAlignment.Right
                  };
                  subtotalRow.Cells.Add(subtotalTitleCell);
+
+                 // Ячейка Итог Себ. порции (Col 3)
+                 var subtotalUnitCostCell = new TableCell(new Paragraph(new Run(FormatCurrency(totalUnitCostSum)) { FontWeight = FontWeights.Bold }))
+                 {
+                     Padding = new Thickness(4),
+                     BorderBrush = Brushes.Black,
+                     BorderThickness = new Thickness(1),
+                     TextAlignment = TextAlignment.Right
+                 };
+                 subtotalRow.Cells.Add(subtotalUnitCostCell);
+
+                 // Ячейка Итог Цена порции (Col 4)
+                 var subtotalUnitPriceCell = new TableCell(new Paragraph(new Run(FormatCurrency(totalUnitPriceSum)) { FontWeight = FontWeights.Bold }))
+                 {
+                     Padding = new Thickness(4),
+                     BorderBrush = Brushes.Black,
+                     BorderThickness = new Thickness(1),
+                     TextAlignment = TextAlignment.Right
+                 };
+                 subtotalRow.Cells.Add(subtotalUnitPriceCell);
 
                  // Ячейка Итог Себестоимость (Col 5)
                  var subtotalCostCell = new TableCell(new Paragraph(new Run(FormatCurrency(totalCostSum)) { FontWeight = FontWeights.Bold }))
@@ -410,11 +444,7 @@ public partial class PrintMenuPage : Page
             }
             else
             {
-                // Стандартный режим (Fallback / NoPrices?? if NoPrices comes here)
-                // Actually NoPrices shouldn't show subtotal if showPriceColumn is false.
-                // But check showPriceColumn is true here.
-                // So this else is practically unreachable given current modes or just ReportMode.NoPrices logic logic higher up.
-                // Keeping minimal fallback.
+                // Стандартный режим (Fallback / NoPrices)
                 var subtotalTitleCell = new TableCell(new Paragraph(new Run("Итого по меню") { FontWeight = FontWeights.Bold }))
                 {
                     ColumnSpan = 2,
