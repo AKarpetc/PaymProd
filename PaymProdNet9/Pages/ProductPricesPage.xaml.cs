@@ -342,7 +342,7 @@ public partial class ProductPricesPage : Page
                         Name = md.Del,
                         ShortComposition = md.Sost,
                         DefaultMarkup = md.DefaultMarkup,
-                        Markup = md.Markup ?? md.DefaultMarkup,
+                        Markup = md.DefaultMarkup,
                         SaveToDefault = true,
                         IsModified = false,
                         Type = allDelicatesDict.ContainsKey(md.Del_id) ? allDelicatesDict[md.Del_id] : "",
