@@ -303,7 +303,10 @@
 
                             <DataGridTextColumn Header="Название" Binding="{Binding Name}" Width="2*" />
                             <DataGridTextColumn Header="Количество людей" Binding="{Binding CountP}" Width="*" />
-                            <DataGridTextColumn Header="Дата, время" Binding="{Binding DateBan}" Width="*" />
+                            <DataGridTextColumn Header="Дата, время" 
+                                                Binding="{Binding DateBanParsed, StringFormat=\{0:dd.MM.yyyy HH:mm\}}" 
+                                                Width="*"
+                                                SortMemberPath="DateBanParsed" />
                             <DataGridTextColumn Header="Доп. информация" Binding="{Binding Detail}" Width="2*" />
                         </DataGrid.Columns>
                     </DataGrid>

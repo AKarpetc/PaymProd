@@ -14,6 +14,8 @@ public class MenuReportResult
     public decimal ServicePercent { get; set; }
     public decimal ServiceAmount { get; set; }
     public decimal GrandTotal { get; set; }
+    public decimal TotalPortionCost { get; set; }
+    public decimal TotalPortionPrice { get; set; }
 }
 
 public class MenuReportItem
@@ -120,6 +122,8 @@ public class MenuReportCalculationService
 
             result.Items.Add(item);
             result.Subtotal += item.DishPrice;
+            result.TotalPortionCost += item.PortionCost;
+            result.TotalPortionPrice += item.PortionPrice;
         }
 
         // Calculate Totals

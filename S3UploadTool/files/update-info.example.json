@@ -1,6 +1,6 @@
 {
-  "version": "3.2.3",
+  "version": "3.2.7",
   "installerUrl": "https://storage.yandexcloud.kz/menu-instaler/auto_update_files/PaymProdNet9_Setup.exe",
-  "releaseNotes": "- Новая версия пиложения\n- Исправленно форматирование отчетов! ",
+  "releaseNotes": "- Новая версия пиложения\n- Исправленно форматирование дат! ",
   "startDb": "https://storage.yandexcloud.kz/menu-instaler/auto_update_files/MenuCalc.start.db"
 }

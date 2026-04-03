@@ -58,7 +58,8 @@ public partial class SavedMenusPage : Page
             var filtered = allMenus.Where(m =>
                 (m.Name != null && m.Name.ToLower().Contains(searchText)) ||
                 (m.Detail != null && m.Detail.ToLower().Contains(searchText)) ||
-                (m.DateBan != null && m.DateBan.ToLower().Contains(searchText))
+                (m.DateBan != null && m.DateBan.ToLower().Contains(searchText)) ||
+                (m.DateBanParsed.HasValue && m.DateBanParsed.Value.ToString("dd.MM.yyyy HH:mm").Contains(searchText))
             );
 
             SavedMenusDataGrid.ItemsSource = filtered.ToList();

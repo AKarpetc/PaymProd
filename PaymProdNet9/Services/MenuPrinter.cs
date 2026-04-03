@@ -699,7 +699,7 @@ public class MenuPrinter
                 new InsideHorizontalBorder { Val = new EnumValue<BorderValues>(BorderValues.Nil) },
                 new InsideVerticalBorder { Val = new EnumValue<BorderValues>(BorderValues.Nil) }
             ),
-             new TableWidth { Width = compositionWidth.ToString(), Type = TableWidthUnitValues.Dxa }
+             new TableWidth { Width = "5000", Type = TableWidthUnitValues.Pct }
         );
         table.AppendChild(tableProps);
 
@@ -845,7 +845,7 @@ public class MenuPrinter
                     if (parts.Length >= 3 && DateTime.TryParse(parts[2].Trim(), out var banquetDate))
                         dateText = banquetDate.ToString("dd.MM.yyyy HH:mm");
                     else
-                        dateText = DateTime.Now.ToString("dd.MM.yyyy HH:mm");
+                        dateText = parts.Length >= 3 ? parts[2].Trim() : DateTime.Now.ToString("dd.MM.yyyy HH:mm");
                 }
                 else
                 {

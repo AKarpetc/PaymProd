@@ -18,7 +18,7 @@ public class BasicScenarios : IClassFixture<AppSession>
         _session = session;
     }
 
-    [Fact]
+    [Fact(Skip = "Only UI manual running")]
     public void CreateNewMenu_And_AddRemoveDish()
     {
         var session = _session.Session;
@@ -260,7 +260,7 @@ public class BasicScenarios : IClassFixture<AppSession>
         // Note: rows.Count is established before add? No, rows was established after add.
         // So rowsAfter should be rows.Count - 1.
     }
-    [Fact]
+    [Fact(Skip = "Only UI manual running")]
     public void Debug_PrintPageSource()
     {
         var session = _session.Session;

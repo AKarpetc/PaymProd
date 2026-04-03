@@ -281,7 +281,7 @@ public partial class MainNavigationWindow : Window
             {
                 openMenu.Name ?? "Без названия",
                 openMenu.CountP.ToString(),
-                openMenu.DateBan ?? DateTime.Now.ToString(),
+                openMenu.DateBanParsed?.ToString("dd.MM.yyyy HH:mm") ?? openMenu.DateBan ?? DateTime.Now.ToString("dd.MM.yyyy HH:mm"),
                 openMenu.Detail ?? ""
             };
 

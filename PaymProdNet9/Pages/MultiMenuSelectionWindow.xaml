@@ -30,7 +30,7 @@
                                         EditingElementStyle="{StaticResource MaterialDesignDataGridCheckBoxColumnEditingStyle}" />
                 <DataGridTextColumn Header="Название" Binding="{Binding Menu.Name}" Width="*" IsReadOnly="True" />
                 <DataGridTextColumn Header="Гостей" Binding="{Binding Menu.CountP}" Width="Auto" IsReadOnly="True" />
-                <DataGridTextColumn Header="Дата" Binding="{Binding Menu.DateBan}" Width="Auto" IsReadOnly="True" />
+                <DataGridTextColumn Header="Дата" Binding="{Binding Menu.DateBanParsed, StringFormat=\{0:dd.MM.yyyy HH:mm\}}" Width="Auto" IsReadOnly="True" />
             </DataGrid.Columns>
         </DataGrid>
 

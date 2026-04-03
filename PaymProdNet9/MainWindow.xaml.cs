@@ -138,7 +138,7 @@ public partial class MainWindow : Window
             var menuDelicates = _menuRepository.GetMenuDelicates(menuId);
             foreach (var item in menuDelicates) _currentMenuDelicates.Add(item);
 
-            CurrentMenuInfo.Text = $"Банкет: {menu.Name} - {menu.CountP} человек, дата - {menu.DateBan}";
+            CurrentMenuInfo.Text = $"Банкет: {menu.Name} - {menu.CountP} человек, дата - {menu.DateBanParsed?.ToString("dd.MM.yyyy HH:mm") ?? menu.DateBan}";
 
             // Включаем панель добавления блюд
             DelicatesPanel.IsEnabled = true;
@@ -590,8 +590,8 @@ public partial class MainWindow : Window
             {
                 BanquetNameTextBox.Text,
                 PeopleCountTextBox.Text,
-                BanquetDatePicker.SelectedDateTime?.ToString("yyyy-MM-dd HH:mm") ??
-                DateTime.Now.ToString("yyyy-MM-dd HH:mm"),
+                BanquetDatePicker.SelectedDateTime?.ToString("dd.MM.yyyy HH:mm") ??
+                DateTime.Now.ToString("dd.MM.yyyy HH:mm"),
                 DescriptionTextBox.Text
             };
 

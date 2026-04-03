@@ -105,6 +105,10 @@ namespace PaymProdNet9.Tests
                 Assert.Equal(200m, item.PortionPrice);
                 
                 Assert.Equal(1000m, item.DishPrice); // Total price
+
+                // Verify Totals
+                Assert.Equal(100m, result.TotalPortionCost); // Sum of portion costs (1 item: 100)
+                Assert.Equal(200m, result.TotalPortionPrice); // Sum of portion prices (1 item: 200)
         }
     }
 }
