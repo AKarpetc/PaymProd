@@ -1,0 +1,58 @@
+<Page x:Class="PaymProdNet9.Pages.PrintFullMenuPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+      Loaded="Page_Loaded">
+
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0"
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Left"
+                    Margin="0,0,0,10">
+            <Button Style="{StaticResource MaterialDesignRaisedButton}"
+                    Background="#757575"
+                    Foreground="White"
+                    Padding="20,5"
+                    Click="Back_Click">
+                <StackPanel Orientation="Horizontal">
+                    <materialDesign:PackIcon Kind="ArrowLeft" Width="20" Height="20" Margin="0,0,10,0" />
+                    <TextBlock Text="Назад" VerticalAlignment="Center" />
+                </StackPanel>
+            </Button>
+            
+            <Button x:Name="SaveToWordButton"
+                    Style="{StaticResource MaterialDesignRaisedButton}"
+                    Background="#4CAF50"
+                    Foreground="White"
+                    Padding="20,5"
+                    Margin="10,0,0,0"
+                    Click="SaveToWord_Click">
+                <StackPanel Orientation="Horizontal">
+                    <materialDesign:PackIcon Kind="FileWord" Width="20" Height="20" Margin="0,0,10,0" />
+                    <TextBlock Text="Сохранить в Word" VerticalAlignment="Center" />
+                </StackPanel>
+            </Button>
+        </StackPanel>
+
+        <Grid Grid.Row="1">
+            <Border HorizontalAlignment="Stretch"
+                    Margin="60,20"
+                    BorderBrush="#CCCCCC"
+                    BorderThickness="1"
+                    CornerRadius="6">
+                <materialDesign:Card Padding="5" Background="White">
+                    <FlowDocumentScrollViewer x:Name="DocumentViewer"
+                                              VerticalScrollBarVisibility="Auto"
+                                              HorizontalScrollBarVisibility="Auto"
+                                              HorizontalAlignment="Stretch"
+                                              MinHeight="600" />
+                </materialDesign:Card>
+            </Border>
+        </Grid>
+    </Grid>
+</Page>

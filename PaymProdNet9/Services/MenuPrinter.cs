@@ -111,6 +111,20 @@ public class MenuPrinter
                 // body.AppendChild(new Paragraph()); // Пустая строка
                 // body.AppendChild(new Paragraph()); // Пустая строка
 
+                int guestsCount = 1;
+                if (!string.IsNullOrWhiteSpace(menuName) && menuName.Contains(","))
+                {
+                    var parts = menuName.Split(',');
+                    if (parts.Length >= 2)
+                    {
+                        var guestStr = parts[1].Replace("человек", "").Replace("чел", "").Trim();
+                        if (int.TryParse(guestStr, out var parsedGuests) && parsedGuests > 0)
+                        {
+                            guestsCount = parsedGuests;
+                        }
+                    }
+                }
+
                 // Создаем таблицу
                 var table = new Table();
 
@@ -269,7 +283,7 @@ public class MenuPrinter
                             if (reportMode == ReportMode.Price || reportMode == ReportMode.Full || reportMode == ReportMode.Cost)
                             {
                                 // --- Новые колонки для Price и Full режима ---
-                                var portions = delicate.Count > 0 ? delicate.Count : 1;
+                                var portions = guestsCount;
                                 
                                 // 1. Себестоимость порции
                                 var unitCost = rawDishTotal / portions;
@@ -394,7 +408,7 @@ public class MenuPrinter
                     {
                         totalCostSum += currentDishCost;
 
-                        var portions = delicate.Count > 0 ? delicate.Count : 1;
+                        var portions = guestsCount;
                         var unitCost = currentDishCost / portions;
                         totalUnitCostSum += unitCost;
 
@@ -1260,6 +1274,172 @@ List<TempRow> AppendTypeSection(IGrouping<string, DelicatesCollForSvod> groupLef
         {
             Logger.Error("Ошибка при создании отчета по продуктам", ex);
             throw new Exception($"Ошибка при создании отчета: {ex.Message}", ex);
+        }
+    }
+
+    public void PrintCustomFullMenu(List<DelicatesColl> delicates, bool showCost, bool showPrice, bool openFile = true)
+    {
+        try
+        {
+            var fileName = Path.Combine(Path.GetTempPath(), $"FullMenu_{DateTime.Now:yyyyMMdd_HHmmss}.docx");
+            var settings = _settingsRepository.GetSettings();
+            var menuFontSizeStr = (settings.MenuReportFontSize * 2).ToString();
+            
+            var measures = _productRepository.GetMeasures();
+            var measureLookup = measures
+                .GroupBy(m => m.Name.ToLower().Trim())
+                .ToDictionary(g => g.Key, g => g.First());
+            var products = _productRepository.GetAllProducts();
+            var productLookup = products.ToDictionary(p => p.ID, p => p);
+
+            var groupedDelicates = delicates
+                .Where(d => d.Lcomp != null && d.Lcomp.Any())
+                .GroupBy(d => new { d.Type, SortOrder = d.TypeSortOrder })
+                .OrderBy(g => g.Key.SortOrder)
+                .ThenBy(g => g.Key.Type);
+
+            using (var document = WordprocessingDocument.Create(fileName, WordprocessingDocumentType.Document))
+            {
+                var mainPart = document.AddMainDocumentPart();
+                mainPart.Document = new Document();
+                var body = mainPart.Document.AppendChild(new Body());
+
+                var titleParagraph = body.AppendChild(new Paragraph());
+                var titleProperties = titleParagraph.AppendChild(new ParagraphProperties());
+                titleProperties.AppendChild(new Justification { Val = JustificationValues.Center });
+
+                var titleRun = titleParagraph.AppendChild(new Run());
+                var titleRunProperties = titleRun.AppendChild(new RunProperties());
+                titleRunProperties.AppendChild(new Bold());
+                titleRunProperties.AppendChild(new FontSize { Val = (settings.MenuReportFontSize * 2 + 4).ToString() });
+                titleRun.AppendChild(new Text("МЕНЮ"));
+
+                var table = new Table();
+                var tableProperties = new TableProperties(
+                    new TableWidth { Type = TableWidthUnitValues.Pct, Width = "5000" },
+                    new TableBorders(
+                        new TopBorder { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 12, Color = "000000" },
+                        new BottomBorder { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 12, Color = "000000" },
+                        new LeftBorder { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 12, Color = "000000" },
+                        new RightBorder { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 12, Color = "000000" },
+                        new InsideHorizontalBorder { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 12, Color = "000000" },
+                        new InsideVerticalBorder { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 12, Color = "000000" }
+                    ),
+                    new TableCellMarginDefault(
+                        new TopMargin { Width = "50", Type = TableWidthUnitValues.Dxa },
+                        new StartMargin { Width = "100", Type = TableWidthUnitValues.Dxa },
+                        new BottomMargin { Width = "50", Type = TableWidthUnitValues.Dxa },
+                        new EndMargin { Width = "100", Type = TableWidthUnitValues.Dxa }
+                    )
+                );
+                table.AppendChild(tableProperties);
+
+                long dishWidth = 2000;
+                long compWidth = 4000;
+                long priceColWidth = 1500;
+
+                var tableGrid = new TableGrid();
+                tableGrid.Append(new GridColumn { Width = dishWidth.ToString() });
+                tableGrid.Append(new GridColumn { Width = compWidth.ToString() });
+                if (showCost) tableGrid.Append(new GridColumn { Width = priceColWidth.ToString() });
+                if (showPrice) tableGrid.Append(new GridColumn { Width = priceColWidth.ToString() });
+                table.AppendChild(tableGrid);
+
+                int span = 2 + (showCost ? 1 : 0) + (showPrice ? 1 : 0);
+
+                foreach (var group in groupedDelicates)
+                {
+                    var headerRow = new TableRow();
+                    var headerCell = new TableCell();
+                    headerCell.Append(new TableCellProperties(
+                        new GridSpan { Val = span },
+                        new Shading { Fill = "D3D3D3" },
+                        new TableCellVerticalAlignment { Val = TableVerticalAlignmentValues.Center }
+                    ));
+                    var headerParagraph = new Paragraph(new ParagraphProperties(new Justification { Val = JustificationValues.Center }));
+                    headerParagraph.Append(new Run(new RunProperties(new Bold(), new FontSize { Val = (settings.MenuReportFontSize * 2 + 4).ToString() }), new Text(group.Key.Type ?? "Без типа")));
+                    headerCell.Append(headerParagraph);
+                    headerRow.Append(headerCell);
+                    table.Append(headerRow);
+
+                    var columnsRow = new TableRow();
+                    columnsRow.Append(CreateTableHeaderCell("Блюдо", menuFontSizeStr));
+                    columnsRow.Append(CreateTableHeaderCell("Состав", menuFontSizeStr));
+                    if (showCost) columnsRow.Append(CreateTableHeaderCell("Себестоимость", menuFontSizeStr));
+                    if (showPrice) columnsRow.Append(CreateTableHeaderCell("Цена", menuFontSizeStr));
+                    table.Append(columnsRow);
+
+                    foreach (var delicate in group)
+                    {
+                        var row = new TableRow();
+
+                        var nameCell = new TableCell();
+                        nameCell.Append(new Paragraph(
+                            new ParagraphProperties(new Justification { Val = JustificationValues.Left }),
+                            new Run(new RunProperties(new FontSize { Val = menuFontSizeStr }), new Text(delicate.Name))));
+                        EnsureVerticalCenter(nameCell);
+                        row.Append(nameCell);
+
+                        var compositionElement = CreateCompositionElement(delicate, ReportMode.Price, menuFontSizeStr, null,
+                            out var dishCost, measureLookup, productLookup, compWidth);
+                        
+                        var compositionCell = new TableCell();
+                        compositionCell.Append(compositionElement);
+                        if (compositionElement is Table) compositionCell.Append(new Paragraph());
+                        EnsureVerticalCenter(compositionCell);
+                        row.Append(compositionCell);
+                        
+                        if (showCost)
+                        {
+                            var costText = dishCost > 0 ? FormatCurrency(dishCost) : "—";
+                            var costCell = new TableCell();
+                            costCell.Append(new Paragraph(
+                                new ParagraphProperties(new Justification { Val = JustificationValues.Right }),
+                                new Run(new RunProperties(new FontSize { Val = menuFontSizeStr }), new Text(costText))));
+                            EnsureVerticalCenter(costCell);
+                            row.Append(costCell);
+                        }
+
+                        if (showPrice)
+                        {
+                            var finalPrice = dishCost;
+                            if (delicate.DefaultMarkup > 0)
+                                finalPrice = dishCost * (delicate.DefaultMarkup / 100);
+
+                            var priceText = finalPrice > 0 ? FormatCurrency(finalPrice) : "—";
+                            var priceCell = new TableCell();
+                            priceCell.Append(new Paragraph(
+                                new ParagraphProperties(new Justification { Val = JustificationValues.Right }),
+                                new Run(new RunProperties(new FontSize { Val = menuFontSizeStr }), new Text(priceText))));
+                            EnsureVerticalCenter(priceCell);
+                            row.Append(priceCell);
+                        }
+
+                        table.Append(row);
+                    }
+                }
+
+                body.Append(table);
+
+                body.AppendChild(new SectionProperties(
+                    new PageSize { Width = 11906U, Height = 16838U, Orient = PageOrientationValues.Portrait },
+                    new PageMargin
+                    {
+                        Top = 720, Right = 720U, Bottom = 720, Left = 720U, Header = 720U, Footer = 720U, Gutter = 0U
+                    }));
+
+                mainPart.Document.Save();
+            }
+
+            if (openFile)
+            {
+                Process.Start(new ProcessStartInfo(fileName) { UseShellExecute = true });
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.Error("Ошибка при создании сводного отчета по меню", ex);
+            throw new Exception($"Ошибка при создании документа: {ex.Message}", ex);
         }
     }
 

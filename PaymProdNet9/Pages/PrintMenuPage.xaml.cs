@@ -89,6 +89,20 @@ public partial class PrintMenuPage : Page
         GenerateReport(ReportMode.Full);
     }
 
+    private void PrintFullMenu_Click(object sender, RoutedEventArgs e)
+    {
+        var configWindow = new PaymProdNet9.Windows.PrintFullMenuConfigWindow();
+        if (configWindow.ShowDialog() == true)
+        {
+            var showCost = configWindow.ShowCost;
+            var showPrice = configWindow.ShowPrice;
+            var selectedCategories = configWindow.SelectedCategoryIds;
+            
+            var printPage = new PrintFullMenuPage(showCost, showPrice, selectedCategories);
+            NavigationService?.Navigate(printPage);
+        }
+    }
+
     private void GenerateReport(ReportMode mode)
     {
         try
@@ -132,24 +146,34 @@ public partial class PrintMenuPage : Page
             // PageWidth = reportMode == ReportMode.Full ? 1122 : 980 // Commented out to allow full width expansion
         };
 
-        var titleParagraph = new Paragraph
-        {
-            TextAlignment = TextAlignment.Center,
-            FontSize = 22,
-            FontWeight = FontWeights.Bold,
-            Margin = new Thickness(0, 0, 0, 10)
-        };
+        var titleTable = new Table { CellSpacing = 0, BorderThickness = new Thickness(0), Margin = new Thickness(0, 0, 0, 10) };
+        titleTable.Columns.Add(new TableColumn { Width = new GridLength(1, GridUnitType.Star) });
+        var titleRowGroup = new TableRowGroup();
+        var titleRow = new TableRow();
         var menuTitle = BanquetInfo.Count >= 3
             ? $"{BanquetInfo[0]} • {BanquetInfo[1]} человек • {BanquetInfo[2]}"
             : "Меню банкета";
-        titleParagraph.Inlines.Add(menuTitle);
-        document.Blocks.Add(titleParagraph);
+        var titleCell = new TableCell(new Paragraph(new Run(menuTitle) { FontSize = 22, FontWeight = FontWeights.Bold }) { TextAlignment = TextAlignment.Center })
+        {
+            BorderThickness = new Thickness(0),
+            Padding = new Thickness(0)
+        };
+        titleRow.Cells.Add(titleCell);
+        titleRowGroup.Rows.Add(titleRow);
+        titleTable.RowGroups.Add(titleRowGroup);
+        document.Blocks.Add(titleTable);
 
         var groupedDelicates = Delicates
             .Where(d => d.Lcomp != null && d.Lcomp.Any())
             .GroupBy(d => new { d.Type, d.TypeSortOrder })
             .OrderBy(g => g.Key.TypeSortOrder)
             .ThenBy(g => g.Key.Type);
+
+        int guestsCount = 1;
+        if (BanquetInfo != null && BanquetInfo.Count >= 2 && int.TryParse(BanquetInfo[1], out var parsedGuests) && parsedGuests > 0)
+        {
+            guestsCount = parsedGuests;
+        }
 
         var table = new Table();
         // Dish Column: ~10% (1024/10000)
@@ -273,7 +297,7 @@ public partial class PrintMenuPage : Page
 
                     if (reportMode == ReportMode.Price || reportMode == ReportMode.Full || reportMode == ReportMode.Cost)
                     {
-                        var portions = delicate.Count > 0 ? delicate.Count : 1;
+                        var portions = guestsCount;
                         var finalPriceForCalc = dishPrice; // In Full mode dishPrice is RAW cost, in Price mode it is MARKUP price
 
                          // Calculate portion cost (always based on raw cost)
@@ -354,7 +378,7 @@ public partial class PrintMenuPage : Page
                     {
                         totalCostSum += rawDishTotal;
 
-                        var portions = delicate.Count > 0 ? delicate.Count : 1;
+                        var portions = guestsCount;
                         var unitCost = rawDishTotal / portions;
                         totalUnitCostSum += unitCost;
 
