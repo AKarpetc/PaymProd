@@ -254,7 +254,7 @@ public partial class PrintFullMenuPage : Page
             return new Paragraph(new Run("Без состава"));
         }
 
-        var simpleLines = items.Select(i => $"{i.Name} ({i.Weight})").ToList();
+        var simpleLines = items.Select(i => i.Name).ToList();
         return new Paragraph(new Run(string.Join(", ", simpleLines)));
     }
 

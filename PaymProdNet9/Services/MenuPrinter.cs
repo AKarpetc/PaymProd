@@ -623,7 +623,7 @@ public class MenuPrinter
     }
 
     private OpenXmlElement CreateCompositionElement(DelicatesColl delicate, ReportMode reportMode, string fontSizeStr,
-        int? menuId, out decimal dishTotal, Dictionary<string, Measure> measureLookup, Dictionary<int, ProductView> productLookup, long compositionWidth)
+        int? menuId, out decimal dishTotal, Dictionary<string, Measure> measureLookup, Dictionary<int, ProductView> productLookup, long compositionWidth, bool excludeWeights = false)
     {
         dishTotal = 0;
         var components = delicate.Lcomp ?? new List<Components>();
@@ -694,7 +694,10 @@ public class MenuPrinter
         if (reportMode == ReportMode.NoPrices || reportMode == ReportMode.Price)
         {
             var p = new Paragraph(new ParagraphProperties(new Justification { Val = JustificationValues.Left }));
-            p.Append(new Run(new RunProperties(new FontSize { Val = fontSizeStr }), new Text(string.Join(", ", items.Select(i => $"{i.Name} ({i.Weight})")))));
+            var text = excludeWeights 
+                ? string.Join(", ", items.Select(i => i.Name))
+                : string.Join(", ", items.Select(i => $"{i.Name} ({i.Weight})"));
+            p.Append(new Run(new RunProperties(new FontSize { Val = fontSizeStr }), new Text(text)));
             return p;
         }
 
@@ -1381,7 +1384,7 @@ List<TempRow> AppendTypeSection(IGrouping<string, DelicatesCollForSvod> groupLef
                         row.Append(nameCell);
 
                         var compositionElement = CreateCompositionElement(delicate, ReportMode.Price, menuFontSizeStr, null,
-                            out var dishCost, measureLookup, productLookup, compWidth);
+                            out var dishCost, measureLookup, productLookup, compWidth, excludeWeights: true);
                         
                         var compositionCell = new TableCell();
                         compositionCell.Append(compositionElement);
